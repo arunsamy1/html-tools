@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Step Hash Converter</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        #output {
+            margin-top: 10px;
+            font-weight: bold;
+            color: #333;
+        }
+        .hash-output {
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Multi-Step Hash Converter</h1>
+    <label for="inputText">Enter text to hash:</label>
+    <br>
+    <textarea id="inputText" rows="4" cols="50" placeholder="Enter your text here"></textarea>
+    <br><br>
+    <button id="convertButton">Convert</button>
+    <div id="output">
+        <div class="hash-output" id="sha224">SHA-224: <span></span></div>
+        <div class="hash-output" id="sha256">SHA-256: <span></span></div>
+        <div class="hash-output" id="sha512">SHA-512: <span></span></div>
+    </div>
+
+    <script>
+        document.getElementById('convertButton').addEventListener('click', () => {
+            const inputText = document.getElementById('inputText').value;
+            if (inputText) {
+                // Step 1: Compute SHA-224
+                const sha224Hash = CryptoJS.SHA224(inputText).toString(CryptoJS.enc.Hex);
+                document.getElementById('sha224').querySelector('span').textContent = sha224Hash;
+
+                // Step 2: Compute SHA-256 of SHA-224 output
+                const sha256Hash = CryptoJS.SHA256(sha224Hash).toString(CryptoJS.enc.Hex);
+                document.getElementById('sha256').querySelector('span').textContent = sha256Hash;
+
+                // Step 3: Compute SHA-512 of SHA-256 output
+                const sha512Hash = CryptoJS.SHA512(sha256Hash).toString(CryptoJS.enc.Hex);
+                document.getElementById('sha512').querySelector('span').textContent = sha512Hash;
+            } else {
+                document.getElementById('sha224').querySelector('span').textContent = 'Please enter text.';
+                document.getElementById('sha256').querySelector('span').textContent = '';
+                document.getElementById('sha512').querySelector('span').textContent = '';
+            }
+        });
+    </script>
+</body>
+</html>

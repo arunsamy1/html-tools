@@ -1,0 +1,29 @@
+### **1. Decrypt a file using a Private Key PEM file:**
+
+To decrypt a file encrypted with the **public key**, you use the corresponding **private key**. Here is the command using **OpenSSL**:
+
+```bash
+openssl rsautl -decrypt -inkey private_key.pem -in encrypted_file.dat -out decrypted_file.txt
+```
+
+- `-decrypt`: Specifies decryption mode.
+- `-inkey private_key.pem`: Use the private key file.
+- `-in encrypted_file.dat`: The input encrypted file.
+- `-out decrypted_file.txt`: The output decrypted file.
+
+---
+
+### **2. Decrypt a file using a Public Key PEM file:**
+
+Public keys are not used to decrypt files in standard PKI because encryption happens with the public key, and decryption requires the private key. If you attempt to decrypt with a public key, it will fail.
+
+---
+
+### **Alternative Flow:**
+- **Encrypt** with the public key: 
+   ```bash
+   openssl rsautl -encrypt -pubin -inkey public_key.pem -in plaintext.txt -out encrypted_file.dat
+   ```
+- **Decrypt** with the private key (as shown above).
+
+In PKI, encryption is always performed with the public key, and **decryption is exclusively done with the private key**. Let me know if you have further questions! 🚀

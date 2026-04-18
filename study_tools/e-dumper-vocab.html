@@ -1,0 +1,1230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>e-dumper Vocab</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background: #ffffff;
+            color: #1a1a2e;
+            min-height: 100vh;
+            min-height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        .header {
+            background: #f5f5f5;
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 2px solid #e94560;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            color: #e94560;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header h1::before {
+            content: '📖';
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .btn-primary {
+            background: #e94560;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #ff6b8a;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #1a1a2e;
+            border: 1px solid #e94560;
+        }
+
+        .btn-secondary:hover {
+            background: #1a1a2e;
+            color: white;
+        }
+
+        .btn-success {
+            background: #00d9a5;
+            color: #0f0f1a;
+        }
+
+        .btn-success:hover {
+            background: #00ffb8;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .app-container {
+            display: flex;
+            min-height: 100vh;
+            min-height: 100dvh;
+        }
+
+        .sidebar {
+            width: 350px;
+            background: #f5f5f5;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            border-right: 1px solid #e0e0e0;
+            transition: width 0.3s ease;
+        }
+
+        .sidebar.collapsed {
+            width: 50px;
+            padding: 10px 5px;
+        }
+
+        .sidebar.collapsed .sidebar-content {
+            display: none;
+        }
+
+        .sidebar-toggle {
+            display: block;
+            width: 100%;
+            padding: 8px;
+            background: #e0e0e0;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+
+        .sidebar .file-input-wrapper {
+            padding-bottom: 20px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .file-input-wrapper input[type="file"] {
+            display: none;
+        }
+
+        .main-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .main-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 24px;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .progress-section {
+            margin-bottom: 20px;
+        }
+
+        .progress-text {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #e94560, #00d9a5);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        .word-card {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 60px;
+            margin-bottom: 24px;
+            min-height: 400px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            justify-content: flex-start;
+            text-align: left;
+        }
+
+        .word-text {
+            font-size: 48px;
+            font-weight: 700;
+            color: #1a1a2e;
+            margin-bottom: 40px;
+            text-align: left;
+            width: 100%;
+        }
+
+        .word-meaning {
+            font-size: 24px;
+            color: #666;
+            margin-bottom: 40px;
+            display: none;
+            text-align: left;
+            width: 100%;
+        }
+
+        .word-meaning.show {
+            display: block;
+        }
+
+        .word-meaning.revealed {
+            color: #00a87d;
+            font-weight: 600;
+        }
+
+        .word-progress {
+            font-size: 16px;
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .jump-to-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .jump-to-container input {
+            width: 50px;
+            padding: 8px;
+            border: 1px solid #d0d0d0;
+            border-radius: 4px;
+            font-size: 14px;
+            text-align: center;
+        }
+
+        .jump-to-container .btn {
+            padding: 8px 12px;
+            font-size: 14px;
+        }
+
+        .word-actions {
+            display: flex;
+            gap: 16px;
+            margin-top: 30px;
+        }
+
+        .flagged-word-indicator {
+            display: inline-block;
+            padding: 4px 12px;
+            background: #f59e0b;
+            color: white;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 400px;
+            text-align: center;
+            color: #666;
+        }
+
+        .empty-state h2 {
+            font-size: 28px;
+            margin-bottom: 16px;
+            color: #1a1a2e;
+        }
+
+        .empty-state p {
+            font-size: 16px;
+            margin-bottom: 24px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Toast notifications */
+        .toast-container {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 1000;
+        }
+
+        .toast {
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            color: white;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            animation: slideIn 0.3s ease, fadeOut 0.3s ease 2.7s forwards;
+            max-width: 320px;
+        }
+
+        .toast-success { background: #00a87d; }
+        .toast-error   { background: #e94560; }
+        .toast-info    { background: #1a1a2e; }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to   { transform: translateX(0);    opacity: 1; }
+        }
+
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to   { opacity: 0; }
+        }
+
+        /* Quiz mode */
+        .quiz-options {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .quiz-option {
+            padding: 14px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            font-size: 18px;
+            text-align: left;
+            transition: border-color 0.15s, background 0.15s;
+            color: #1a1a2e;
+            font-family: inherit;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .quiz-option:hover:not(:disabled) {
+            border-color: #e94560;
+            background: #fff5f7;
+        }
+
+        .quiz-option.correct {
+            border-color: #00a87d;
+            background: #e6fff8;
+            color: #00a87d;
+            font-weight: 600;
+        }
+
+        .quiz-option.wrong {
+            border-color: #e94560;
+            background: #fff0f3;
+            color: #e94560;
+        }
+
+        .quiz-option:disabled {
+            cursor: default;
+        }
+
+        .quiz-score {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 2px 10px;
+            background: #1a1a2e;
+            color: white;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .quiz-summary {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 60px;
+            margin-bottom: 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        .quiz-summary h2 {
+            font-size: 32px;
+            color: #1a1a2e;
+            margin-bottom: 8px;
+        }
+
+        .quiz-summary .score-big {
+            font-size: 72px;
+            font-weight: 700;
+            color: #e94560;
+            line-height: 1;
+            margin: 20px 0 10px;
+        }
+
+        .quiz-summary .score-pct {
+            font-size: 24px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .quiz-summary .score-msg {
+            font-size: 18px;
+            color: #1a1a2e;
+            margin-bottom: 30px;
+        }
+
+        .quiz-summary-actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .navigation-buttons {
+            display: flex;
+            flex-wrap: nowrap;
+            align-items: center;
+            gap: 12px;
+        }
+
+        @media (max-width: 768px) {
+            .app-container {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100% !important;
+                flex-direction: row;
+                flex-wrap: wrap;
+                padding: 10px;
+                gap: 10px;
+                border-right: none;
+                border-bottom: 1px solid #e0e0e0;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                z-index: 100;
+                background: #f5f5f5;
+                max-height: 60vh;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .sidebar.collapsed {
+                width: 100% !important;
+                max-height: 56px;
+                overflow: hidden;
+            }
+
+            .sidebar-toggle {
+                margin-top: 0;
+                margin-bottom: 0;
+                width: auto;
+                padding: 10px 15px;
+            }
+
+            .sidebar-content {
+                display: flex !important;
+                flex-wrap: wrap;
+                gap: 10px;
+                width: 100%;
+            }
+
+            .sidebar.collapsed .sidebar-content {
+                display: none !important;
+            }
+
+            .file-input-wrapper {
+                flex: 1 1 100%;
+            }
+
+            .file-input-wrapper .btn {
+                width: 100%;
+            }
+
+            /* JS sets this dynamically; 56px is the collapsed sidebar fallback */
+            .main-wrapper {
+                margin-top: 56px;
+            }
+
+            .main-container {
+                padding: 12px;
+            }
+
+            .word-card {
+                padding: 20px;
+                min-height: 200px;
+            }
+
+            .word-text {
+                font-size: 32px;
+                margin-bottom: 24px;
+            }
+
+            .word-meaning {
+                font-size: 18px;
+                margin-bottom: 24px;
+            }
+
+            .btn {
+                padding: 12px 16px;
+                font-size: 14px;
+                min-height: 44px;
+            }
+
+            .navigation-buttons {
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+
+            /* Direct children only — avoids setting flex on Go button inside jump-to-container */
+            .navigation-buttons > .btn {
+                flex: 1 1 45%;
+                min-width: 100px;
+                justify-content: center;
+            }
+
+            /* Prevent iOS Safari from zooming on input focus */
+            .jump-to-container input {
+                font-size: 16px;
+            }
+
+            .quiz-summary {
+                padding: 24px 16px;
+            }
+
+            .quiz-summary .score-big {
+                font-size: 56px;
+            }
+
+            .progress-section {
+                margin-bottom: 12px;
+            }
+
+            h1 {
+                font-size: 20px;
+            }
+
+            h2 {
+                font-size: 18px;
+            }
+
+            .header h1 {
+                font-size: 18px;
+                margin-right: 10px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .navigation-buttons > .btn {
+                flex: 1 1 100%;
+            }
+
+            .word-text {
+                font-size: 28px;
+            }
+
+            .btn {
+                padding: 10px 12px;
+                font-size: 13px;
+            }
+
+            .quiz-summary .score-big {
+                font-size: 48px;
+            }
+
+            .quiz-summary-actions {
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .quiz-summary-actions .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar collapsed">
+            <button class="sidebar-toggle" onclick="app.toggleSidebar()">☰</button>
+            <div class="sidebar-content">
+                <div class="file-input-wrapper" style="width: 100%;">
+                    <input type="file" id="wordFileInput" accept=".csv,.txt">
+                    <button class="btn btn-primary" onclick="document.getElementById('wordFileInput').click()" style="width: 100%;">
+                        📂 Import Words
+                    </button>
+                </div>
+                <label class="shuffle-checkbox" style="display: flex; align-items: center; gap: 8px; margin-top: 20px; cursor: pointer;">
+                    <input type="checkbox" id="shuffleWordsCheck" onchange="app.toggleShuffleMode()">
+                    <span>🔀 Shuffle</span>
+                </label>
+                <label class="swap-checkbox" style="display: flex; align-items: center; gap: 8px; margin-top: 10px; cursor: pointer;">
+                    <input type="checkbox" id="swapWordsCheck" onchange="app.toggleSwapMode()">
+                    <span>Swap (Meaning → Word)</span>
+                </label>
+                <label style="display: flex; align-items: center; gap: 8px; margin-top: 10px; cursor: pointer;">
+                    <input type="checkbox" id="quizModeCheck" onchange="app.toggleQuizMode()">
+                    <span>🎯 Quiz Mode</span>
+                </label>
+                <button class="btn btn-secondary" id="reviewWordFlaggedBtn" onclick="app.reviewWordFlags()" style="width: 100%; margin-top: 10px;" disabled>
+                    ⚑ Review Flagged
+                </button>
+                <button class="btn btn-secondary" id="exportWordFlaggedBtn" onclick="app.exportWordFlags()" style="width: 100%; margin-top: 10px;" disabled>
+                    📥 Export Flagged
+                </button>
+                <button class="btn btn-secondary" id="clearStateBtn" onclick="app.clearAndReset()" style="width: 100%; margin-top: 20px;">
+                    🗑️ Clear Progress
+                </button>
+                <button class="btn btn-secondary" style="width: 100%; margin-top: 20px;" onclick="window.open('README-vocab.html', '_blank')">
+                    📖 Documentation
+                </button>
+            </div>
+        </aside>
+
+        <main class="main-wrapper">
+            <header class="header">
+                <h1>e-dumper Vocab <span style="font-size: 14px; color: #666;">v2.0</span></h1>
+            </header>
+
+            <div class="main-container">
+                <div id="emptyState" class="empty-state">
+                    <h2>Welcome to e-dumper Vocab</h2>
+                    <p>Import a word list file to get started using the button in the sidebar.</p>
+                </div>
+
+                <div id="wordListArea" class="hidden">
+                    <div class="progress-section">
+                        <div class="progress-text">
+                            <span id="wordProgressText">Word 0 of 0</span>
+                            <span id="quizScoreDisplay" class="quiz-score hidden">🎯 Score: 0/0</span>
+                            <span id="wordProgressPercent">0%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="wordProgressFill" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <div class="word-card" id="wordCard">
+                        <span id="wordFlaggedBadge" class="flagged-word-indicator hidden">FLAGGED</span>
+                        <div class="word-text" id="wordText">No words loaded</div>
+                        <div class="word-meaning" id="wordMeaning">Click "Show Meaning" to see the meaning</div>
+                        <div id="quizOptions" class="quiz-options hidden"></div>
+                    </div>
+
+                    <div class="navigation-buttons">
+                        <button class="btn btn-secondary nav-btn" id="wordPrevBtn" onclick="app.prevWord()">
+                            ← Previous
+                        </button>
+                        <button class="btn btn-primary" id="showMeaningBtn" onclick="app.showWordMeaning()">
+                            Show Meaning
+                        </button>
+                        <button class="btn btn-success" id="wordFlagBtn" onclick="app.toggleWordFlag()">
+                            ⚑ Flag
+                        </button>
+                        <div class="jump-to-container" id="jumpToContainer">
+                            <input type="number" id="jumpToWordInput" min="1" placeholder="#">
+                            <button class="btn btn-secondary" onclick="app.jumpToWord()">Go</button>
+                        </div>
+                        <button class="btn btn-primary nav-btn" id="wordNextBtn" onclick="app.nextWord()">
+                            Next →
+                        </button>
+                        <button class="btn btn-secondary hidden" id="endQuizBtn" onclick="app.showQuizSummary()">
+                            ⏹ End Quiz
+                        </button>
+                    </div>
+
+                    <div id="quizSummaryArea" class="quiz-summary hidden">
+                        <h2>Quiz Complete!</h2>
+                        <div class="score-big" id="quizSummaryScore">0/0</div>
+                        <div class="score-pct" id="quizSummaryPercent">0%</div>
+                        <div class="score-msg" id="quizSummaryMessage"></div>
+                        <div class="quiz-summary-actions">
+                            <button class="btn btn-primary" onclick="app.restartQuiz()">🔄 Restart Quiz</button>
+                            <button class="btn btn-secondary" id="exportWrongBtn" onclick="app.exportQuizWrongAnswers()">📥 Export Wrong Answers</button>
+                            <button class="btn btn-secondary" onclick="app.exitQuiz()">Exit Quiz Mode</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script>
+        const app = {
+            wordList: [],
+            wordIndex: 0,
+            wordMeaningShown: false,
+            swapMode: false,
+            shuffleMode: false,
+            flaggedReviewIndex: 0,
+            quizMode: false,
+            quizAnswered: false,
+            quizCorrect: 0,
+            quizTotal: 0,
+            quizWrongAnswers: [],
+
+            showToast(message, type = 'info') {
+                const container = document.getElementById('toastContainer');
+                const toast = document.createElement('div');
+                toast.className = `toast toast-${type}`;
+                toast.textContent = message;
+                container.appendChild(toast);
+                setTimeout(() => toast.remove(), 3000);
+            },
+
+            saveState() {
+                try {
+                    const state = {
+                        words: app.wordList,
+                        index: app.wordIndex,
+                        swapMode: app.swapMode,
+                        shuffleMode: app.shuffleMode
+                    };
+                    localStorage.setItem('edumperVocabState', JSON.stringify(state));
+                } catch (e) {
+                    console.warn('Could not save state:', e);
+                }
+            },
+
+            loadState() {
+                try {
+                    const saved = localStorage.getItem('edumperVocabState');
+                    if (!saved) return false;
+
+                    const state = JSON.parse(saved);
+
+                    if (state.words && state.words.length > 0) {
+                        app.wordList = state.words;
+                        app.wordIndex = state.index || 0;
+                        app.swapMode = state.swapMode || false;
+                        app.shuffleMode = state.shuffleMode || false;
+                        document.getElementById('swapWordsCheck').checked = app.swapMode;
+                        document.getElementById('shuffleWordsCheck').checked = app.shuffleMode;
+                        document.getElementById('jumpToWordInput').max = app.wordList.length;
+                        app.renderWordCard();
+                        app.updateWordButtons();
+                    }
+
+                    return true;
+                } catch (e) {
+                    console.warn('Could not load state:', e);
+                    return false;
+                }
+            },
+
+            clearState() {
+                try {
+                    localStorage.removeItem('edumperVocabState');
+                } catch (e) {
+                    console.warn('Could not clear state:', e);
+                }
+            },
+
+            clearAndReset() {
+                if (confirm('Are you sure you want to clear all saved progress? This cannot be undone.')) {
+                    app.clearState();
+                    location.reload();
+                }
+            },
+
+            init() {
+                document.getElementById('wordFileInput').addEventListener('change', (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onerror = () => {
+                            app.showToast('Error reading file. Please try again.', 'error');
+                        };
+                        reader.onload = (event) => {
+                            app.loadWordList(event.target.result);
+                        };
+                        reader.readAsText(file);
+                    }
+                });
+
+                document.getElementById('jumpToWordInput').addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        app.jumpToWord();
+                    }
+                });
+
+                app.updateMainWrapperMargin();
+                window.addEventListener('resize', () => app.updateMainWrapperMargin());
+
+                document.addEventListener('keydown', (e) => {
+                    const wordListArea = document.getElementById('wordListArea');
+                    if (wordListArea.classList.contains('hidden')) return;
+
+                    if (e.key === 'ArrowRight') {
+                        if (!app.quizMode || app.quizAnswered) app.nextWord();
+                    } else if (e.key === 'ArrowLeft') {
+                        if (!app.quizMode) app.prevWord();
+                    } else if (e.key === 'ArrowUp') {
+                        app.showWordMeaning();
+                    } else if (e.key === 'm' || e.key === 'M') {
+                        app.toggleWordFlag();
+                    }
+                });
+            },
+
+            toggleSidebar() {
+                const sidebar = document.querySelector('.sidebar');
+                sidebar.classList.toggle('collapsed');
+                const btn = sidebar.querySelector('.sidebar-toggle');
+                btn.textContent = sidebar.classList.contains('collapsed') ? '☰' : '✕';
+                app.updateMainWrapperMargin();
+            },
+
+            collapseSidebar() {
+                const sidebar = document.querySelector('.sidebar');
+                sidebar.classList.add('collapsed');
+                sidebar.querySelector('.sidebar-toggle').textContent = '☰';
+                app.updateMainWrapperMargin();
+            },
+
+            updateMainWrapperMargin() {
+                if (window.innerWidth > 768) {
+                    document.querySelector('.main-wrapper').style.marginTop = '';
+                    return;
+                }
+                const sidebar = document.querySelector('.sidebar');
+                document.querySelector('.main-wrapper').style.marginTop = sidebar.offsetHeight + 'px';
+            },
+
+            loadWordList(content) {
+                try {
+                    const lines = content.split('\n');
+                    app.wordList = [];
+                    app.wordIndex = 0;
+                    app.flaggedReviewIndex = 0;
+
+                    for (let line of lines) {
+                        line = line.trim();
+                        if (!line) continue;
+
+                        let parts = line.split(',');
+                        if (parts.length < 2) {
+                            parts = line.split('|');
+                        }
+
+                        if (parts.length >= 2) {
+                            app.wordList.push({
+                                word: parts[0].trim(),
+                                meaning: parts.slice(1).join(',').trim(),
+                                isFlagged: false
+                            });
+                        }
+                    }
+
+                    if (app.wordList.length > 0) {
+                        if (app.shuffleMode) {
+                            app.shuffleWords();
+                        }
+                        document.getElementById('jumpToWordInput').max = app.wordList.length;
+                        app.showToast(`Loaded ${app.wordList.length} words`, 'success');
+                        document.getElementById('emptyState').classList.add('hidden');
+                        document.getElementById('wordListArea').classList.remove('hidden');
+                        app.renderWordCard();
+                        app.collapseSidebar();
+                        app.updateWordButtons();
+                        app.saveState();
+                    } else {
+                        app.showToast('No words found. Please use format: word,meaning', 'error');
+                    }
+                } catch (e) {
+                    console.error('Error loading word list:', e);
+                    app.showToast('Error loading word list. Please check the file format.', 'error');
+                }
+            },
+
+            renderWordCard() {
+                if (app.wordList.length === 0) return;
+
+                const word = app.wordList[app.wordIndex];
+
+                if (app.swapMode) {
+                    document.getElementById('wordText').textContent = word.meaning;
+                    document.getElementById('wordMeaning').textContent = word.word;
+                } else {
+                    document.getElementById('wordText').textContent = word.word;
+                    document.getElementById('wordMeaning').textContent = word.meaning;
+                }
+                document.getElementById('wordMeaning').classList.remove('show', 'revealed');
+                app.wordMeaningShown = false;
+
+                document.getElementById('wordProgressText').textContent =
+                    `Word ${app.wordIndex + 1} of ${app.wordList.length}`;
+                document.getElementById('wordProgressPercent').textContent =
+                    `${Math.round(((app.wordIndex + 1) / app.wordList.length) * 100)}%`;
+                document.getElementById('wordProgressFill').style.width =
+                    `${Math.round(((app.wordIndex + 1) / app.wordList.length) * 100)}%`;
+
+                const flaggedBadge = document.getElementById('wordFlaggedBadge');
+                if (word.isFlagged) {
+                    flaggedBadge.classList.remove('hidden');
+                } else {
+                    flaggedBadge.classList.add('hidden');
+                }
+
+                if (app.quizMode) {
+                    document.getElementById('showMeaningBtn').classList.add('hidden');
+                    document.getElementById('wordPrevBtn').classList.add('hidden');
+                    document.getElementById('jumpToContainer').classList.add('hidden');
+                    document.getElementById('endQuizBtn').classList.remove('hidden');
+                    document.getElementById('quizOptions').classList.remove('hidden');
+                    document.getElementById('wordNextBtn').disabled = true;
+                    app.quizAnswered = false;
+                    app.renderQuizOptions();
+                } else {
+                    document.getElementById('showMeaningBtn').classList.remove('hidden');
+                    document.getElementById('wordPrevBtn').classList.remove('hidden');
+                    document.getElementById('jumpToContainer').classList.remove('hidden');
+                    document.getElementById('endQuizBtn').classList.add('hidden');
+                    document.getElementById('quizOptions').classList.add('hidden');
+                    document.getElementById('wordPrevBtn').disabled = app.wordIndex === 0;
+                    document.getElementById('wordNextBtn').disabled = app.wordIndex === app.wordList.length - 1;
+                    document.getElementById('showMeaningBtn').textContent = 'Show Meaning';
+                }
+            },
+
+            showWordMeaning() {
+                if (app.quizMode) return;
+                const meaningEl = document.getElementById('wordMeaning');
+                meaningEl.classList.add('show', 'revealed');
+                app.wordMeaningShown = true;
+                document.getElementById('showMeaningBtn').textContent = 'Meaning Shown';
+            },
+
+            toggleWordFlag() {
+                if (app.wordList.length === 0) return;
+
+                const word = app.wordList[app.wordIndex];
+                word.isFlagged = !word.isFlagged;
+
+                app.renderWordCard();
+                app.updateWordButtons();
+                app.saveState();
+            },
+
+            jumpToWord() {
+                const input = document.getElementById('jumpToWordInput');
+                const wordNumber = parseInt(input.value);
+
+                if (isNaN(wordNumber) || wordNumber < 1) {
+                    app.showToast('Please enter a valid word number (1–' + app.wordList.length + ')', 'error');
+                    return;
+                }
+
+                if (wordNumber > app.wordList.length) {
+                    app.showToast('Word number exceeds total words (' + app.wordList.length + ')', 'error');
+                    return;
+                }
+
+                app.wordIndex = wordNumber - 1;
+                app.renderWordCard();
+                app.saveState();
+                input.value = '';
+            },
+
+            nextWord() {
+                if (app.wordIndex < app.wordList.length - 1) {
+                    app.wordIndex++;
+                    app.renderWordCard();
+                    app.saveState();
+                }
+            },
+
+            prevWord() {
+                if (app.wordIndex > 0) {
+                    app.wordIndex--;
+                    app.renderWordCard();
+                    app.saveState();
+                }
+            },
+
+            toggleShuffleMode() {
+                const checkbox = document.getElementById('shuffleWordsCheck');
+                app.shuffleMode = checkbox.checked;
+
+                if (app.shuffleMode && app.wordList.length > 0) {
+                    app.shuffleWords();
+                } else if (app.wordList.length > 0) {
+                    app.wordIndex = 0;
+                    app.renderWordCard();
+                }
+                app.saveState();
+            },
+
+            shuffleWords() {
+                if (app.wordList.length === 0) return;
+
+                for (let i = app.wordList.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [app.wordList[i], app.wordList[j]] = [app.wordList[j], app.wordList[i]];
+                }
+
+                app.wordIndex = 0;
+                app.renderWordCard();
+                app.saveState();
+            },
+
+            toggleSwapMode() {
+                const checkbox = document.getElementById('swapWordsCheck');
+                app.swapMode = checkbox.checked;
+                app.renderWordCard();
+                app.saveState();
+            },
+
+            updateWordButtons() {
+                document.getElementById('shuffleWordsCheck').disabled = app.wordList.length === 0;
+                document.getElementById('swapWordsCheck').disabled = app.wordList.length === 0;
+                document.getElementById('quizModeCheck').disabled = app.wordList.length === 0;
+
+                const flaggedCount = app.wordList.filter(w => w.isFlagged).length;
+                document.getElementById('reviewWordFlaggedBtn').disabled = flaggedCount === 0;
+                document.getElementById('reviewWordFlaggedBtn').textContent = `⚑ Review Flagged (${flaggedCount})`;
+                document.getElementById('exportWordFlaggedBtn').disabled = flaggedCount === 0;
+            },
+
+            reviewWordFlags() {
+                const flaggedEntries = app.wordList
+                    .map((w, i) => ({ word: w, index: i }))
+                    .filter(({ word }) => word.isFlagged);
+
+                if (flaggedEntries.length === 0) {
+                    app.showToast('No flagged words to review.', 'info');
+                    return;
+                }
+
+                app.flaggedReviewIndex = app.flaggedReviewIndex % flaggedEntries.length;
+                app.wordIndex = flaggedEntries[app.flaggedReviewIndex].index;
+                app.flaggedReviewIndex++;
+                app.renderWordCard();
+            },
+
+            toggleQuizMode() {
+                app.quizMode = document.getElementById('quizModeCheck').checked;
+                app.quizCorrect = 0;
+                app.quizTotal = 0;
+                app.quizAnswered = false;
+                app.quizWrongAnswers = [];
+
+                document.getElementById('quizScoreDisplay').classList.toggle('hidden', !app.quizMode);
+                document.getElementById('quizSummaryArea').classList.add('hidden');
+
+                if (app.wordList.length > 0) {
+                    app.wordIndex = 0;
+                    if (app.quizMode && app.shuffleMode) app.shuffleWords();
+                    app.renderWordCard();
+                    app.updateQuizScore();
+                }
+            },
+
+            updateQuizScore() {
+                document.getElementById('quizScoreDisplay').textContent =
+                    `🎯 ${app.quizCorrect}/${app.quizTotal}`;
+            },
+
+            generateQuizOptions() {
+                const word = app.wordList[app.wordIndex];
+                const correctAnswer = app.swapMode ? word.word : word.meaning;
+
+                const pool = app.wordList
+                    .filter((_, i) => i !== app.wordIndex)
+                    .map(w => app.swapMode ? w.word : w.meaning);
+
+                // Fisher-Yates shuffle the pool and take up to 3 distractors
+                for (let i = pool.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [pool[i], pool[j]] = [pool[j], pool[i]];
+                }
+                const options = [correctAnswer, ...pool.slice(0, 3)];
+
+                // Shuffle final options
+                for (let i = options.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [options[i], options[j]] = [options[j], options[i]];
+                }
+
+                return { options, correctAnswer };
+            },
+
+            renderQuizOptions() {
+                const container = document.getElementById('quizOptions');
+                const { options, correctAnswer } = app.generateQuizOptions();
+
+                container.innerHTML = '';
+                options.forEach(option => {
+                    const btn = document.createElement('button');
+                    btn.className = 'quiz-option';
+                    btn.textContent = option;
+                    btn.onclick = () => app.handleQuizAnswer(btn, option, correctAnswer, container);
+                    container.appendChild(btn);
+                });
+            },
+
+            handleQuizAnswer(selectedBtn, selected, correctAnswer, container) {
+                if (app.quizAnswered) return;
+                app.quizAnswered = true;
+                app.quizTotal++;
+
+                const isCorrect = selected === correctAnswer;
+                if (isCorrect) {
+                    app.quizCorrect++;
+                    selectedBtn.classList.add('correct');
+                } else {
+                    selectedBtn.classList.add('wrong');
+                    container.querySelectorAll('.quiz-option').forEach(btn => {
+                        if (btn.textContent === correctAnswer) btn.classList.add('correct');
+                    });
+                    app.quizWrongAnswers.push(app.wordList[app.wordIndex]);
+                }
+
+                container.querySelectorAll('.quiz-option').forEach(btn => { btn.disabled = true; });
+                document.getElementById('wordNextBtn').disabled = false;
+                app.updateQuizScore();
+
+                if (app.wordIndex === app.wordList.length - 1) {
+                    setTimeout(() => app.showQuizSummary(), 900);
+                }
+            },
+
+            showQuizSummary() {
+                document.getElementById('quizSummaryArea').classList.remove('hidden');
+                document.getElementById('quizSummaryArea').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+                const pct = app.quizTotal > 0 ? Math.round((app.quizCorrect / app.quizTotal) * 100) : 0;
+                document.getElementById('quizSummaryScore').textContent = `${app.quizCorrect}/${app.quizTotal}`;
+                document.getElementById('quizSummaryPercent').textContent = `${pct}% correct`;
+
+                let msg;
+                if (pct === 100) msg = 'Perfect score! 🎉';
+                else if (pct >= 80) msg = 'Great work! 👍';
+                else if (pct >= 60) msg = 'Good effort — keep going!';
+                else msg = 'More practice will help. You got this!';
+                document.getElementById('quizSummaryMessage').textContent = msg;
+
+                document.getElementById('exportWrongBtn').classList.toggle('hidden', app.quizWrongAnswers.length === 0);
+            },
+
+            restartQuiz() {
+                app.quizCorrect = 0;
+                app.quizTotal = 0;
+                app.quizAnswered = false;
+                app.quizWrongAnswers = [];
+                app.wordIndex = 0;
+                document.getElementById('quizSummaryArea').classList.add('hidden');
+                if (app.shuffleMode) app.shuffleWords();
+                app.renderWordCard();
+                app.updateQuizScore();
+            },
+
+            exitQuiz() {
+                document.getElementById('quizModeCheck').checked = false;
+                app.quizMode = false;
+                app.quizCorrect = 0;
+                app.quizTotal = 0;
+                app.quizAnswered = false;
+                app.quizWrongAnswers = [];
+                app.wordIndex = 0;
+                document.getElementById('quizScoreDisplay').classList.add('hidden');
+                document.getElementById('quizSummaryArea').classList.add('hidden');
+                app.renderWordCard();
+            },
+
+            exportQuizWrongAnswers() {
+                if (app.quizWrongAnswers.length === 0) {
+                    app.showToast('No wrong answers to export.', 'info');
+                    return;
+                }
+
+                const content = app.quizWrongAnswers.map(w => `${w.word},${w.meaning}`).join('\n');
+                const blob = new Blob([content], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'quiz_wrong_answers.csv';
+                a.click();
+                URL.revokeObjectURL(url);
+            },
+
+            exportWordFlags() {
+                const flagged = app.wordList.filter(w => w.isFlagged);
+
+                if (flagged.length === 0) {
+                    app.showToast('No flagged words to export.', 'info');
+                    return;
+                }
+
+                const content = flagged.map(w => `${w.word},${w.meaning}`).join('\n');
+                const blob = new Blob([content], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'flagged_words_export.csv';
+                a.click();
+                URL.revokeObjectURL(url);
+            }
+        };
+
+        app.init();
+        app.loadState();
+    </script>
+</body>
+</html>

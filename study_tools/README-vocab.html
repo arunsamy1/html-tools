@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>e-dumper Vocab - Documentation</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            line-height: 1.6;
+            color: #1a1a2e;
+            background: #f5f5f5;
+            text-align: left;
+        }
+        h1 {
+            color: #1a1a2e;
+            border-bottom: 3px solid #e94560;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #16213e;
+            margin-top: 36px;
+        }
+        h3 {
+            color: #e94560;
+        }
+        .toc {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px 20px;
+            margin-bottom: 30px;
+        }
+        .toc h2 {
+            margin-top: 0;
+            font-size: 18px;
+        }
+        .toc ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .toc li {
+            margin: 8px 0;
+        }
+        .toc a {
+            text-decoration: none;
+        }
+        .toc a:hover {
+            text-decoration: underline;
+        }
+        code {
+            background: #eee;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Consolas', monospace;
+        }
+        pre {
+            background: #1a1a2e;
+            color: #fff;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 15px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background: #1a1a2e;
+            color: #fff;
+        }
+        tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+        ul, ol {
+            padding-left: 20px;
+        }
+        li {
+            margin: 5px 0;
+        }
+        .note {
+            background: #fff3cd;
+            border-left: 4px solid #f59e0b;
+            padding: 10px 15px;
+            margin: 15px 0;
+        }
+        .tip {
+            background: #e6fff8;
+            border-left: 4px solid #00a87d;
+            padding: 10px 15px;
+            margin: 15px 0;
+        }
+        a {
+            color: #e94560;
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            padding: 10px 20px;
+            background: #e94560;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+        }
+        .back-link:hover {
+            background: #ff6b8a;
+        }
+    </style>
+</head>
+<body>
+    <a href="e-dumper-vocab.html" class="back-link">← Back to App</a>
+
+    <div class="toc">
+        <h2>Table of Contents</h2>
+        <ul>
+            <li><a href="#quick-start">Quick Start</a></li>
+            <li><a href="#sidebar">Sidebar</a></li>
+            <li><a href="#flashcard-mode">Flashcard Mode</a></li>
+            <li><a href="#quiz-mode">Quiz Mode</a></li>
+            <li><a href="#flagged-words">Flagged Words</a></li>
+            <li><a href="#file-format">File Format</a></li>
+            <li><a href="#sample-file">Sample File</a></li>
+            <li><a href="#keyboard-shortcuts">Keyboard Shortcuts</a></li>
+            <li><a href="#data-persistence">Data Persistence</a></li>
+            <li><a href="#running-the-app">Running the App</a></li>
+            <li><a href="#browser-support">Browser &amp; Device Support</a></li>
+            <li><a href="#license">License</a></li>
+        </ul>
+    </div>
+
+    <h1 id="top">e-dumper Vocab</h1>
+    <p>A standalone, offline-capable flashcard app for vocabulary learning. Runs entirely in the browser — no server, no account, no installation required.</p>
+
+    <h2 id="quick-start">Quick Start</h2>
+    <ol>
+        <li>Open <code>e-dumper-vocab.html</code> in any modern web browser</li>
+        <li>Click the <strong>☰</strong> toggle to open the sidebar</li>
+        <li>Click <strong>📂 Import Words</strong> and select a <code>.csv</code> or <code>.txt</code> file</li>
+        <li>Cards load automatically — the sidebar collapses and study begins</li>
+        <li>Press <strong>Show Meaning</strong> (or <kbd>↑</kbd>) to reveal the definition, then use <strong>Next →</strong> (or <kbd>→</kbd>) to advance</li>
+    </ol>
+
+    <h2 id="sidebar">Sidebar</h2>
+    <p>The sidebar is collapsed by default. Click <strong>☰</strong> to open it and <strong>✕</strong> to close it. On mobile it is pinned to the top of the screen.</p>
+
+    <table>
+        <tr><th>Control</th><th>Description</th></tr>
+        <tr><td>📂 Import Words</td><td>Load a <code>.csv</code> or <code>.txt</code> word list. Replaces the current list and resets position and flags.</td></tr>
+        <tr><td>🔀 Shuffle</td><td>Randomise card order. Enabling it reshuffles immediately; disabling it resets to word 1.</td></tr>
+        <tr><td>Swap (Meaning → Word)</td><td>Flip cards — meaning shown as prompt, word is the hidden answer.</td></tr>
+        <tr><td>🎯 Quiz Mode</td><td>Switch to multiple-choice quiz. See <a href="#quiz-mode">Quiz Mode</a> for details.</td></tr>
+        <tr><td>⚑ Review Flagged (N)</td><td>Jump to flagged words one by one, cycling through all of them. Disabled when none are flagged.</td></tr>
+        <tr><td>📥 Export Flagged</td><td>Download all flagged words as <code>flagged_words_export.csv</code>. Disabled when none are flagged.</td></tr>
+        <tr><td>🗑️ Clear Progress</td><td>Wipe all saved state (word list, position, flags) and reload the app.</td></tr>
+        <tr><td>📖 Documentation</td><td>Opens this page in a new tab.</td></tr>
+    </table>
+
+    <h2 id="flashcard-mode">Flashcard Mode</h2>
+    <p>The default study mode. Each card shows the word (or meaning in Swap mode) and hides the answer until you choose to reveal it.</p>
+
+    <h3>Navigation bar</h3>
+    <table>
+        <tr><th>Button</th><th>Action</th></tr>
+        <tr><td>← Previous</td><td>Go to the previous card.</td></tr>
+        <tr><td>Show Meaning</td><td>Reveal the hidden answer. Button label changes to <em>Meaning Shown</em>. The revealed text is highlighted in green.</td></tr>
+        <tr><td>⚑ Flag</td><td>Toggle a flag on the current word. Flagged cards show an amber <strong>FLAGGED</strong> badge.</td></tr>
+        <tr><td># / Go</td><td>Type a card number and press <kbd>Enter</kbd> or click <strong>Go</strong> to jump directly to it.</td></tr>
+        <tr><td>Next →</td><td>Go to the next card.</td></tr>
+    </table>
+
+    <h3>Progress bar</h3>
+    <p>Displays the current position (<em>Word X of Y</em>) and completion percentage. The bar fills from red to green as you advance through the deck.</p>
+
+    <div class="tip">
+        <strong>Tip:</strong> Shuffle and Swap work together — you can randomise the order while also practising meaning-to-word recognition.
+    </div>
+
+    <h2 id="quiz-mode">Quiz Mode</h2>
+    <p>Enable <strong>🎯 Quiz Mode</strong> in the sidebar to switch from passive flashcards to active multiple-choice testing.</p>
+
+    <h3>How it works</h3>
+    <ul>
+        <li>Each card shows the word (or meaning in Swap mode) along with <strong>up to 4 answer choices</strong> — one correct answer plus up to three random distractors drawn from the rest of the list.</li>
+        <li>Tap or click an option to lock in your answer.</li>
+        <li>The correct choice turns <strong style="color:#00a87d;">green</strong>. A wrong choice turns <strong style="color:#e94560;">red</strong> and the correct answer is highlighted simultaneously.</li>
+        <li>All options are disabled after answering — you cannot change your selection.</li>
+        <li><strong>Next →</strong> is locked until the current card is answered.</li>
+        <li>A live score badge (<em>🎯 correct / total</em>) appears in the progress bar row.</li>
+    </ul>
+
+    <h3>Ending a quiz</h3>
+    <p>The quiz ends automatically after the last card is answered. You can also click <strong>⏹ End Quiz</strong> (visible in the navigation bar during quiz mode) at any time to jump straight to the results.</p>
+
+    <h3>Quiz summary</h3>
+    <p>The summary screen shows your score, percentage correct, and a performance message.</p>
+    <table>
+        <tr><th>Button</th><th>Action</th></tr>
+        <tr><td>🔄 Restart Quiz</td><td>Reset the score, return to word 1, and reshuffle if Shuffle is on.</td></tr>
+        <tr><td>📥 Export Wrong Answers</td><td>Download every word answered incorrectly as <code>quiz_wrong_answers.csv</code>, ready to re-import as a focused study list. This button is hidden when the score is perfect.</td></tr>
+        <tr><td>Exit Quiz Mode</td><td>Return to normal flashcard mode at word 1.</td></tr>
+    </table>
+
+    <div class="note">
+        <strong>Note:</strong> Wrong answers are tracked per quiz session only. Restarting or exiting the quiz clears the wrong-answer list.
+    </div>
+
+    <h3>Quiz mode interactions with other settings</h3>
+    <ul>
+        <li><strong>Shuffle</strong> — if Shuffle is on when Quiz Mode is enabled, the deck is reshuffled immediately.</li>
+        <li><strong>Swap</strong> — Quiz Mode respects Swap mode; the options will be words when Swap is active.</li>
+        <li><strong>Flag</strong> — you can still flag cards mid-quiz. Useful for marking words you found difficult.</li>
+        <li><strong>Keyboard shortcuts</strong> — see the <a href="#keyboard-shortcuts">Keyboard Shortcuts</a> section for quiz-specific behaviour.</li>
+    </ul>
+
+    <h2 id="flagged-words">Flagged Words</h2>
+    <p>Mark any card as flagged using the <strong>⚑ Flag</strong> button or the <kbd>M</kbd> key. Flagged cards display an amber <strong>FLAGGED</strong> badge in the top-left corner of the card. Pressing the button again removes the flag.</p>
+    <ul>
+        <li>The sidebar shows the live count: <em>⚑ Review Flagged (N)</em>.</li>
+        <li>Clicking <strong>Review Flagged</strong> jumps to the first flagged word. Each subsequent click advances to the next flagged word, wrapping back to the start after the last one.</li>
+        <li>Flags survive shuffling — each word carries its flag regardless of deck order.</li>
+        <li>Flags are saved to <code>localStorage</code> and restored when you reopen the app.</li>
+        <li>Use <strong>📥 Export Flagged</strong> to save your flagged words as a CSV file for a focused follow-up session.</li>
+    </ul>
+
+    <h2 id="file-format">File Format</h2>
+    <p>Word list files must be plain text (<code>.txt</code> or <code>.csv</code>) with one entry per line. Each line contains the word and its meaning separated by a comma or pipe character.</p>
+
+    <pre><code>apple,a fruit that is red or green
+banana,a long yellow fruit
+cherry,a small round red fruit</code></pre>
+
+    <h3>Separator options</h3>
+    <table>
+        <tr><th>Separator</th><th>Example</th></tr>
+        <tr><td>Comma <code>,</code></td><td><code>word,meaning</code></td></tr>
+        <tr><td>Pipe <code>|</code></td><td><code>word|meaning</code></td></tr>
+    </table>
+
+    <h3>Rules</h3>
+    <ul>
+        <li>Blank lines are ignored.</li>
+        <li>Lines without a separator are skipped.</li>
+        <li>If the meaning itself contains a comma, use the pipe separator to avoid splitting the meaning incorrectly.</li>
+        <li>Leading and trailing whitespace is stripped from both the word and the meaning.</li>
+        <li>Importing a new file replaces the current word list and resets position and all flags.</li>
+    </ul>
+
+    <h2 id="sample-file">Sample File</h2>
+    <p>Copy this content into a file named <code>sample_words.csv</code> to test the app:</p>
+    <pre><code>apple,a fruit that is red or green
+banana,a long yellow fruit
+cherry,a small round red fruit
+dog,a domesticated carnivorous mammal
+elephant,the largest living land animal
+flower,the reproductive structure of a plant
+guitar,a musical instrument with strings
+hamburger,a sandwich with a patty between buns
+internet,a global network of computers
+jelly,a soft food made from fruit juice
+kangaroo,a marsupial from Australia
+lemon,a sour yellow citrus fruit
+mountain,a large natural elevation of Earth
+notebook,a book for writing notes
+ocean,a vast body of salt water
+pizza,a flat bread with toppings
+queen,a female monarch
+rainbow,a spectrum of colors in the sky
+sun,the star at the center of our solar system
+tree,a perennial plant with a trunk</code></pre>
+
+    <h2 id="keyboard-shortcuts">Keyboard Shortcuts</h2>
+
+    <h3>Flashcard mode</h3>
+    <table>
+        <tr><th>Key</th><th>Action</th></tr>
+        <tr><td><kbd>←</kbd> Left Arrow</td><td>Previous card</td></tr>
+        <tr><td><kbd>→</kbd> Right Arrow</td><td>Next card</td></tr>
+        <tr><td><kbd>↑</kbd> Up Arrow</td><td>Show meaning</td></tr>
+        <tr><td><kbd>M</kbd></td><td>Flag / unflag current word</td></tr>
+        <tr><td><kbd>Enter</kbd> (in # field)</td><td>Jump to the entered word number</td></tr>
+    </table>
+
+    <h3>Quiz mode</h3>
+    <table>
+        <tr><th>Key</th><th>Action</th></tr>
+        <tr><td><kbd>→</kbd> Right Arrow</td><td>Next card — only works after the current card has been answered</td></tr>
+        <tr><td><kbd>M</kbd></td><td>Flag / unflag current word</td></tr>
+        <tr><td><kbd>←</kbd> Left Arrow</td><td><em>Disabled</em> — going back is not allowed during a quiz</td></tr>
+        <tr><td><kbd>↑</kbd> Up Arrow</td><td><em>Disabled</em> — the answer cannot be revealed before choosing</td></tr>
+    </table>
+
+    <h2 id="data-persistence">Data Persistence</h2>
+    <p>Progress is automatically saved to <code>localStorage</code> after every action and restored the next time you open the file in the same browser.</p>
+
+    <h3>What is saved</h3>
+    <ul>
+        <li>The full word list, including the flag state of each word</li>
+        <li>Current card position</li>
+        <li>Shuffle and Swap checkbox states</li>
+    </ul>
+
+    <h3>What is not saved</h3>
+    <ul>
+        <li>Quiz Mode state — Quiz Mode is always off on load</li>
+        <li>Quiz scores and wrong-answer lists — these are session-only and reset each time</li>
+    </ul>
+
+    <p>Click <strong>🗑️ Clear Progress</strong> in the sidebar to erase all saved data and start fresh.</p>
+
+    <div class="note">
+        <strong>Note:</strong> <code>localStorage</code> is scoped to the page origin (protocol + hostname + port). If you open the file from a different folder path or a different local server port, previously saved state will not be available.
+    </div>
+
+    <h2 id="running-the-app">Running the App</h2>
+    <p>Double-click <code>e-dumper-vocab.html</code> to open it directly in a browser — no server needed. To serve it locally:</p>
+    <pre><code># Python
+python -m http.server 8000 -d e-dumper/
+
+# Node / npx
+npx serve e-dumper/</code></pre>
+    <p>Then open <code>http://localhost:8000/e-dumper-vocab.html</code> in your browser.</p>
+
+    <h2 id="browser-support">Browser &amp; Device Support</h2>
+    <p>Works in all modern browsers on desktop and mobile:</p>
+    <ul>
+        <li>Chrome / Edge 90+</li>
+        <li>Firefox 90+</li>
+        <li>Safari 14+ (iOS and macOS)</li>
+    </ul>
+    <p>The app is fully responsive. On mobile the sidebar becomes a collapsible panel pinned to the top of the screen. All touch targets meet the 44 px minimum for comfortable tapping, and the 300 ms tap delay is removed.</p>
+
+    <h2 id="license">License</h2>
+    <p>MIT</p>
+</body>
+</html>

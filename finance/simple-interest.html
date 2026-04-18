@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Interest Calculator</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            max-width: 600px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        h1 {
+            text-align: center;
+            color: #1a1a2e;
+            font-size: 24px;
+        }
+        .calculator {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .field {
+            margin-bottom: 20px;
+            width: 100%;
+        }
+        .field label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #1a1a2e;
+        }
+        .field input {
+            width: 100%;
+            padding: 14px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+        .field input:focus {
+            outline: none;
+            border-color: #e94560;
+        }
+        .field-row {
+            display: flex;
+            gap: 15px;
+        }
+        .field-row .field {
+            flex: 1;
+        }
+        button {
+            width: 100%;
+            padding: 14px;
+            background: #e94560;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #d63d56;
+        }
+        .result {
+            margin-top: 25px;
+            padding: 20px;
+            background: #e8f5e9;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .result-label {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        .result-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #2e7d32;
+        }
+        .result-row {
+            display: flex;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .result-item {
+            flex: 1;
+            padding: 15px;
+            background: white;
+            border-radius: 6px;
+            text-align: center;
+        }
+        .result-item .label {
+            font-size: 12px;
+            color: #666;
+        }
+        .result-item .value {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1a1a2e;
+            margin-top: 5px;
+        }
+
+        @media (max-width: 500px) {
+            body {
+                margin: 20px auto;
+                padding: 15px;
+            }
+            .calculator {
+                padding: 20px;
+            }
+            .field-row {
+                flex-direction: column;
+                gap: 0;
+            }
+            .result-row {
+                flex-direction: column;
+                gap: 10px;
+            }
+            .result-value {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Simple Interest Calculator</h1>
+    
+    <div class="calculator">
+        <div class="field">
+            <label for="principal">Principal Amount ($)</label>
+            <input type="number" id="principal" placeholder="Enter principal amount" oninput="calculate()">
+        </div>
+        
+        <div class="field-row">
+            <div class="field">
+                <label for="rate">Interest Rate (%)</label>
+                <input type="number" id="rate" placeholder="Rate" step="0.01" oninput="calculate()">
+            </div>
+            <div class="field">
+                <label for="time">Time Period</label>
+                <input type="number" id="time" placeholder="Years" oninput="calculate()">
+            </div>
+        </div>
+
+        <button onclick="calculate()">Calculate</button>
+
+        <div class="result" id="result" style="display: none;">
+            <div class="result-label">Simple Interest</div>
+            <div class="result-value" id="interest">$0.00</div>
+            
+            <div class="result-row">
+                <div class="result-item">
+                    <div class="label">Total Amount</div>
+                    <div class="value" id="total">$0.00</div>
+                </div>
+                <div class="result-item">
+                    <div class="label">Per Month Interest</div>
+                    <div class="value" id="monthly">$0.00</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function formatCurrency(value) {
+            return '$' + value.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        }
+
+        function calculate() {
+            const principal = parseFloat(document.getElementById('principal').value) || 0;
+            const rate = parseFloat(document.getElementById('rate').value) || 0;
+            const time = parseFloat(document.getElementById('time').value) || 0;
+
+            if (principal <= 0 || rate <= 0 || time <= 0) {
+                document.getElementById('result').style.display = 'none';
+                return;
+            }
+
+            const interest = (principal * rate * time) / 100;
+            const total = principal + interest;
+            const monthly = interest / (time * 12);
+
+            document.getElementById('interest').textContent = formatCurrency(interest);
+            document.getElementById('total').textContent = formatCurrency(total);
+            document.getElementById('monthly').textContent = formatCurrency(monthly);
+            document.getElementById('result').style.display = 'block';
+        }
+    </script>
+</body>
+</html>

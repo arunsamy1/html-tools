@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hash and File Encryptor</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .container {
+            margin-bottom: 20px;
+        }
+        textarea, input, button {
+            margin-top: 10px;
+        }
+        .output {
+            font-weight: bold;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Hash Generator and File Encryptor  - not used now.</h1>
+
+    <!-- Hash Generation Section -->
+    <div class="container">
+        <h2>Step 1: Generate Hashes</h2>
+        <label for="inputText">Enter text to hash:</label>
+        <br>
+        <textarea id="inputText" rows="4" cols="50" placeholder="Enter text here"></textarea>
+        <br>
+        <button id="generateHashes">Generate Hashes</button>
+        <div id="hashOutput" class="output">
+            <div id="sha224Output">SHA-224: <span></span></div>
+            <div id="sha256Output">SHA-256: <span></span></div>
+            <div id="sha512Output">SHA-512: <span></span></div>
+        </div>
+    </div>
+
+    <!-- File Encryption Section -->
+    <div class="container">
+        <h2>Step 2: Encrypt a File</h2>
+        <label for="fileInput">Select a file to encrypt:</label>
+        <br>
+        <input type="file" id="fileInput">
+        <br>
+        <button id="encryptFile">Encrypt and Download</button>
+        <div id="encryptionStatus" class="output"></div>
+    </div>
+
+    <script>
+        let sha512Password = '';
+
+        // Function 1: Generate chained hashes
+        document.getElementById('generateHashes').addEventListener('click', () => {
+            const inputText = document.getElementById('inputText').value;
+
+            if (!inputText) {
+                alert('Please enter text to hash.');
+                return;
+            }
+
+            // Generate SHA-224 hash
+            const sha224Hash = CryptoJS.SHA224(inputText).toString(CryptoJS.enc.Hex);
+            document.getElementById('sha224Output').querySelector('span').textContent = sha224Hash;
+
+            // Generate SHA-256 hash from SHA-224 output
+            const sha256Hash = CryptoJS.SHA256(sha224Hash).toString(CryptoJS.enc.Hex);
+            document.getElementById('sha256Output').querySelector('span').textContent = sha256Hash;
+
+            // Generate SHA-512 hash from SHA-256 output
+            sha512Password = CryptoJS.SHA512(sha256Hash).toString(CryptoJS.enc.Hex);
+            document.getElementById('sha512Output').querySelector('span').textContent = sha512Password;
+
+            alert('Hashes generated successfully!');
+        });
+
+        // Function 2: Encrypt a file using SHA-512 hash as password
+        document.getElementById('encryptFile').addEventListener('click', () => {
+            if (!sha512Password) {
+                alert('Please generate hashes first to create a password.');
+                return;
+            }
+
+            const fileInput = document.getElementById('fileInput');
+            if (!fileInput.files.length) {
+                alert('Please select a file to encrypt.');
+                return;
+            }
+
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+
+            reader.onload = function (event) {
+                const fileContent = event.target.result;
+                const encrypted = CryptoJS.AES.encrypt(fileContent, sha512Password).toString();
+
+                // Create a blob for the encrypted file
+                const blob = new Blob([encrypted], { type: 'text/plain' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = file.name + '.encrypted';
+                link.click();
+
+                document.getElementById('encryptionStatus').textContent = 'File encrypted and ready for download.';
+            };
+
+            reader.readAsText(file);
+        });
+    </script>
+</body>
+</html>

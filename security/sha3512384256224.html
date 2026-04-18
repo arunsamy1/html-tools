@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SHA3 Converter</title>
+    <!-- Include the js-sha3 library -->
+    <script src="https://cdn.jsdelivr.net/npm/js-sha3@0.8.0"></script>
+</head>
+<body>
+    <h1>SHA3 Hash Converter - Highly used</h1>
+    <p>Enter text to convert:</p>
+    <textarea id="inputText" rows="4" cols="50" placeholder="Enter your text here"></textarea><br><br>
+    <button onclick="convertHashes()">Convert</button>
+    <h2>Results:</h2>
+    <div id="results"></div>
+
+    <script>
+        function convertHashes() {
+            const text = document.getElementById('inputText').value.trim();
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = ""; // Clear previous results
+
+            if (!text) {
+                resultsDiv.innerHTML = "<p>Please enter some text.</p>";
+                return;
+            }
+
+            // Perform hashing using the js-sha3 library
+            try {
+                const sha3_512_output = sha3_512(text);
+                const sha3_384_output = sha3_384(sha3_512_output);
+                const sha3_256_output = sha3_256(sha3_384_output);
+                const sha3_224_output = sha3_224(sha3_256_output);
+
+                // Display the results
+                resultsDiv.innerHTML = `
+                    <p><strong>SHA3-512:</strong> ${sha3_512_output}</p>
+                    <p><strong>SHA3-384:</strong> ${sha3_384_output}</p>
+                    <p><strong>SHA3-256:</strong> ${sha3_256_output}</p>
+                    <p><strong>SHA3-224:</strong> ${sha3_224_output}</p>
+                `;
+            } catch (error) {
+                resultsDiv.innerHTML = `<p>Error occurred: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

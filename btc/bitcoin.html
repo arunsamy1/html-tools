@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bitcoin Unit Converter</title>
+</head>
+<body>
+    <h1>Bitcoin Unit Converter</h1>
+    <p>Enter a value in any unit and click "Convert" to see the equivalent values in all other units.</p>
+
+    <form>
+        <label for="btc">Bitcoin (BTC):</label>
+        <input type="text" id="btc" placeholder="Enter BTC" oninput="convertUnits('btc')">
+        <br><br>
+        <label for="mbtc">milliBitcoin (mBTC):</label>
+        <input type="text" id="mbtc" placeholder="Enter mBTC" oninput="convertUnits('mbtc')">
+        <br><br>
+        <label for="ubtc">microBitcoin (µBTC or bits):</label>
+        <input type="text" id="ubtc" placeholder="Enter µBTC" oninput="convertUnits('ubtc')">
+        <br><br>
+        <label for="satoshi">Satoshi (sat):</label>
+        <input type="text" id="satoshi" placeholder="Enter Satoshi" oninput="convertUnits('satoshi')">
+        <br><br>
+    </form>
+
+    <script>
+        function convertUnits(changedUnit) {
+            // Parse input values, default to 0 if invalid
+            const btc = parseFloat(document.getElementById('btc').value) || 0;
+            const mbtc = parseFloat(document.getElementById('mbtc').value) || 0;
+            const ubtc = parseFloat(document.getElementById('ubtc').value) || 0;
+            const satoshi = parseFloat(document.getElementById('satoshi').value) || 0;
+
+            let calculatedBTC, calculatedMBTC, calculatedUBTC, calculatedSatoshi;
+
+            // Conversion logic
+            switch (changedUnit) {
+                case 'btc':
+                    calculatedBTC = btc;
+                    calculatedMBTC = btc * 1000;
+                    calculatedUBTC = btc * 1_000_000;
+                    calculatedSatoshi = btc * 100_000_000;
+                    break;
+                case 'mbtc':
+                    calculatedBTC = mbtc / 1000;
+                    calculatedMBTC = mbtc;
+                    calculatedUBTC = mbtc * 1000;
+                    calculatedSatoshi = mbtc * 100_000;
+                    break;
+                case 'ubtc':
+                    calculatedBTC = ubtc / 1_000_000;
+                    calculatedMBTC = ubtc / 1000;
+                    calculatedUBTC = ubtc;
+                    calculatedSatoshi = ubtc * 100;
+                    break;
+                case 'satoshi':
+                    calculatedBTC = satoshi / 100_000_000;
+                    calculatedMBTC = satoshi / 100_000;
+                    calculatedUBTC = satoshi / 100;
+                    calculatedSatoshi = satoshi;
+                    break;
+                default:
+                    return;
+            }
+
+            // Update all fields with the calculated values
+            document.getElementById('btc').value = calculatedBTC.toFixed(8);
+            document.getElementById('mbtc').value = calculatedMBTC.toFixed(5);
+            document.getElementById('ubtc').value = calculatedUBTC.toFixed(2);
+            document.getElementById('satoshi').value = Math.floor(calculatedSatoshi);
+        }
+    </script>
+</body>
+</html>

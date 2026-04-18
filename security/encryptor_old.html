@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Encryptor</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .container {
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <h1>File Encryptor</h1>
+    <div class="container">
+        <label for="fileInput">Select a file:</label>
+        <input type="file" id="fileInput">
+    </div>
+    <div class="container">
+        <label for="password">Enter a password:</label>
+        <input type="password" id="password">
+    </div>
+    <button id="encryptButton">Encrypt and Download</button>
+    <script>
+        document.getElementById('encryptButton').addEventListener('click', () => {
+            const fileInput = document.getElementById('fileInput');
+            const password = document.getElementById('password').value;
+
+            if (!fileInput.files.length) {
+                alert("Please select a file.");
+                return;
+            }
+            if (!password) {
+                alert("Please enter a password.");
+                return;
+            }
+
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+
+            reader.onload = function (event) {
+                const fileContent = event.target.result;
+                const encrypted = CryptoJS.AES.encrypt(fileContent, password).toString();
+
+                // Create a blob for the encrypted content
+                const blob = new Blob([encrypted], { type: "text/plain" });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = file.name + ".encrypted";
+                link.click();
+            };
+
+            reader.readAsText(file);
+        });
+    </script>
+</body>
+</html>

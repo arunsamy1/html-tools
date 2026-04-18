@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>World Timezones</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+            background-color: #e0f2ff;
+        }
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 800px;
+        }
+        h1 {
+            text-align: center;
+            font-size: 2.5rem;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 1.2rem;
+        }
+        th, td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        th {
+            background-color: #f8f9fa;
+        }
+        .action-btn {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            font-family: sans-serif;
+        }
+        .action-btn:hover {
+            background-color: #0056b3;
+        }
+        .time { font-family: monospace; color: #333; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>World Clocks</h1>
+    <div style="display: flex; justify-content: center; gap: 10px; margin-bottom: 20px;">
+        <button class="action-btn" onclick="toggleEditUTC()">Calc</button>
+        <button class="action-btn" onclick="resetToLive()">Live</button>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>City</th>
+                <th>Current Date & Time</th>
+            </tr>
+        </thead>
+        <tbody id="timezone-list">
+            <tr data-tz="Asia/Kolkata"><td>Chennai</td><td class="time"></td></tr>
+            <tr data-tz="UTC">
+                <td>UTC</td>
+                <td style="display: flex; justify-content: space-between; align-items: center;">
+                    <span class="time"></span>
+                    <button onclick="toggleEditUTC()" style="cursor: pointer; padding: 4px 8px;">Edit</button>
+                </td>
+            </tr>
+            <tr data-tz="America/New_York"><td>New York</td><td class="time"></td></tr>
+            <tr data-tz="America/Chicago"><td>Chicago</td><td class="time"></td></tr>
+            <tr data-tz="America/Denver"><td>Colorado</td><td class="time"></td></tr>
+            <tr data-tz="America/Phoenix"><td>Phoenix</td><td class="time"></td></tr>
+            <tr data-tz="America/Los_Angeles"><td>San Francisco</td><td class="time"></td></tr>
+        </tbody>
+    </table>
+</div>
+
+<script>
+    let customBaseTime = null;
+    let isEditing = false;
+
+    function toggleEditUTC() {
+        isEditing = !isEditing;
+        const utcRow = document.querySelector('tr[data-tz="UTC"]');
+        const timeCell = utcRow.querySelector('.time');
+        const btn = utcRow.querySelector('button');
+
+        if (isEditing) {
+            btn.textContent = 'Save';
+            const now = customBaseTime || new Date();
+            const isoStr = new Date(now.getTime()).toISOString().slice(0, 19);
+            timeCell.innerHTML = `<input type="datetime-local" step="1" value="${isoStr}" id="utc-input" style="font-size: 1rem;">`;
+        } else {
+            btn.textContent = 'Edit';
+            const input = document.getElementById('utc-input');
+            if (input.value) {
+                customBaseTime = new Date(input.value + 'Z');
+            }
+            updateClocks();
+        }
+    }
+
+    function updateClocks() {
+        if (isEditing) return;
+
+        const listItems = document.querySelectorAll('#timezone-list tr');
+        const now = customBaseTime || new Date();
+
+        listItems.forEach(item => {
+            const tz = item.getAttribute('data-tz');
+            const timeSpan = item.querySelector('.time');
+            const options = {
+                timeZone: tz,
+                weekday: 'short',
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            };
+            const dateTimeString = now.toLocaleString('en-GB', options);
+            timeSpan.style.fontWeight = customBaseTime ? 'bold' : 'normal';
+            timeSpan.textContent = dateTimeString;
+        });
+
+        if (customBaseTime && !isEditing) {
+            customBaseTime = new Date(customBaseTime.getTime() + 1000);
+        }
+    }
+
+    setInterval(updateClocks, 1000);
+    updateClocks();
+</script>
+</body>
+</html>
+<script>
+    function resetToLive() {
+        customBaseTime = null;
+        if (isEditing) {
+            toggleEditUTC();
+        }
+        // Ensure the interval resumes normal behavior
+        if (!window.clockInterval) {
+            window.clockInterval = setInterval(updateClocks, 1000);
+        }
+        updateClocks();
+    }
+
+    // Override updateClocks to stop ticking when custom time is set
+    const originalUpdateClocks = updateClocks;
+    updateClocks = function() {
+        if (customBaseTime && !isEditing) {
+            // Update once and then stop the interval to keep it static
+            originalUpdateClocks();
+            if (window.clockInterval) {
+                clearInterval(window.clockInterval);
+                window.clockInterval = null;
+            }
+        } else {
+            originalUpdateClocks();
+            if (!window.clockInterval && !isEditing) {
+                window.clockInterval = setInterval(updateClocks, 1000);
+            }
+        }
+    };
+    window.clockInterval = setInterval(updateClocks, 1000);
+</script>

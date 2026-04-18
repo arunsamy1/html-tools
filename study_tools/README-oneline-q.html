@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>e-dumper One Liner Q - Documentation</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            line-height: 1.6;
+            color: #1a1a2e;
+            background: #f5f5f5;
+            text-align: left;
+        }
+        h1 {
+            color: #1a1a2e;
+            border-bottom: 3px solid #e94560;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #16213e;
+            margin-top: 30px;
+        }
+        h3 {
+            color: #e94560;
+        }
+        .toc {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px 20px;
+            margin-bottom: 30px;
+        }
+        .toc h2 {
+            margin-top: 0;
+            font-size: 18px;
+        }
+        .toc ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .toc li {
+            margin: 8px 0;
+        }
+        .toc a {
+            text-decoration: none;
+        }
+        .toc a:hover {
+            text-decoration: underline;
+        }
+        code {
+            background: #eee;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Consolas', monospace;
+        }
+        pre {
+            background: #1a1a2e;
+            color: #fff;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 15px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background: #1a1a2e;
+            color: #fff;
+        }
+        tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+        ul {
+            padding-left: 20px;
+        }
+        li {
+            margin: 5px 0;
+        }
+        .note {
+            background: #fff3cd;
+            border-left: 4px solid #f59e0b;
+            padding: 10px 15px;
+            margin: 15px 0;
+        }
+        a {
+            color: #e94560;
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            padding: 10px 20px;
+            background: #e94560;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+        }
+        .back-link:hover {
+            background: #ff6b8a;
+        }
+    </style>
+</head>
+<body>
+    <a href="e-dumper-oneline-q.html" class="back-link">← Back to App</a>
+
+    <div class="toc">
+        <h2>Table of Contents</h2>
+        <ul>
+            <li><a href="#quick-start">Quick Start</a></li>
+            <li><a href="#features">Features</a></li>
+            <li><a href="#file-format">File Format</a></li>
+            <li><a href="#sample-file">Sample File</a></li>
+            <li><a href="#keyboard-shortcuts">Keyboard Shortcuts</a></li>
+            <li><a href="#data-persistence">Data Persistence</a></li>
+            <li><a href="#running-the-app">Running the App</a></li>
+            <li><a href="#browser-support">Browser Support</a></li>
+            <li><a href="#license">License</a></li>
+        </ul>
+    </div>
+
+    <h1 id="top">e-dumper One Liner Q</h1>
+    <p>A simple one-at-a-time text viewer for reviewing quotes, proverbs, or any line-by-line content.</p>
+
+    <h2 id="quick-start">Quick Start</h2>
+    <ol>
+        <li>Open <code>e-dumper-oneline-q.html</code> in any modern web browser</li>
+        <li>Import your text file using the "Import Text" button</li>
+        <li>Navigate through lines with Previous/Next or arrow keys</li>
+    </ol>
+
+    <h2 id="features">Features</h2>
+
+    <h3>Display</h3>
+    <ul>
+        <li>Shows one line at a time for focused reading</li>
+        <li>Large, easy-to-read text display</li>
+        <li>Progress indicator (X of Y lines)</li>
+    </ul>
+
+    <h3>Organization</h3>
+    <ul>
+        <li>Shuffle lines to randomize order</li>
+        <li>Navigate forward and backward through content</li>
+        <li>Jump to specific lines (optional enhancement)</li>
+    </ul>
+
+    <h3>Use Cases</h3>
+    <ul>
+        <li>Memorizing quotes and proverbs</li>
+        <li>Reviewing interview questions one at a time</li>
+        <li>Studying one fact at a time</li>
+        <li>Reading through any multi-line content sequentially</li>
+    </ul>
+
+    <h2 id="file-format">File Format</h2>
+    <p>Text files should be plain text (.txt) with one item per line:</p>
+    <pre><code>The early bird catches the worm.
+A stitch in time saves nine.
+Actions speak louder than words.
+Better late than never.
+Birds of a feather flock together.</code></pre>
+
+    <h3>Format Rules</h3>
+    <ul>
+        <li>One line per item</li>
+        <li>Lines are trimmed of leading/trailing whitespace</li>
+        <li>Empty lines are ignored</li>
+    </ul>
+
+    <h2 id="sample-file">Sample File</h2>
+    <p>Copy this content to a file named <code>sample_oneliner.txt</code> to test the app:</p>
+    <pre><code>The early bird catches the worm.
+A stitch in time saves nine.
+Actions speak louder than words.
+Better late than never.
+Birds of a feather flock together.
+Don't count your chickens before they hatch.
+Every cloud has a silver lining.
+Failure is the mother of success.
+Fortune favors the bold.
+Great minds think alike.
+He who hesitates is lost.
+Knowledge is power.
+Laughter is the best medicine.
+No pain, no gain.
+Once in a blue moon.
+Practice makes perfect.
+Rome wasn't built in a day.
+The pen is mightier than the sword.
+Time and tide wait for no man.
+Where there's a will, there's a way.</code></pre>
+
+    <h2 id="keyboard-shortcuts">Keyboard Shortcuts</h2>
+    <table>
+        <tr>
+            <th>Keys</th>
+            <th>Action</th>
+        </tr>
+        <tr>
+            <td>Left Arrow</td>
+            <td>Previous line</td>
+        </tr>
+        <tr>
+            <td>Right Arrow</td>
+            <td>Next line</td>
+        </tr>
+    </table>
+
+    <h2 id="data-persistence">Data Persistence</h2>
+    <p>Your progress is automatically saved to localStorage:</p>
+    <ul>
+        <li>Current line position</li>
+        <li>Loaded lines</li>
+    </ul>
+    <p>Click "Clear Progress" in the sidebar to reset all data.</p>
+
+    <h2 id="running-the-app">Running the App</h2>
+    <p>Simply open <code>e-dumper-oneline-q.html</code> in a browser. No server required.</p>
+    <pre><code># Using Python
+python -m http.server 8000 -d e-dumper/
+
+# Using npx
+npx serve e-dumper/</code></pre>
+    <p>Then open <a href="e-dumper-oneline-q.html">http://localhost:8000/e-dumper-oneline-q.html</a></p>
+
+    <h2 id="browser-support">Browser Support</h2>
+    <p>Works in all modern browsers (Chrome, Firefox, Safari, Edge).</p>
+
+    <h2 id="license">License</h2>
+    <p>MIT</p>
+</body>
+</html>

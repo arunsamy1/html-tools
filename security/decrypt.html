@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Decryptor</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .container {
+            margin-bottom: 20px;
+        }
+        textarea, input, button {
+            margin-top: 10px;
+        }
+        .output {
+            font-weight: bold;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>File Decryptor</h1>
+
+    <!-- Password Generation Section -->
+    <div class="container">
+        <h2>Step 1: Generate Decryption Key</h2>
+        <label for="inputText">Enter the same text used to generate the encryption key:</label>
+        <br>
+        <textarea id="inputText" rows="4" cols="50" placeholder="Enter text here"></textarea>
+        <br>
+        <button id="generateKey">Generate Key</button>
+        <div id="keyOutput" class="output">
+            Decryption Key (SHA-512): <span></span>
+        </div>
+    </div>
+
+    <!-- File Decryption Section -->
+    <div class="container">
+        <h2>Step 2: Decrypt File</h2>
+        <label for="fileInput">Select the encrypted file:</label>
+        <br>
+        <input type="file" id="fileInput">
+        <br>
+        <button id="decryptFile">Decrypt File</button>
+        <div id="decryptionStatus" class="output"></div>
+    </div>
+
+    <script>
+        let decryptionKey = '';
+
+        // Step 1: Generate the decryption key
+        document.getElementById('generateKey').addEventListener('click', () => {
+            const inputText = document.getElementById('inputText').value;
+
+            if (!inputText) {
+                alert('Please enter the original text.');
+                return;
+            }
+
+            // Generate SHA-224 hash
+            const sha224Hash = CryptoJS.SHA224(inputText).toString(CryptoJS.enc.Hex);
+
+            // Generate SHA-256 hash from SHA-224 output
+            const sha256Hash = CryptoJS.SHA256(sha224Hash).toString(CryptoJS.enc.Hex);
+
+            // Generate SHA-512 hash from SHA-256 output
+            decryptionKey = CryptoJS.SHA512(sha256Hash).toString(CryptoJS.enc.Hex);
+
+            document.getElementById('keyOutput').querySelector('span').textContent = decryptionKey;
+            alert('Decryption key generated successfully!');
+        });
+
+        // Step 2: Decrypt the file
+        document.getElementById('decryptFile').addEventListener('click', () => {
+            if (!decryptionKey) {
+                alert('Please generate the decryption key first.');
+                return;
+            }
+
+            const fileInput = document.getElementById('fileInput');
+            if (!fileInput.files.length) {
+                alert('Please select an encrypted file.');
+                return;
+            }
+
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+
+            reader.onload = function (event) {
+                const encryptedContent = event.target.result;
+
+                try {
+                    // Decrypt the file content
+                    const decrypted = CryptoJS.AES.decrypt(encryptedContent, decryptionKey).toString(CryptoJS.enc.Utf8);
+
+                    if (!decrypted) {
+                        throw new Error('Decryption failed.');
+                    }
+
+                    // Create a blob for the decrypted content
+                    const blob = new Blob([decrypted], { type: 'text/plain' });
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(blob);
+                    link.download = file.name.replace('.encrypted', '.decrypted');
+                    link.click();
+
+                    document.getElementById('decryptionStatus').textContent = 'File decrypted and ready for download.';
+                } catch (error) {
+                    alert('Decryption failed. Please ensure the key and file are correct.');
+                    document.getElementById('decryptionStatus').textContent = 'Decryption failed.';
+                }
+            };
+
+            reader.readAsText(file);
+        });
+    </script>
+</body>
+</html>

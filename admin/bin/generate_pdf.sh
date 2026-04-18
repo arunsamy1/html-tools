@@ -1,0 +1,156 @@
+#!/bin/bash
+
+# Generate index_pdf.html with folder nav in left pane and PDF files in right pane
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PARENT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
+OUTPUT="$PARENT_DIR/index_pdf.html"
+
+# Collect unique folders that contain at least one PDF, in sorted order
+mapfile -t folders < <(find "$PARENT_DIR" -mindepth 2 -name "*.pdf" | sort | while IFS= read -r f; do dirname "${f#$PARENT_DIR/}"; done | awk '!seen[$0]++')
+
+first_folder="${folders[0]}"
+
+cat > "$OUTPUT" <<'HTMLHEAD'
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PDF File Index</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; margin: 0; background: #f5f5f5; font-size: 1.2em; }
+    /* Layout */
+    .layout { display: flex; min-height: 100vh; }
+    .sidebar { width: 280px; flex-shrink: 0; background: #add8e6; color: #1a1a1a; }
+    .sidebar-title { padding: 24px 20px; font-size: 1.1em; font-weight: bold; letter-spacing: 0.05em; border-bottom: 1px solid #8bbfd4; }
+    .nav-item { padding: 12px 20px; cursor: pointer; font-size: 0.95em; border-bottom: 1px solid #8bbfd4; transition: background 0.15s; }
+    .nav-item:hover { background: #85c1d4; }
+    .nav-item.active { background: #4a8fa8; color: #fff; font-weight: bold; }
+    .content { flex: 1; padding: 40px; min-width: 0; }
+    /* Tables */
+    .folder-panel { display: none; }
+    .folder-panel h2 { color: #4a6fa5; font-size: 1em; margin: 0 0 12px 0; padding: 6px 12px; background: #e4ecf7; border-left: 4px solid #4a6fa5; border-radius: 2px; }
+    table { border-collapse: collapse; width: 100%; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+    th { background: #4a6fa5; color: #fff; padding: 10px 14px; text-align: left; }
+    td { padding: 8px 14px; border-bottom: 1px solid #ddd; }
+    tr:hover td { background: #f0f4ff; }
+    a { color: #2a5db0; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .open-btn { margin-left: 16px; padding: 2px 10px; font-size: 0.8em; background: #4a6fa5; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
+    .open-btn:hover { background: #2a5db0; }
+    .download-btn { margin-left: 16px; padding: 2px 10px; font-size: 0.8em; background: #2e7d52; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
+    .download-btn:hover { background: #1a5c39; }
+    .back-btn { padding: 4px 14px; font-size: 0.85em; background: #64748b; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
+    .back-btn:hover { background: #475569; }
+    #viewer-bar { align-items: center; gap: 12px; margin-bottom: 10px; }
+    #viewer-filename { font-size: 0.9em; color: #475569; }
+    #file-viewer { width: 100%; height: calc(100vh - 120px); border: 1px solid #ddd; border-radius: 6px; }
+    /* Mobile */
+    @media (max-width: 600px) {
+      .layout { flex-direction: column; }
+      .sidebar { width: 100%; }
+      .content { padding: 20px; }
+    }
+  </style>
+  <script>
+    var activeFolder = '';
+    function showFolder(name) {
+      activeFolder = name;
+      document.querySelectorAll('.folder-panel').forEach(function(p) { p.style.display = 'none'; });
+      document.querySelectorAll('.nav-item').forEach(function(i) { i.classList.remove('active'); });
+      document.getElementById('folder-' + name).style.display = 'block';
+      document.querySelector('.nav-item[data-folder="' + name + '"]').classList.add('active');
+      document.getElementById('viewer-bar').style.display = 'none';
+      document.getElementById('file-viewer').style.display = 'none';
+      document.getElementById('file-viewer').src = '';
+    }
+    function openFile(url, filename) {
+      document.querySelectorAll('.folder-panel').forEach(function(p) { p.style.display = 'none'; });
+      document.getElementById('viewer-filename').textContent = filename;
+      document.getElementById('viewer-bar').style.display = 'flex';
+      document.getElementById('file-viewer').style.display = 'block';
+      document.getElementById('file-viewer').src = url;
+    }
+    function goBack() {
+      if (activeFolder) showFolder(activeFolder);
+    }
+    function downloadFile(url, filename) {
+      fetch(url)
+        .then(function(res) { return res.blob(); })
+        .then(function(blob) {
+          var objUrl = URL.createObjectURL(blob);
+          var a = document.createElement('a');
+          a.href = objUrl;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(objUrl);
+        });
+    }
+  </script>
+</head>
+<body>
+<div class="layout">
+HTMLHEAD
+
+# Write sidebar nav
+echo '  <div class="sidebar">' >> "$OUTPUT"
+echo '    <div class="sidebar-title">Home</div>' >> "$OUTPUT"
+for folder in "${folders[@]}"; do
+  active_class=""
+  [ "$folder" = "$first_folder" ] && active_class=" active"
+  echo "    <div class=\"nav-item$active_class\" data-folder=\"$folder\" onclick=\"showFolder('$folder')\">$folder</div>" >> "$OUTPUT"
+done
+echo '  </div>' >> "$OUTPUT"
+
+# Write content panels
+echo '  <div class="content">' >> "$OUTPUT"
+
+total_count=0
+for folder in "${folders[@]}"; do
+  echo "  <div class=\"folder-panel\" id=\"folder-$folder\">" >> "$OUTPUT"
+  echo "    <h2>$folder</h2>" >> "$OUTPUT"
+  echo "    <table>" >> "$OUTPUT"
+  echo "      <thead><tr><th>#</th><th>File</th></tr></thead>" >> "$OUTPUT"
+  echo "      <tbody>" >> "$OUTPUT"
+
+  file_num=0
+  while IFS= read -r filepath; do
+    relpath="${filepath#$PARENT_DIR/}"
+    filename="$(basename "$relpath")"
+    file_num=$((file_num + 1))
+    total_count=$((total_count + 1))
+    echo "        <tr>" >> "$OUTPUT"
+    echo "          <td>$file_num</td>" >> "$OUTPUT"
+    echo "          <td><a href=\"$relpath\" onclick=\"openFile('$relpath','$filename'); return false;\">$filename</a><button class=\"open-btn\" onclick=\"window.open('$relpath','_blank')\">Open in new tab</button><button class=\"download-btn\" onclick=\"downloadFile('$relpath','$filename')\">Download</button></td>" >> "$OUTPUT"
+    echo "        </tr>" >> "$OUTPUT"
+  done < <(find "$PARENT_DIR/$folder" -maxdepth 1 -name "*.pdf" | sort)
+
+  echo "      </tbody>" >> "$OUTPUT"
+  echo "    </table>" >> "$OUTPUT"
+  echo "  </div>" >> "$OUTPUT"
+done
+
+cat >> "$OUTPUT" <<'HTMLFOOT'
+    <div id="viewer-bar" style="display:none;">
+      <button class="back-btn" onclick="goBack()">&#8592; Back</button>
+      <span id="viewer-filename"></span>
+    </div>
+    <iframe id="file-viewer" style="display:none;"></iframe>
+  </div>
+</div>
+<script>
+  var first = document.querySelector('.nav-item');
+  if (first) showFolder(first.getAttribute('data-folder'));
+</script>
+</body>
+</html>
+HTMLFOOT
+
+if [ "$total_count" -eq 0 ]; then
+  echo "No PDF files found. $OUTPUT not updated."
+else
+  echo "Generated $OUTPUT with $total_count PDF entries."
+fi

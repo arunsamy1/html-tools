@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SHA3 Converter (Base64)</title>
+    <script src="https://cdn.jsdelivr.net/npm/js-sha3@0.8.0"></script>
+</head>
+<body>
+    <h1>SHA3 Hash Converter (Base64)</h1>
+    <p>Enter text to convert:</p>
+    <textarea id="inputText" rows="4" cols="50" placeholder="Enter your text here"></textarea><br><br>
+    <button onclick="convertHashes()">Convert</button>
+    <h2>Results:</h2>
+    <div id="results"></div>
+
+    <script>
+        // Helper function to convert hex to Base64
+        function hexToBase64(hex) {
+            const binary = hex.match(/.{2}/g).map(byte => String.fromCharCode(parseInt(byte, 16))).join('');
+            return btoa(binary);
+        }
+
+        function convertHashes() {
+            const text = document.getElementById('inputText').value.trim();
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = ""; // Clear previous results
+
+            if (!text) {
+                resultsDiv.innerHTML = "<p>Please enter some text.</p>";
+                return;
+            }
+
+            try {
+                // Perform SHA3 hashing
+                const sha3_512_hex = sha3_512(text);
+                const sha3_384_hex = sha3_384(sha3_512_hex);
+                const sha3_256_hex = sha3_256(sha3_384_hex);
+                const sha3_224_hex = sha3_224(sha3_256_hex);
+
+                // Convert the outputs to Base64
+                const sha3_512_base64 = hexToBase64(sha3_512_hex);
+                const sha3_384_base64 = hexToBase64(sha3_384_hex);
+                const sha3_256_base64 = hexToBase64(sha3_256_hex);
+                const sha3_224_base64 = hexToBase64(sha3_224_hex);
+
+                // Display the results
+                resultsDiv.innerHTML = `
+                    <p><strong>SHA3-512 (Base64):</strong> ${sha3_512_base64}</p>
+                    <p><strong>SHA3-384 (Base64):</strong> ${sha3_384_base64}</p>
+                    <p><strong>SHA3-256 (Base64):</strong> ${sha3_256_base64}</p>
+                    <p><strong>SHA3-224 (Base64):</strong> ${sha3_224_base64}</p>
+                `;
+            } catch (error) {
+                resultsDiv.innerHTML = `<p>Error occurred: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

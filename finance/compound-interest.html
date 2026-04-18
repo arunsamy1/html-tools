@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compound Interest Calculator</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            max-width: 600px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        h1 {
+            text-align: center;
+            color: #1a1a2e;
+            font-size: 24px;
+        }
+        .calculator {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .field {
+            margin-bottom: 20px;
+            width: 100%;
+        }
+        .field label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #1a1a2e;
+        }
+        .field input {
+            width: 100%;
+            padding: 14px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+        .field input:focus {
+            outline: none;
+            border-color: #e94560;
+        }
+        .field-row {
+            display: flex;
+            gap: 15px;
+        }
+        .field-row .field {
+            flex: 1;
+        }
+        button {
+            width: 100%;
+            padding: 14px;
+            background: #e94560;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #d63d56;
+        }
+        .result {
+            margin-top: 25px;
+            padding: 20px;
+            background: #e8f5e9;
+            border-radius: 8px;
+        }
+        .result-title {
+            text-align: center;
+            font-size: 18px;
+            font-weight: 600;
+            color: #1a1a2e;
+            margin-bottom: 15px;
+        }
+        .result-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        .result-item {
+            flex: 1;
+            padding: 15px;
+            background: white;
+            border-radius: 6px;
+            text-align: center;
+        }
+        .result-item .label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        .result-item .value {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2e7d32;
+        }
+        .result-item.highlight {
+            background: #c8e6c9;
+        }
+        .result-item.highlight .value {
+            font-size: 22px;
+        }
+        .yearly-breakdown {
+            margin-top: 20px;
+            background: #f9f9f9;
+            border-radius: 6px;
+            padding: 15px;
+        }
+        .yearly-breakdown h3 {
+            font-size: 14px;
+            color: #1a1a2e;
+            margin: 0 0 10px 0;
+        }
+        .yearly-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+        .yearly-table th, .yearly-table td {
+            padding: 8px 5px;
+            text-align: right;
+            border-bottom: 1px solid #eee;
+        }
+        .yearly-table th {
+            color: #666;
+            font-weight: 600;
+        }
+        .yearly-table td {
+            color: #1a1a2e;
+        }
+        .yearly-table td:first-child,
+        .yearly-table th:first-child {
+            text-align: left;
+        }
+
+        @media (max-width: 500px) {
+            body {
+                margin: 20px auto;
+                padding: 15px;
+            }
+            .calculator {
+                padding: 20px;
+            }
+            .field-row {
+                flex-direction: column;
+                gap: 0;
+            }
+            .result-row {
+                flex-direction: column;
+                gap: 10px;
+            }
+            .yearly-table {
+                font-size: 11px;
+            }
+            .yearly-table th, .yearly-table td {
+                padding: 6px 3px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Compound Interest Calculator</h1>
+    
+    <div class="calculator">
+        <div class="field">
+            <label for="principal">Principal Amount ($)</label>
+            <input type="number" id="principal" placeholder="Enter principal amount" oninput="calculate()">
+        </div>
+        
+        <div class="field-row">
+            <div class="field">
+                <label for="rate">Interest Rate (% per year)</label>
+                <input type="number" id="rate" placeholder="Rate" step="0.01" oninput="calculate()">
+            </div>
+            <div class="field">
+                <label for="years">Number of Years</label>
+                <input type="number" id="years" placeholder="Years" oninput="calculate()">
+            </div>
+        </div>
+
+        <button onclick="calculate()">Calculate</button>
+
+        <div class="result" id="result" style="display: none;">
+            <div class="result-title">After <span id="resultYears">0</span> Years</div>
+            
+            <div class="result-row">
+                <div class="result-item highlight">
+                    <div class="label">Total Amount</div>
+                    <div class="value" id="totalAmount">$0.00</div>
+                </div>
+            </div>
+            
+            <div class="result-row">
+                <div class="result-item">
+                    <div class="label">Principal</div>
+                    <div class="value" id="resultPrincipal">$0.00</div>
+                </div>
+                <div class="result-item">
+                    <div class="label">Interest Earned</div>
+                    <div class="value" id="totalInterest">$0.00</div>
+                </div>
+            </div>
+
+            <div class="yearly-breakdown" id="yearlyBreakdown" style="display: none;">
+                <h3>Yearly Breakdown</h3>
+                <table class="yearly-table">
+                    <thead>
+                        <tr>
+                            <th>Year</th>
+                            <th>Start Balance</th>
+                            <th>Interest</th>
+                            <th>End Balance</th>
+                        </tr>
+                    </thead>
+                    <tbody id="yearlyBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function formatCurrency(value) {
+            return '$' + value.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        }
+
+        function calculate() {
+            const principal = parseFloat(document.getElementById('principal').value) || 0;
+            const rate = parseFloat(document.getElementById('rate').value) || 0;
+            const years = parseInt(document.getElementById('years').value) || 0;
+
+            if (principal <= 0 || rate <= 0 || years <= 0) {
+                document.getElementById('result').style.display = 'none';
+                return;
+            }
+
+            const rateDecimal = rate / 100;
+            const totalAmount = principal * Math.pow(1 + rateDecimal, years);
+            const totalInterest = totalAmount - principal;
+
+            document.getElementById('resultYears').textContent = years;
+            document.getElementById('resultPrincipal').textContent = formatCurrency(principal);
+            document.getElementById('totalAmount').textContent = formatCurrency(totalAmount);
+            document.getElementById('totalInterest').textContent = formatCurrency(totalInterest);
+
+            // Generate yearly breakdown
+            const yearlyBody = document.getElementById('yearlyBody');
+            yearlyBody.innerHTML = '';
+            
+            let balance = principal;
+            for (let year = 1; year <= years; year++) {
+                const startBalance = balance;
+                const interest = startBalance * rateDecimal;
+                const endBalance = startBalance + interest;
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${year}</td>
+                    <td>${formatCurrency(startBalance)}</td>
+                    <td>${formatCurrency(interest)}</td>
+                    <td>${formatCurrency(endBalance)}</td>
+                `;
+                yearlyBody.appendChild(row);
+                
+                balance = endBalance;
+            }
+
+            document.getElementById('yearlyBreakdown').style.display = years <= 10 ? 'block' : 'none';
+            document.getElementById('result').style.display = 'block';
+        }
+    </script>
+</body>
+</html>

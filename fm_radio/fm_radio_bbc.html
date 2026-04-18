@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FM Radio Player</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: Arial, sans-serif;
+      background: #1a1a2e;
+      color: #eee;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .player {
+      background: #16213e;
+      border-radius: 20px;
+      padding: 40px 50px;
+      text-align: center;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      width: 340px;
+    }
+
+    .radio-icon {
+      font-size: 64px;
+      margin-bottom: 16px;
+    }
+
+    h1 {
+      font-size: 1.3em;
+      color: #a0c4ff;
+      margin-bottom: 6px;
+      letter-spacing: 1px;
+    }
+
+    .stream-url {
+      font-size: 0.7em;
+      color: #555;
+      margin-bottom: 30px;
+      word-break: break-all;
+    }
+
+    .visualizer {
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 4px;
+      height: 40px;
+      margin-bottom: 28px;
+    }
+
+    .bar {
+      width: 6px;
+      background: #4a90e2;
+      border-radius: 3px;
+      height: 4px;
+      transition: height 0.1s;
+    }
+
+    .playing .bar:nth-child(1) { animation: bounce 0.8s ease infinite 0.0s; }
+    .playing .bar:nth-child(2) { animation: bounce 0.8s ease infinite 0.1s; }
+    .playing .bar:nth-child(3) { animation: bounce 0.8s ease infinite 0.2s; }
+    .playing .bar:nth-child(4) { animation: bounce 0.8s ease infinite 0.15s; }
+    .playing .bar:nth-child(5) { animation: bounce 0.8s ease infinite 0.05s; }
+    .playing .bar:nth-child(6) { animation: bounce 0.8s ease infinite 0.25s; }
+    .playing .bar:nth-child(7) { animation: bounce 0.8s ease infinite 0.1s; }
+
+    @keyframes bounce {
+      0%, 100% { height: 4px; }
+      50% { height: 36px; }
+    }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      margin-bottom: 28px;
+    }
+
+    #playBtn {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      border: none;
+      background: #4a90e2;
+      color: #fff;
+      font-size: 1.6em;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(74,144,226,0.4);
+      transition: background 0.2s, transform 0.1s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #playBtn:hover { background: #357abd; transform: scale(1.05); }
+    #playBtn:active { transform: scale(0.97); }
+
+    .volume-section {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .volume-icon { font-size: 1.1em; color: #888; }
+
+    #volumeSlider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 130px;
+      height: 4px;
+      border-radius: 2px;
+      background: #333;
+      outline: none;
+      cursor: pointer;
+    }
+
+    #volumeSlider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #4a90e2;
+      cursor: pointer;
+    }
+
+    #status {
+      font-size: 0.85em;
+      color: #888;
+      min-height: 1.2em;
+    }
+
+    #status.live { color: #4caf50; }
+    #status.error { color: #e74c3c; }
+  </style>
+</head>
+<body>
+
+<div class="player">
+  <div class="radio-icon">📻</div>
+  <h1>FM Radio</h1>
+  <div class="stream-url">stream.live.vc.bbcmedia.co.uk</div>
+
+  <div class="visualizer" id="visualizer">
+    <div class="bar"></div>
+    <div class="bar"></div>
+    <div class="bar"></div>
+    <div class="bar"></div>
+    <div class="bar"></div>
+    <div class="bar"></div>
+    <div class="bar"></div>
+  </div>
+
+  <div class="controls">
+    <button id="playBtn" title="Play / Stop">&#9654;</button>
+  </div>
+
+  <div class="volume-section">
+    <span class="volume-icon">🔈</span>
+    <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="0.8">
+    <span class="volume-icon">🔊</span>
+  </div>
+
+  <br>
+  <div id="status">Press play to start streaming</div>
+</div>
+
+<audio id="audio" preload="none">
+  <source src="http://stream.live.vc.bbcmedia.co.uk/bbc_world_service" type="audio/mpeg">
+</audio>
+
+<script>
+  const audio = document.getElementById('audio');
+  const playBtn = document.getElementById('playBtn');
+  const volumeSlider = document.getElementById('volumeSlider');
+  const status = document.getElementById('status');
+  const visualizer = document.getElementById('visualizer');
+
+  let isPlaying = false;
+
+  audio.volume = volumeSlider.value;
+
+  function setPlaying(state) {
+    isPlaying = state;
+    playBtn.innerHTML = isPlaying ? '&#9646;&#9646;' : '&#9654;';
+    visualizer.classList.toggle('playing', isPlaying);
+  }
+
+  playBtn.addEventListener('click', () => {
+    if (!isPlaying) {
+      // Reload source each time to avoid browser cache stale issues with live streams
+      audio.src = 'http://stream.live.vc.bbcmedia.co.uk/bbc_world_service';
+      audio.load();
+      audio.play().catch(err => {
+        status.textContent = 'Playback error: ' + err.message;
+        status.className = 'error';
+        setPlaying(false);
+      });
+      status.textContent = 'Connecting...';
+      status.className = '';
+    } else {
+      audio.pause();
+      audio.src = '';
+      status.textContent = 'Stopped';
+      status.className = '';
+      setPlaying(false);
+    }
+  });
+
+  audio.addEventListener('playing', () => {
+    status.textContent = '● LIVE';
+    status.className = 'live';
+    setPlaying(true);
+  });
+
+  audio.addEventListener('waiting', () => {
+    status.textContent = 'Buffering...';
+    status.className = '';
+  });
+
+  audio.addEventListener('error', () => {
+    status.textContent = 'Stream error. Try again.';
+    status.className = 'error';
+    setPlaying(false);
+  });
+
+  volumeSlider.addEventListener('input', () => {
+    audio.volume = volumeSlider.value;
+  });
+</script>
+
+</body>
+</html>

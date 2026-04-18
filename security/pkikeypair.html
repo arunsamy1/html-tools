@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PKI Key Pair Generator</title>
+</head>
+<body>
+    <h1>PKI Key Pair Generator</h1>
+    <button onclick="generateKeyPair()">Generate Key Pair</button>
+
+    <h3>Public Key:</h3>
+    <pre id="publicKey"></pre>
+    <button id="downloadPublicBtn" style="display:none;">Download Public Key</button>
+
+    <h3>Private Key:</h3>
+    <pre id="privateKey"></pre>
+    <button id="downloadPrivateBtn" style="display:none;">Download Private Key</button>
+
+    <script>
+        async function generateKeyPair() {
+            try {
+                // Generate RSA Key Pair (2048-bit)
+                const keyPair = await window.crypto.subtle.generateKey(
+                    {
+                        name: "RSA-OAEP",
+                        modulusLength: 2048,
+                        publicExponent: new Uint8Array([0x01, 0x00, 0x01]),
+                        hash: "SHA-256",
+                    },
+                    true, // Can extract keys
+                    ["encrypt", "decrypt"]
+                );
+
+                // Export keys
+                const publicKey = await window.crypto.subtle.exportKey("spki", keyPair.publicKey);
+                const privateKey = await window.crypto.subtle.exportKey("pkcs8", keyPair.privateKey);
+
+                // Convert keys to PEM format
+                const publicKeyPEM = convertArrayBufferToPEM(publicKey, 'PUBLIC KEY');
+                const privateKeyPEM = convertArrayBufferToPEM(privateKey, 'PRIVATE KEY');
+
+                // Display keys on the page
+                document.getElementById("publicKey").innerText = publicKeyPEM;
+                document.getElementById("privateKey").innerText = privateKeyPEM;
+
+                // Add download button for public key
+                const downloadPublicBtn = document.getElementById("downloadPublicBtn");
+                downloadPublicBtn.style.display = 'block';
+                downloadPublicBtn.onclick = () => downloadKey(publicKeyPEM, 'public_key.pem');
+
+                // Add download button for private key
+                const downloadPrivateBtn = document.getElementById("downloadPrivateBtn");
+                downloadPrivateBtn.style.display = 'block';
+                downloadPrivateBtn.onclick = () => downloadKey(privateKeyPEM, 'private_key.pem');
+            } catch (error) {
+                console.error("Key Generation Failed: ", error);
+                alert("Key generation failed. Check browser support for Web Crypto API.");
+            }
+        }
+
+        function convertArrayBufferToPEM(keyBuffer, keyType) {
+            const binary = String.fromCharCode.apply(null, new Uint8Array(keyBuffer));
+            const base64Key = btoa(binary);
+            const formattedKey = base64Key.match(/.{1,64}/g).join('\n');
+            return `-----BEGIN ${keyType}-----\n${formattedKey}\n-----END ${keyType}-----`;
+        }
+
+        function downloadKey(keyContent, fileName) {
+            const blob = new Blob([keyContent], { type: 'text/plain' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Crypto Tools</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/js-sha3/0.9.3/sha3.min.js"></script>
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1rem;
+      background: #ffffff;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      color: #1e293b;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 1000px;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 1.5rem 2rem;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+    }
+
+    h1 {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #1e293b;
+      margin-bottom: 0.25rem;
+      letter-spacing: -0.02em;
+    }
+
+    .subtitle {
+      font-size: 0.875rem;
+      color: #64748b;
+      margin-bottom: 1.25rem;
+    }
+
+    label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #475569;
+      margin-bottom: 0.5rem;
+    }
+
+    textarea {
+      width: 100%;
+      padding: 0.4rem 0.75rem;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      color: #1e293b;
+      font-size: 0.9rem;
+      font-family: inherit;
+      resize: vertical;
+      min-height: 56px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    textarea::placeholder {
+      color: #94a3b8;
+    }
+
+    textarea:focus {
+      border-color: #94a3b8;
+      box-shadow: 0 0 0 3px rgba(148, 163, 184, 0.2);
+    }
+
+    .controls {
+      display: flex;
+      gap: 0.75rem;
+      margin-top: 0.75rem;
+      margin-bottom: 1.25rem;
+    }
+
+    button {
+      padding: 0.65rem 1.4rem;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    button:active {
+      transform: scale(0.97);
+    }
+
+    button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-primary {
+      background: #1e293b;
+      color: #fff;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: #334155;
+    }
+
+    .btn-secondary {
+      background: #f1f5f9;
+      color: #475569;
+      border: 1px solid #e2e8f0;
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+      background: #e2e8f0;
+    }
+
+    .btn-decrypt {
+      background: #0f766e;
+      color: #fff;
+    }
+
+    .btn-decrypt:hover:not(:disabled) {
+      background: #0d9488;
+    }
+
+    /* --- internal divider (within a section) --- */
+    .divider {
+      border: none;
+      border-top: 1px solid #e2e8f0;
+      margin: 1.25rem 0;
+    }
+
+    /* --- section separator between the two tools --- */
+    .section-sep {
+      border: none;
+      border-top: 2px solid #cbd5e1;
+      margin: 1.5rem 0;
+    }
+
+    /* SHA result */
+    .result-section {
+      display: none;
+    }
+
+    .result-section.visible {
+      display: block;
+    }
+
+    .result-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.5rem;
+    }
+
+    .badge {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      background: #f1f5f9;
+      color: #475569;
+      padding: 0.2rem 0.6rem;
+      border-radius: 20px;
+      border: 1px solid #e2e8f0;
+    }
+
+    .copy-btn {
+      background: transparent;
+      color: #64748b;
+      border: 1px solid #e2e8f0;
+      padding: 0.3rem 0.75rem;
+      font-size: 0.75rem;
+      border-radius: 6px;
+    }
+
+    .copy-btn:hover {
+      color: #1e293b;
+      border-color: #94a3b8;
+    }
+
+    .copy-btn.copied {
+      color: #16a34a;
+      border-color: #16a34a;
+    }
+
+    .hash-output {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 0.5rem 0.75rem;
+      font-family: 'Courier New', 'Consolas', monospace;
+      font-size: 0.8rem;
+      color: #334155;
+      word-break: break-all;
+      line-height: 1.6;
+      min-height: 36px;
+    }
+
+    .meta {
+      margin-top: 0.75rem;
+      display: flex;
+      gap: 1.5rem;
+    }
+
+    .meta-item {
+      font-size: 0.75rem;
+      color: #94a3b8;
+    }
+
+    .meta-item span {
+      color: #64748b;
+      font-weight: 600;
+    }
+
+    /* AES — file drop */
+    .drop-zone {
+      width: 100%;
+      min-height: 60px;
+      border: 2px dashed #e2e8f0;
+      border-radius: 10px;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      padding: 0.6rem 1rem;
+      text-align: center;
+      background: #f8fafc;
+    }
+
+    .drop-zone:hover,
+    .drop-zone.dragover {
+      border-color: #94a3b8;
+      background: #f1f5f9;
+    }
+
+    .drop-zone.has-file {
+      border-color: #1e293b;
+      border-style: solid;
+    }
+
+    .drop-icon {
+      font-size: 1.25rem;
+      line-height: 1;
+      color: #94a3b8;
+    }
+
+    .drop-text {
+      font-size: 0.9rem;
+      color: #64748b;
+    }
+
+    .drop-text strong {
+      color: #1e293b;
+    }
+
+    .file-info {
+      display: none;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.4rem 0.75rem;
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      margin-top: 0.5rem;
+    }
+
+    .file-info.visible {
+      display: flex;
+    }
+
+    .file-icon {
+      font-size: 1.4rem;
+      flex-shrink: 0;
+    }
+
+    .file-details {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .file-name {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: #1e293b;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .file-size {
+      font-size: 0.75rem;
+      color: #64748b;
+      margin-top: 0.1rem;
+    }
+
+    .remove-file {
+      background: none;
+      border: none;
+      color: #94a3b8;
+      cursor: pointer;
+      font-size: 1.1rem;
+      padding: 0.2rem;
+      line-height: 1;
+      flex-shrink: 0;
+      border-radius: 4px;
+      transition: color 0.2s;
+    }
+
+    .remove-file:hover {
+      color: #ef4444;
+    }
+
+    /* AES — password */
+    .password-wrap {
+      position: relative;
+      margin-bottom: 1.25rem;
+    }
+
+    input[type="password"],
+    input[type="text"] {
+      width: 100%;
+      padding: 0.4rem 3rem 0.4rem 0.75rem;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      color: #1e293b;
+      font-size: 0.9rem;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    input:focus {
+      border-color: #94a3b8;
+      box-shadow: 0 0 0 3px rgba(148, 163, 184, 0.2);
+    }
+
+    input::placeholder {
+      color: #94a3b8;
+    }
+
+    .toggle-pw {
+      position: absolute;
+      right: 0.875rem;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #94a3b8;
+      font-size: 0.8rem;
+      font-weight: 600;
+      padding: 0;
+      transition: color 0.2s;
+    }
+
+    .toggle-pw:hover {
+      color: #475569;
+    }
+
+    /* AES — status */
+    .status {
+      display: none;
+      margin-top: 1.25rem;
+      padding: 0.875rem 1rem;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .status.visible {
+      display: flex;
+    }
+
+    .status.success {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      color: #166534;
+    }
+
+    .status.error {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #991b1b;
+    }
+
+    .status.working {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      color: #475569;
+    }
+
+    .spinner {
+      width: 14px;
+      height: 14px;
+      border: 2px solid #cbd5e1;
+      border-top-color: #475569;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      flex-shrink: 0;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .info-note {
+      margin-top: 1rem;
+      font-size: 0.75rem;
+      color: #94a3b8;
+      line-height: 1.6;
+    }
+
+    .info-note strong {
+      color: #64748b;
+    }
+
+    #aesFileInput {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+
+    <!-- ===== SHA3-512 Hash Generator ===== -->
+    <h1>SHA3-512 Hash Generator</h1>
+    <p class="subtitle">Compute a cryptographic hash of any input text</p>
+
+    <label for="inputText">Input</label>
+    <textarea id="inputText" placeholder="Type or paste your text here…" oninput="onHashInput()"></textarea>
+
+    <div class="controls">
+      <button class="btn-primary" onclick="computeHash()">Generate Hash</button>
+      <button class="btn-secondary" onclick="clearHash()">Clear</button>
+    </div>
+
+    <div class="result-section" id="resultSection">
+      <hr class="divider">
+      <div class="result-header">
+        <label style="margin:0">SHA3-512 Hash</label>
+        <div style="display:flex;align-items:center;gap:0.5rem">
+          <span class="badge">Base64</span>
+          <button class="copy-btn" id="copyBtn" onclick="copyHash()">Copy</button>
+        </div>
+      </div>
+      <div class="hash-output" id="hashOutput"></div>
+      <div class="meta">
+        <div class="meta-item">Characters: <span id="charCount">0</span></div>
+        <div class="meta-item">Bytes: <span id="byteCount">0</span></div>
+        <div class="meta-item">Hash length: <span>88 base64 chars</span></div>
+      </div>
+    </div>
+
+    <!-- ===== Section separator ===== -->
+    <hr class="section-sep">
+
+    <!-- ===== AES-256 File Encryptor / Decryptor ===== -->
+    <h1>AES-256 File Encryptor / Decryptor</h1>
+    <p class="subtitle">Encrypt or decrypt any file using AES-256-GCM in your browser</p>
+
+    <label>File</label>
+    <div class="drop-zone" id="dropZone" onclick="document.getElementById('aesFileInput').click()">
+      <div class="drop-icon">&#128196;</div>
+      <div class="drop-text"><strong>Click to choose</strong> or drag &amp; drop a file</div>
+    </div>
+    <input type="file" id="aesFileInput">
+
+    <div class="file-info" id="fileInfo">
+      <div class="file-icon">&#128196;</div>
+      <div class="file-details">
+        <div class="file-name" id="fileName"></div>
+        <div class="file-size" id="fileSize"></div>
+      </div>
+      <button class="remove-file" onclick="removeFile()" title="Remove file">&#10005;</button>
+    </div>
+
+    <hr class="divider">
+
+    <label for="aesPassword">Password</label>
+    <div class="password-wrap">
+      <input type="password" id="aesPassword" placeholder="Enter a strong password…">
+      <button class="toggle-pw" type="button" onclick="togglePassword()">Show</button>
+    </div>
+
+    <div class="controls">
+      <button class="btn-primary" id="encryptBtn" onclick="encryptFile()" disabled>Encrypt &amp; Download</button>
+      <button class="btn-decrypt" id="decryptBtn" onclick="decryptFile()" disabled>Decrypt &amp; Download</button>
+      <button class="btn-secondary" onclick="clearAes()">Clear</button>
+    </div>
+
+    <div class="status" id="aesStatus"></div>
+
+    <p class="info-note">
+      <strong>How it works:</strong> Your file is encrypted with AES-256-GCM entirely in the browser.
+      The password is stretched with PBKDF2 (310,000 iterations, SHA-256). A random salt and IV are
+      generated per encryption and prepended to the output. The encrypted file downloads as
+      <strong>filename_enc.ext</strong>. To decrypt, select the encrypted file, enter the same password,
+      and click <strong>Decrypt &amp; Download</strong> — the <em>_enc</em> suffix is removed automatically.
+    </p>
+
+  </div>
+
+  <script>
+    // =====================
+    // SHA3-512 Hash Section
+    // =====================
+
+    let currentHash = '';
+
+    function onHashInput() {
+      const text = document.getElementById('inputText').value;
+      if (text.length > 0) {
+        computeHash();
+      } else {
+        document.getElementById('resultSection').classList.remove('visible');
+      }
+    }
+
+    function computeHash() {
+      const text = document.getElementById('inputText').value;
+      if (!text) return;
+
+      const hex = sha3_512(text);
+      const bytes = new Uint8Array(hex.match(/.{2}/g).map(b => parseInt(b, 16)));
+      currentHash = btoa(String.fromCharCode(...bytes));
+
+      document.getElementById('hashOutput').textContent = currentHash;
+      document.getElementById('charCount').textContent = text.length.toLocaleString();
+      document.getElementById('byteCount').textContent = new TextEncoder().encode(text).length.toLocaleString();
+      document.getElementById('resultSection').classList.add('visible');
+
+      const copyBtn = document.getElementById('copyBtn');
+      copyBtn.textContent = 'Copy';
+      copyBtn.classList.remove('copied');
+    }
+
+    function clearHash() {
+      document.getElementById('inputText').value = '';
+      document.getElementById('resultSection').classList.remove('visible');
+      currentHash = '';
+    }
+
+    function copyHash() {
+      if (!currentHash) return;
+      navigator.clipboard.writeText(currentHash).then(() => {
+        const btn = document.getElementById('copyBtn');
+        btn.textContent = 'Copied!';
+        btn.classList.add('copied');
+        setTimeout(() => {
+          btn.textContent = 'Copy';
+          btn.classList.remove('copied');
+        }, 2000);
+      });
+    }
+
+    document.getElementById('inputText').addEventListener('keydown', function(e) {
+      if (e.ctrlKey && e.key === 'Enter') computeHash();
+    });
+
+    // ========================
+    // AES-256 Encrypt Section
+    // ========================
+
+    let selectedFile = null;
+
+    document.getElementById('aesFileInput').addEventListener('change', e => {
+      if (e.target.files[0]) setFile(e.target.files[0]);
+    });
+
+    const dropZone = document.getElementById('dropZone');
+
+    dropZone.addEventListener('dragover', e => {
+      e.preventDefault();
+      dropZone.classList.add('dragover');
+    });
+
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+
+    dropZone.addEventListener('drop', e => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      if (e.dataTransfer.files[0]) setFile(e.dataTransfer.files[0]);
+    });
+
+    function setFile(file) {
+      selectedFile = file;
+      document.getElementById('fileName').textContent = file.name;
+      document.getElementById('fileSize').textContent = formatSize(file.size);
+      document.getElementById('fileInfo').classList.add('visible');
+      dropZone.classList.add('has-file');
+      updateEncryptBtn();
+      hideAesStatus();
+    }
+
+    function removeFile() {
+      selectedFile = null;
+      document.getElementById('aesFileInput').value = '';
+      document.getElementById('fileInfo').classList.remove('visible');
+      dropZone.classList.remove('has-file');
+      updateEncryptBtn();
+      hideAesStatus();
+    }
+
+    document.getElementById('aesPassword').addEventListener('input', updateEncryptBtn);
+
+    function updateEncryptBtn() {
+      const ready = selectedFile && document.getElementById('aesPassword').value.length > 0;
+      document.getElementById('encryptBtn').disabled = !ready;
+      document.getElementById('decryptBtn').disabled = !ready;
+    }
+
+    function togglePassword() {
+      const input = document.getElementById('aesPassword');
+      const btn = input.nextElementSibling;
+      if (input.type === 'password') {
+        input.type = 'text';
+        btn.textContent = 'Hide';
+      } else {
+        input.type = 'password';
+        btn.textContent = 'Show';
+      }
+    }
+
+    async function encryptFile() {
+      if (!selectedFile) return;
+      const password = document.getElementById('aesPassword').value;
+      if (!password) return;
+
+      showAesStatus('working', 'Encrypting\u2026');
+      document.getElementById('encryptBtn').disabled = true;
+
+      try {
+        const fileBytes = await readFileAsBytes(selectedFile);
+
+        const salt = crypto.getRandomValues(new Uint8Array(16));
+        const iv   = crypto.getRandomValues(new Uint8Array(12));
+
+        const keyMaterial = await crypto.subtle.importKey(
+          'raw',
+          new TextEncoder().encode(password),
+          'PBKDF2',
+          false,
+          ['deriveKey']
+        );
+
+        const key = await crypto.subtle.deriveKey(
+          { name: 'PBKDF2', salt, iterations: 310000, hash: 'SHA-256' },
+          keyMaterial,
+          { name: 'AES-GCM', length: 256 },
+          false,
+          ['encrypt']
+        );
+
+        const encrypted = await crypto.subtle.encrypt(
+          { name: 'AES-GCM', iv },
+          key,
+          fileBytes
+        );
+
+        // Layout: [salt 16B][iv 12B][ciphertext]
+        const output = new Uint8Array(16 + 12 + encrypted.byteLength);
+        output.set(salt, 0);
+        output.set(iv, 16);
+        output.set(new Uint8Array(encrypted), 28);
+
+        const outName = encryptedFileName(selectedFile.name);
+        triggerDownload(output, outName);
+
+        showAesStatus('success', `Encrypted successfully \u2014 downloading as <strong>${outName}</strong>`);
+      } catch (err) {
+        showAesStatus('error', 'Encryption failed: ' + err.message);
+      } finally {
+        updateEncryptBtn();
+      }
+    }
+
+    async function decryptFile() {
+      if (!selectedFile) return;
+      const password = document.getElementById('aesPassword').value;
+      if (!password) return;
+
+      showAesStatus('working', 'Decrypting\u2026');
+      document.getElementById('encryptBtn').disabled = true;
+      document.getElementById('decryptBtn').disabled = true;
+
+      try {
+        const fileBytes = await readFileAsBytes(selectedFile);
+
+        if (fileBytes.byteLength < 28) {
+          throw new Error('File is too small to be a valid encrypted file');
+        }
+
+        // Layout: [salt 16B][iv 12B][ciphertext]
+        const salt       = fileBytes.slice(0, 16);
+        const iv         = fileBytes.slice(16, 28);
+        const ciphertext = fileBytes.slice(28);
+
+        const keyMaterial = await crypto.subtle.importKey(
+          'raw',
+          new TextEncoder().encode(password),
+          'PBKDF2',
+          false,
+          ['deriveKey']
+        );
+
+        const key = await crypto.subtle.deriveKey(
+          { name: 'PBKDF2', salt, iterations: 310000, hash: 'SHA-256' },
+          keyMaterial,
+          { name: 'AES-GCM', length: 256 },
+          false,
+          ['decrypt']
+        );
+
+        const decrypted = await crypto.subtle.decrypt(
+          { name: 'AES-GCM', iv },
+          key,
+          ciphertext
+        );
+
+        const outName = decryptedFileName(selectedFile.name);
+        triggerDownload(new Uint8Array(decrypted), outName);
+
+        showAesStatus('success', `Decrypted successfully \u2014 downloading as <strong>${outName}</strong>`);
+      } catch (err) {
+        const msg = err.name === 'OperationError'
+          ? 'Decryption failed \u2014 wrong password or corrupted file'
+          : 'Decryption failed: ' + err.message;
+        showAesStatus('error', msg);
+      } finally {
+        updateEncryptBtn();
+      }
+    }
+
+    function clearAes() {
+      removeFile();
+      const input = document.getElementById('aesPassword');
+      input.value = '';
+      input.type = 'password';
+      input.nextElementSibling.textContent = 'Show';
+      updateEncryptBtn();
+      hideAesStatus();
+    }
+
+    function encryptedFileName(name) {
+      const dot = name.lastIndexOf('.');
+      if (dot > 0) return name.slice(0, dot) + '_enc' + name.slice(dot);
+      return name + '_enc';
+    }
+
+    function decryptedFileName(name) {
+      const dot = name.lastIndexOf('.');
+      const base = dot > 0 ? name.slice(0, dot) : name;
+      const ext  = dot > 0 ? name.slice(dot) : '';
+      const stripped = base.endsWith('_enc') ? base.slice(0, -4) : base + '_dec';
+      return stripped + ext;
+    }
+
+    function readFileAsBytes(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = e => resolve(new Uint8Array(e.target.result));
+        reader.onerror = () => reject(new Error('Failed to read file'));
+        reader.readAsArrayBuffer(file);
+      });
+    }
+
+    function triggerDownload(bytes, filename) {
+      const blob = new Blob([bytes], { type: 'application/octet-stream' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
+    }
+
+    function formatSize(bytes) {
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+      return (bytes / 1048576).toFixed(2) + ' MB';
+    }
+
+    function showAesStatus(type, html) {
+      const el = document.getElementById('aesStatus');
+      el.className = 'status visible ' + type;
+      el.innerHTML = type === 'working'
+        ? '<div class="spinner"></div>' + html
+        : html;
+    }
+
+    function hideAesStatus() {
+      document.getElementById('aesStatus').className = 'status';
+    }
+  </script>
+</body>
+</html>

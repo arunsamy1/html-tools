@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SHA-224 Hash Converter</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        #output {
+            margin-top: 10px;
+            font-weight: bold;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <h1>SHA-224 Hash Converter</h1>
+    <label for="inputText">Enter text to hash:</label>
+    <br>
+    <textarea id="inputText" rows="4" cols="50" placeholder="Enter your text here"></textarea>
+    <br><br>
+    <button id="convertButton">Convert to SHA-224</button>
+    <div id="output">Hash: <span id="hashValue"></span></div>
+
+    <script>
+        document.getElementById('convertButton').addEventListener('click', () => {
+            const inputText = document.getElementById('inputText').value;
+            if (inputText) {
+                const hash = CryptoJS.SHA224(inputText).toString(CryptoJS.enc.Hex);
+                document.getElementById('hashValue').textContent = hash;
+            } else {
+                document.getElementById('hashValue').textContent = 'Please enter text to hash.';
+            }
+        });
+    </script>
+</body>
+</html>

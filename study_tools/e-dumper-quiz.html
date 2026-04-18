@@ -1,0 +1,1985 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>e-dumper Quiz</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background: #ffffff;
+            color: #1a1a2e;
+            min-height: 100vh;
+            min-height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        .header {
+            background: #f5f5f5;
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 2px solid #e94560;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            color: #e94560;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header h1::before {
+            content: '📝';
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .btn-primary {
+            background: #e94560;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #ff6b8a;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #1a1a2e;
+            border: 1px solid #e94560;
+        }
+
+        .btn-secondary:hover {
+            background: #1a1a2e;
+            color: white;
+        }
+
+        .btn-success {
+            background: #00d9a5;
+            color: #0f0f1a;
+        }
+
+        .btn-success:hover {
+            background: #00ffb8;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            pointer-events: none;
+        }
+
+        .app-container {
+            display: flex;
+            min-height: 100vh;
+            min-height: 100dvh;
+        }
+
+        .sidebar {
+            width: 350px;
+            background: #f5f5f5;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            border-right: 1px solid #e0e0e0;
+            transition: width 0.3s ease;
+        }
+
+        .sidebar.collapsed {
+            width: 50px;
+            padding: 10px 5px;
+        }
+
+        .sidebar.collapsed .sidebar-content {
+            display: none;
+        }
+
+        .sidebar-toggle {
+            display: block;
+            width: 100%;
+            padding: 8px;
+            background: #e0e0e0;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 18px;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .sidebar .file-input-wrapper {
+            padding-bottom: 20px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .file-input-wrapper input[type="file"] {
+            display: none;
+        }
+
+        .main-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .main-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 24px;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .progress-section {
+            margin-bottom: 20px;
+        }
+
+        .progress-text {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #e94560, #00d9a5);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        .stats-bar {
+            display: flex;
+            gap: 24px;
+            margin-bottom: 20px;
+            padding: 12px 16px;
+            background: #f5f5f5;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .stat-item.correct { color: #00a87d; }
+        .stat-item.wrong { color: #e94560; }
+        .stat-item.flagged { color: #f59e0b; }
+
+        .question-panel {
+            background: #ffffff;
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 60px;
+            margin-bottom: 24px;
+            min-height: 500px;
+        }
+
+        .question-text {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 40px;
+            line-height: 1.5;
+        }
+
+        .options-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .option-btn {
+            padding: 16px 20px;
+            background: #ffffff;
+            border: 2px solid #d0d0d0;
+            border-radius: 8px;
+            color: #1a1a2e;
+            font-size: 16px;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.2s;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .option-btn:hover:not(:disabled) {
+            border-color: #e94560;
+            background: #fff5f5;
+        }
+
+        .option-btn.selected {
+            border-color: #e94560;
+            background: #fff0f0;
+        }
+
+        .option-btn.correct {
+            border-color: #00a87d;
+            background: #e8faf4;
+        }
+
+        .option-btn.incorrect {
+            border-color: #e94560;
+            background: #ffe8ea;
+        }
+
+        .option-btn:disabled {
+            cursor: default;
+        }
+
+        .flagged-indicator {
+            display: inline-block;
+            padding: 2px 8px;
+            background: #f59e0b;
+            color: white;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .feedback-panel {
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .feedback-panel.show {
+            display: block;
+        }
+
+        .feedback-panel.correct {
+            background: #e8faf4;
+            border: 1px solid #00a87d;
+            color: #00a87d;
+        }
+
+        .feedback-panel.incorrect {
+            background: #ffe8ea;
+            border: 1px solid #e94560;
+            color: #e94560;
+        }
+
+        .action-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-top: 48px;
+        }
+
+        .show-answer-btn {
+            min-width: 140px;
+        }
+
+        .navigation-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            margin-top: 32px;
+        }
+
+        .nav-btn {
+            min-width: 120px;
+        }
+
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 400px;
+            text-align: center;
+            color: #666;
+        }
+
+        .empty-state h2 {
+            font-size: 28px;
+            margin-bottom: 16px;
+            color: #1a1a2e;
+        }
+
+        .empty-state p {
+            font-size: 16px;
+            margin-bottom: 24px;
+        }
+
+        .review-header {
+            margin-bottom: 30px;
+        }
+
+        .review-header h2 {
+            font-size: 28px;
+            color: #1a1a2e;
+            margin-bottom: 16px;
+        }
+
+        .review-stats {
+            display: flex;
+            gap: 24px;
+            padding: 16px;
+            background: #f5f5f5;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        .review-stats .correct {
+            color: #00a87d;
+            font-weight: 600;
+        }
+
+        .review-stats .incorrect {
+            color: #e94560;
+            font-weight: 600;
+        }
+
+        /* Review list (compact clickable rows) */
+        .review-list-item {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 14px 18px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .review-list-item:hover {
+            border-color: #e94560;
+            background: #fff5f5;
+            transform: translateX(2px);
+        }
+
+        .review-list-item.correct { border-left: 4px solid #00a87d; }
+        .review-list-item.incorrect { border-left: 4px solid #e94560; }
+        .review-list-item.skipped { border-left: 4px solid #aaaaaa; }
+
+        .review-list-num {
+            font-size: 13px;
+            font-weight: 700;
+            color: #999;
+            min-width: 28px;
+        }
+
+        .review-list-preview {
+            flex: 1;
+            font-size: 14px;
+            color: #1a1a2e;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .review-list-badge {
+            font-size: 12px;
+            font-weight: 700;
+            padding: 3px 10px;
+            border-radius: 4px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .review-list-badge.correct { background: #e8faf4; color: #00a87d; }
+        .review-list-badge.incorrect { background: #ffe8ea; color: #e94560; }
+        .review-list-badge.skipped { background: #f0f0f0; color: #666; }
+
+        .review-list-arrow {
+            font-size: 16px;
+            color: #ccc;
+            flex-shrink: 0;
+        }
+
+        /* Review detail (full question view) */
+        .review-question-item {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+
+        .review-question-item.correct { border-left: 4px solid #00a87d; }
+        .review-question-item.incorrect { border-left: 4px solid #e94560; }
+        .review-question-item.skipped { border-left: 4px solid #aaaaaa; }
+
+        .review-question-text {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: #1a1a2e;
+        }
+
+        .review-question-status {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            padding: 4px 12px;
+            border-radius: 4px;
+            display: inline-block;
+        }
+
+        .review-question-status.correct { background: #e8faf4; color: #00a87d; }
+        .review-question-status.incorrect { background: #ffe8ea; color: #e94560; }
+        .review-question-status.skipped { background: #f0f0f0; color: #666; }
+
+        .review-explanation {
+            margin-top: 16px;
+            padding: 12px 16px;
+            background: #e6fff8;
+            border-left: 4px solid #00a87d;
+            border-radius: 4px;
+            font-size: 14px;
+            color: #1a1a2e;
+            line-height: 1.6;
+        }
+
+        .review-explanation-label {
+            font-weight: 700;
+            color: #00a87d;
+            margin-bottom: 4px;
+        }
+
+        .review-option {
+            padding: 12px 16px;
+            margin-bottom: 8px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .review-option.correct { background: #e8faf4; border-color: #00a87d; }
+        .review-option.selected { background: #fff5f5; border-color: #e94560; }
+        .review-option.selected.correct { background: #e8faf4; border-color: #00a87d; }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .settings-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 180px;
+        }
+
+        .settings-group label {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1a1a2e;
+        }
+
+        .settings-group select {
+            flex: 1;
+            width: 150px;
+            padding: 8px 12px;
+            border: 1px solid #d0d0d0;
+            border-radius: 6px;
+            font-size: 16px;
+            background: white;
+            cursor: pointer;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-overlay.hidden {
+            display: none;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .modal-header h2 {
+            font-size: 20px;
+            color: #1a1a2e;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #666;
+        }
+
+        .modal-close:hover {
+            color: #e94560;
+        }
+
+        .flagged-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .flagged-item {
+            padding: 16px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .flagged-item:hover {
+            border-color: #e94560;
+            background: #fff5f5;
+        }
+
+        .flagged-item-number {
+            font-weight: 600;
+            color: #e94560;
+            margin-bottom: 8px;
+        }
+
+        .flagged-item-text {
+            font-size: 14px;
+            color: #1a1a2e;
+            line-height: 1.4;
+        }
+
+        /* Explanation popup */
+        .explanation-popup {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            max-width: 420px;
+            width: calc(100% - 48px);
+            background: white;
+            border: 2px solid #e94560;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+            z-index: 9998;
+            animation: toastIn 0.3s ease;
+        }
+
+        .explanation-popup.hidden {
+            display: none;
+        }
+
+        .explanation-popup-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            font-weight: 700;
+            font-size: 15px;
+            color: #e94560;
+        }
+
+        .explanation-popup-close {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: #666;
+            line-height: 1;
+            padding: 0 2px;
+        }
+
+        .explanation-popup-close:hover {
+            color: #e94560;
+        }
+
+        .explanation-popup-body {
+            font-size: 15px;
+            line-height: 1.6;
+            color: #1a1a2e;
+            margin-bottom: 10px;
+        }
+
+        .explanation-popup-timer {
+            font-size: 12px;
+            color: #999;
+            text-align: right;
+        }
+
+        /* Toast notifications */
+        .toast-container {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 9999;
+        }
+
+        .toast {
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            color: white;
+            max-width: 320px;
+            animation: toastIn 0.3s ease;
+        }
+
+        @keyframes toastIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .toast-success { background: #00a87d; }
+        .toast-error   { background: #e94560; }
+        .toast-info    { background: #1a1a2e; }
+
+        @media (max-width: 768px) {
+            .app-container {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100% !important;
+                flex-direction: row;
+                flex-wrap: wrap;
+                padding: 10px;
+                gap: 10px;
+                border-right: none;
+                border-bottom: 1px solid #e0e0e0;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                z-index: 100;
+                background: #f5f5f5;
+                max-height: 60vh;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .sidebar.collapsed {
+                width: 100% !important;
+                max-height: 56px;
+                overflow: hidden;
+            }
+
+            .sidebar-toggle {
+                width: auto;
+                padding: 10px 15px;
+            }
+
+            .sidebar-content {
+                display: flex !important;
+                flex-wrap: wrap;
+                gap: 10px;
+                width: 100%;
+            }
+
+            .sidebar.collapsed .sidebar-content {
+                display: none !important;
+            }
+
+            .settings-group {
+                flex: 1 1 auto;
+                min-width: 120px;
+            }
+
+            .settings-group select {
+                flex: 1;
+                width: 120px;
+            }
+
+            .file-input-wrapper {
+                flex: 1 1 100%;
+            }
+
+            .file-input-wrapper .btn {
+                width: 100%;
+            }
+
+            .main-container {
+                padding: 12px;
+            }
+
+            .question-panel {
+                padding: 20px;
+                min-height: auto;
+            }
+
+            .question-text {
+                font-size: 18px;
+            }
+
+            .option-btn {
+                padding: 12px 15px;
+                font-size: 14px;
+            }
+
+            .btn {
+                padding: 12px 16px;
+                font-size: 14px;
+                min-height: 44px;
+            }
+
+            .navigation-buttons {
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+
+            .navigation-buttons .btn {
+                flex: 1 1 45%;
+                min-width: 100px;
+                justify-content: center;
+            }
+
+            .stats-bar {
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+
+            .progress-section {
+                margin-bottom: 12px;
+            }
+
+            /* Tighten vertical spacing inside question panel */
+            .question-panel {
+                margin-bottom: 12px;
+            }
+
+            .question-text {
+                margin-bottom: 20px;
+            }
+
+            .options-container {
+                gap: 12px;
+            }
+
+            .feedback-panel {
+                font-size: 14px;
+                padding: 12px;
+            }
+
+            /* Action buttons: wrap and fill width like nav buttons */
+            .action-buttons {
+                margin-top: 16px;
+                gap: 10px;
+                flex-wrap: wrap;
+            }
+
+            .action-buttons .btn {
+                flex: 1 1 45%;
+                justify-content: center;
+            }
+
+            .navigation-buttons {
+                margin-top: 16px;
+            }
+
+            /* Stats bar: smaller text, wraps cleanly */
+            .stats-bar {
+                font-size: 13px;
+                padding: 10px 12px;
+            }
+
+            /* Review */
+            .review-stats {
+                flex-wrap: wrap;
+                gap: 8px;
+                font-size: 14px;
+            }
+
+            .review-list-item {
+                padding: 12px 14px;
+            }
+
+            .review-question-item {
+                padding: 15px;
+            }
+
+            .review-question-text {
+                font-size: 16px;
+            }
+
+            /* Explanation popup: full-width at bottom */
+            .explanation-popup {
+                left: 12px;
+                right: 12px;
+                bottom: 16px;
+                max-width: none;
+                width: auto;
+            }
+
+            /* Prevent iOS zoom on selects */
+            .settings-group select {
+                font-size: 16px;
+            }
+
+            .modal-content {
+                width: 95%;
+                max-height: 90vh;
+                margin: 10px;
+                padding: 15px;
+            }
+
+            .flagged-item {
+                padding: 12px;
+            }
+
+            h1 {
+                font-size: 20px;
+            }
+
+            h2 {
+                font-size: 18px;
+            }
+
+            .header h1 {
+                font-size: 18px;
+                margin-right: 10px;
+            }
+
+            .toast-container {
+                bottom: 16px;
+                right: 16px;
+                left: 16px;
+            }
+
+            .toast {
+                max-width: 100%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .sidebar {
+                max-height: 60vh;
+            }
+
+            .settings-group {
+                min-width: 100%;
+            }
+
+            .navigation-buttons .btn {
+                flex: 1 1 100%;
+            }
+
+            .action-buttons .btn {
+                flex: 1 1 100%;
+            }
+
+            .question-text {
+                font-size: 16px;
+            }
+
+            .btn {
+                padding: 10px 12px;
+                font-size: 13px;
+            }
+
+            /* Review list: hide arrow to prevent badge being squeezed off */
+            .review-list-arrow {
+                display: none;
+            }
+
+            .review-stats {
+                font-size: 13px;
+            }
+        }
+
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar collapsed">
+            <button class="sidebar-toggle" onclick="app.toggleSidebar()">☰</button>
+            <div class="sidebar-content">
+                <div class="settings-group">
+                    <label for="examMode">Mode:</label>
+                    <select id="examMode" onchange="app.onExamModeChange()">
+                        <option value="Study">Study</option>
+                        <option value="Exam">Exam</option>
+                    </select>
+                </div>
+                <div class="settings-group" id="answersModeGroup" style="padding-bottom: 20px; border-bottom: 1px solid #e0e0e0;">
+                    <label for="answersMode">Answers:</label>
+                    <select id="answersMode" onchange="app.onAnswersModeChange()">
+                        <option value="Highlight">Highlight</option>
+                        <option value="ShowAnswer">Show Answer</option>
+                    </select>
+                </div>
+                <div class="file-input-wrapper" style="margin-top: 20px; width: 100%;">
+                    <input type="file" id="fileInput" accept=".txt">
+                    <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()" style="width: 100%;">
+                        📂 Import Questions
+                    </button>
+                </div>
+                <button class="btn btn-secondary" id="shuffleQuizBtn" onclick="app.shuffleQuizQuestions()" style="width: 100%; margin-top: 10px;" disabled>
+                    🔀 Shuffle Questions
+                </button>
+                <button class="btn btn-secondary" id="exportBtn" onclick="app.exportMissed()" style="width: 100%; margin-top: 10px;">
+                    📥 Export Wrong Answers
+                </button>
+                <button class="btn btn-secondary" id="exportFlaggedBtn" onclick="app.exportFlagged()" style="width: 100%; text-align: left; margin-top: 20px;">
+                    📥 Export Flagged
+                </button>
+<button class="btn btn-secondary" id="clearStateBtn" onclick="app.clearAndReset()" style="width: 100%; margin-top: 20px;">
+                    🗑️ Clear Progress
+                </button>
+                <button class="btn btn-secondary" style="width: 100%; margin-top: 20px;" onclick="window.open('README-quiz.html', '_blank')">
+                    📖 Documentation
+                </button>
+            </div>
+        </aside>
+
+        <main class="main-wrapper">
+            <header class="header">
+                <h1>e-dumper Quiz <span style="font-size: 14px; color: #666;">v2.0</span></h1>
+            </header>
+
+            <div class="main-container">
+                <div id="emptyState" class="empty-state">
+                    <h2>Welcome to e-dumper Quiz</h2>
+                    <p>Import a quiz file to get started using the button in the sidebar.</p>
+                </div>
+
+                <div id="studyArea" class="hidden">
+                    <div class="progress-section">
+                        <div class="progress-text">
+                            <span id="progressText">Question 1 of 10</span>
+                            <span id="progressPercent">10%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill" style="width: 10%"></div>
+                        </div>
+                    </div>
+
+                    <div class="stats-bar">
+                        <div class="stat-item correct">✓ Correct: <span id="statCorrect">0</span></div>
+                        <div class="stat-item wrong">✗ Wrong: <span id="statWrong">0</span></div>
+                        <div class="stat-item flagged">⚑ Flagged: <span id="statFlagged">0</span></div>
+                    </div>
+
+                    <div class="question-panel">
+                        <div class="question-text">
+                            <span id="questionText">Loading...</span>
+                            <span id="flaggedBadge" class="flagged-indicator hidden">FLAGGED</span>
+                        </div>
+                        <div class="options-container" id="optionsContainer">
+                        </div>
+                    </div>
+
+                    <div class="feedback-panel" id="feedbackPanel">
+                    </div>
+
+                    <div class="action-buttons">
+                        <button class="btn btn-primary" id="submitAnswerBtn" onclick="app.submitAnswer()">
+                            Submit Answer
+                        </button>
+                        <button class="btn btn-secondary show-answer-btn" id="showAnswerBtn" onclick="app.showAnswer()">
+                            Show Answer
+                        </button>
+                        <button class="btn btn-secondary hidden" id="explanationBtn" onclick="app.showExplanation()">
+                            💡 Explanation
+                        </button>
+                    </div>
+
+                    <div class="navigation-buttons">
+                        <button class="btn btn-secondary nav-btn" id="prevBtn" onclick="app.prev()">
+                            ← Previous
+                        </button>
+                        <button class="btn btn-secondary" id="flagBtn" onclick="app.toggleFlag()">
+                            ⚑ Flag for Review
+                        </button>
+                        <button class="btn btn-secondary" id="reviewFlaggedBtn" onclick="app.reviewFlagged()">
+                            ⚑ Review Flagged
+                        </button>
+                        <button class="btn btn-danger nav-btn" id="endExamBtn" onclick="app.endExam()" style="display: none;">
+                            End Exam
+                        </button>
+                        <button class="btn btn-primary nav-btn" id="nextBtn" onclick="app.next()">
+                            Next →
+                        </button>
+                    </div>
+                </div>
+
+                <div id="reviewArea" class="hidden">
+                    <div class="review-header">
+                        <h2>Exam Review</h2>
+                        <div class="review-stats" id="reviewStats"></div>
+                    </div>
+                    <div id="reviewList"></div>
+                    <div class="navigation-buttons" style="margin-top: 30px;">
+                        <button class="btn btn-primary" onclick="app.closeReview()">
+                            Back to Exam
+                        </button>
+                    </div>
+                </div>
+
+                <div id="reviewDetailArea" class="hidden">
+                    <div class="navigation-buttons" style="margin-top: 0; margin-bottom: 24px; justify-content: flex-start;">
+                        <button class="btn btn-secondary" onclick="app.backToReviewList()">
+                            ← Back to List
+                        </button>
+                    </div>
+                    <div id="reviewDetailContent"></div>
+                    <div class="navigation-buttons" style="margin-top: 20px;">
+                        <button class="btn btn-secondary nav-btn" id="reviewDetailPrev" onclick="app.reviewDetailNav(-1)">
+                            ← Previous
+                        </button>
+                        <button class="btn btn-secondary nav-btn" id="reviewDetailNext" onclick="app.reviewDetailNav(1)">
+                            Next →
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="explanationPopup" class="explanation-popup hidden">
+        <div class="explanation-popup-header">
+            <span>💡 Explanation</span>
+            <button class="explanation-popup-close" onclick="app.closeExplanation()">×</button>
+        </div>
+        <div class="explanation-popup-body" id="explanationText"></div>
+        <div class="explanation-popup-timer">Closes in <span id="explanationTimer">20</span>s</div>
+    </div>
+
+    <div id="flaggedModal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Flagged Questions</h2>
+                <button class="modal-close" onclick="app.closeFlaggedModal()">&times;</button>
+            </div>
+            <div id="flaggedList" class="flagged-list">
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script>
+        class Question {
+            constructor(id, text, options, correctAnswer, explanation = '') {
+                this.id = id;
+                this.text = text;
+                this.options = options;
+                this.correctAnswers = Array.isArray(correctAnswer) ? correctAnswer : [correctAnswer];
+                this.userAnswers = [];
+                this.isAnswered = false;
+                this.isFlagged = false;
+                this.explanation = explanation;
+            }
+
+            isCorrect(userAnswers) {
+                if (!userAnswers || userAnswers.length === 0) return false;
+                const sortedUser = [...userAnswers].sort();
+                const sortedCorrect = [...this.correctAnswers].sort();
+                return sortedUser.length === sortedCorrect.length &&
+                       sortedUser.every((val, idx) => val === sortedCorrect[idx]);
+            }
+
+            reset() {
+                this.userAnswers = [];
+                this.isAnswered = false;
+            }
+        }
+
+        class AppController {
+            constructor() {
+                this.questions = [];
+                this.missedQuestions = [];
+                this.currentIndex = 0;
+                this.correctCount = 0;
+                this.totalAnswered = 0;
+                this.isFileLoaded = false;
+                this.examMode = 'Study';
+                this.answersMode = 'Highlight';
+            }
+
+            setExamMode(mode) { this.examMode = mode; }
+            getExamMode() { return this.examMode; }
+            setAnswersMode(mode) { this.answersMode = mode; }
+            getAnswersMode() { return this.answersMode; }
+
+            parseTranDumperFormat(content) {
+                try {
+                    const lines = content.split('\n');
+                    const questions = [];
+                    let currentQuestion = null;
+                    let currentOptions = [];
+                    let currentCorrectAnswer = null;
+                    let currentExplanation = '';
+                    let questionId = 1;
+
+                    for (let line of lines) {
+                        line = line.trim();
+                        if (!line) continue;
+
+                        if (line.match(/^Question\s*\d*[:.]?\s*/i)) {
+                            if (currentQuestion) {
+                                questions.push(new Question(
+                                    questionId++,
+                                    currentQuestion,
+                                    currentOptions,
+                                    currentCorrectAnswer,
+                                    currentExplanation
+                                ));
+                            }
+                            currentQuestion = line.replace(/^Question\s*\d*[:.]?\s*/i, '');
+                            currentOptions = [];
+                            currentCorrectAnswer = null;
+                            currentExplanation = '';
+                        } else if (line.match(/^[A-Z]\)[\s]/i) || line.match(/^[A-Z]\.\s/i)) {
+                            currentOptions.push(line);
+                        } else if (line.toLowerCase().startsWith('answer:')) {
+                            const answer = line.replace(/^answer:\s*/i, '').trim();
+                            const answers = answer.split(',').map(a => {
+                                const match = a.trim().match(/^([A-Z])/i);
+                                return match ? match[1].toUpperCase() : null;
+                            }).filter(a => a !== null);
+                            if (answers.length > 0) {
+                                currentCorrectAnswer = answers;
+                            }
+                        } else if (line.toLowerCase().startsWith('explanation:')) {
+                            currentExplanation = line.replace(/^explanation:\s*/i, '').trim();
+                        }
+                    }
+
+                    if (currentQuestion && currentCorrectAnswer) {
+                        questions.push(new Question(
+                            questionId++,
+                            currentQuestion,
+                            currentOptions,
+                            currentCorrectAnswer,
+                            currentExplanation
+                        ));
+                    }
+
+                    return questions;
+                } catch (e) {
+                    console.error('Error parsing questions:', e);
+                    return [];
+                }
+            }
+
+            loadQuestions(content) {
+                this.questions = this.parseTranDumperFormat(content);
+                this.missedQuestions = [];
+                this.currentIndex = 0;
+                this.correctCount = 0;
+                this.totalAnswered = 0;
+                this.isFileLoaded = this.questions.length > 0;
+                return this.questions.length;
+            }
+
+            getCurrentQuestion() {
+                return this.questions[this.currentIndex] || null;
+            }
+
+            getProgress() {
+                return {
+                    current: this.currentIndex + 1,
+                    total: this.questions.length,
+                    percentage: this.questions.length > 0
+                        ? Math.round(((this.currentIndex + 1) / this.questions.length) * 100)
+                        : 0
+                };
+            }
+
+            getStats() {
+                const flagged = this.questions.filter(q => q.isFlagged).length;
+                return {
+                    correct: this.correctCount,
+                    answered: this.totalAnswered,
+                    flagged: flagged,
+                    missed: this.missedQuestions.length
+                };
+            }
+
+            getFlaggedQuestions() {
+                return this.questions.filter(q => q.isFlagged);
+            }
+
+            nextQuestion() {
+                if (this.currentIndex < this.questions.length - 1) {
+                    this.currentIndex++;
+                    return true;
+                }
+                return false;
+            }
+
+            prevQuestion() {
+                if (this.currentIndex > 0) {
+                    this.currentIndex--;
+                    return true;
+                }
+                return false;
+            }
+
+            submitAnswer(answers) {
+                const question = this.getCurrentQuestion();
+                if (!question || question.isAnswered) return null;
+
+                question.userAnswers = answers;
+                question.isAnswered = true;
+                this.totalAnswered++;
+
+                const isCorrect = question.isCorrect(answers);
+                if (isCorrect) {
+                    this.correctCount++;
+                } else {
+                    if (!this.missedQuestions.includes(question)) {
+                        this.missedQuestions.push(question);
+                    }
+                }
+
+                return { isCorrect, correctAnswers: question.correctAnswers };
+            }
+
+            toggleFlag() {
+                const question = this.getCurrentQuestion();
+                if (question) {
+                    question.isFlagged = !question.isFlagged;
+                    return question.isFlagged;
+                }
+                return false;
+            }
+
+            exportWrongAnswers() {
+                if (this.missedQuestions.length === 0) return null;
+
+                let content = '';
+                for (let q of this.missedQuestions) {
+                    content += `Question ${q.id}: ${q.text}\n`;
+                    for (let opt of q.options) {
+                        content += `${opt}\n`;
+                    }
+                    content += `Answer: ${q.correctAnswers.join(',')}\n\n`;
+                }
+                return content;
+            }
+
+            exportFlaggedAnswers() {
+                const flaggedQuestions = this.questions.filter(q => q.isFlagged);
+                if (flaggedQuestions.length === 0) return null;
+
+                let content = '';
+                for (let q of flaggedQuestions) {
+                    content += `Question ${q.id}: ${q.text}\n`;
+                    for (let opt of q.options) {
+                        content += `${opt}\n`;
+                    }
+                    content += `Answer: ${q.correctAnswers.join(',')}\n\n`;
+                }
+                return content;
+            }
+
+            canGoNext() { return this.currentIndex < this.questions.length - 1; }
+            canGoPrev() { return this.currentIndex > 0; }
+        }
+
+        const controller = new AppController();
+
+        const app = {
+            selectedOptions: [],
+
+            showToast(message, type = 'info') {
+                const container = document.getElementById('toastContainer');
+                const toast = document.createElement('div');
+                toast.className = `toast toast-${type}`;
+                toast.textContent = message;
+                container.appendChild(toast);
+                setTimeout(() => toast.remove(), 3000);
+            },
+
+            saveState() {
+                try {
+                    const state = {
+                        questions: controller.questions.map(q => ({
+                            id: q.id,
+                            text: q.text,
+                            options: q.options,
+                            correctAnswers: q.correctAnswers,
+                            isAnswered: q.isAnswered,
+                            userAnswers: q.userAnswers,
+                            isFlagged: q.isFlagged,
+                            explanation: q.explanation || ''
+                        })),
+                        currentIndex: controller.currentIndex,
+                        missedQuestions: controller.missedQuestions.map(q => q.id),
+                        correctCount: controller.correctCount,
+                        totalAnswered: controller.totalAnswered,
+                        examMode: controller.examMode,
+                        answersMode: controller.answersMode
+                    };
+                    localStorage.setItem('edumperQuizState', JSON.stringify(state));
+                } catch (e) {
+                    console.warn('Could not save state:', e);
+                }
+            },
+
+            loadState() {
+                try {
+                    const saved = localStorage.getItem('edumperQuizState');
+                    if (!saved) return false;
+
+                    const state = JSON.parse(saved);
+
+                    if (state.questions && state.questions.length > 0) {
+                        controller.questions = state.questions.map(q => {
+                            const question = new Question(q.id, q.text, q.options, q.correctAnswers);
+                            question.isAnswered = q.isAnswered;
+                            question.userAnswers = q.userAnswers || [];
+                            question.isFlagged = q.isFlagged;
+                            question.explanation = q.explanation || '';
+                            return question;
+                        });
+                        controller.currentIndex = state.currentIndex || 0;
+                        controller.correctCount = state.correctCount || 0;
+                        controller.totalAnswered = state.totalAnswered || 0;
+                        controller.isFileLoaded = true;
+                        controller.examMode = state.examMode || 'Study';
+                        controller.answersMode = state.answersMode || 'Highlight';
+
+                        // Restore missedQuestions as Question objects, not IDs
+                        const missedIds = state.missedQuestions || [];
+                        controller.missedQuestions = controller.questions.filter(q => missedIds.includes(q.id));
+
+                        document.getElementById('examMode').value = controller.examMode;
+                        document.getElementById('answersMode').value = controller.answersMode;
+
+                        if (controller.questions.length > 0) {
+                            app.selectedOptions = [];
+                            app.render();
+                            app.updateButtons();
+                        }
+                    }
+
+                    return true;
+                } catch (e) {
+                    console.warn('Could not load state:', e);
+                    return false;
+                }
+            },
+
+            clearState() {
+                try {
+                    localStorage.removeItem('edumperQuizState');
+                } catch (e) {
+                    console.warn('Could not clear state:', e);
+                }
+            },
+
+            clearAndReset() {
+                if (confirm('Are you sure you want to clear all saved progress? This cannot be undone.')) {
+                    app.clearState();
+                    location.reload();
+                }
+            },
+
+            updateMainWrapperMargin() {
+                if (window.innerWidth > 768) {
+                    document.querySelector('.main-wrapper').style.marginTop = '';
+                    return;
+                }
+                const sidebar = document.querySelector('.sidebar');
+                document.querySelector('.main-wrapper').style.marginTop = sidebar.offsetHeight + 'px';
+            },
+
+            init() {
+                document.getElementById('fileInput').addEventListener('change', (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onerror = () => {
+                            app.showToast('Error reading file. Please try again.', 'error');
+                        };
+                        reader.onload = (event) => {
+                            try {
+                                const content = event.target.result;
+                                const count = controller.loadQuestions(content);
+                                if (count > 0) {
+                                    app.showToast(`Loaded ${count} questions`, 'success');
+                                    document.getElementById('emptyState').classList.add('hidden');
+                                    document.getElementById('studyArea').classList.remove('hidden');
+                                    app.selectedOptions = [];
+                                    app.render();
+                                    app.collapseSidebar();
+                                    document.getElementById('shuffleQuizBtn').disabled = false;
+                                    app.saveState();
+                                } else {
+                                    app.showToast('No questions found. Check your file format.', 'error');
+                                }
+                            } catch (e) {
+                                console.error('Error processing questions:', e);
+                                app.showToast('Error processing file. Please check the format.', 'error');
+                            }
+                        };
+                        reader.readAsText(file);
+                    }
+                });
+
+                document.addEventListener('keydown', (e) => {
+                    const studyArea = document.getElementById('studyArea');
+                    if (studyArea.classList.contains('hidden')) return;
+
+                    if (e.key === 'ArrowRight') {
+                        app.next();
+                    } else if (e.key === 'ArrowLeft') {
+                        app.prev();
+                    } else if (e.key === 'm' || e.key === 'M') {
+                        app.toggleFlag();
+                    }
+                });
+
+                app.updateMainWrapperMargin();
+                window.addEventListener('resize', app.updateMainWrapperMargin);
+            },
+
+            toggleSidebar() {
+                const sidebar = document.querySelector('.sidebar');
+                sidebar.classList.toggle('collapsed');
+                app.updateMainWrapperMargin();
+            },
+
+            collapseSidebar() {
+                const sidebar = document.querySelector('.sidebar');
+                sidebar.classList.add('collapsed');
+                app.updateMainWrapperMargin();
+            },
+
+            onExamModeChange() {
+                const examMode = document.getElementById('examMode').value;
+                const answersModeGroup = document.getElementById('answersModeGroup');
+                const endExamBtn = document.getElementById('endExamBtn');
+
+                controller.setExamMode(examMode);
+
+                if (examMode === 'Study') {
+                    answersModeGroup.classList.remove('hidden');
+                    document.getElementById('answersMode').value = 'Highlight';
+                    controller.setAnswersMode('Highlight');
+                    endExamBtn.style.display = 'none';
+                } else {
+                    answersModeGroup.classList.add('hidden');
+                    endExamBtn.style.display = 'inline-flex';
+                }
+
+                app.render();
+            },
+
+            onAnswersModeChange() {
+                const answersMode = document.getElementById('answersMode').value;
+                controller.setAnswersMode(answersMode);
+                this.render();
+            },
+
+            render() {
+                const question = controller.getCurrentQuestion();
+                if (!question) return;
+
+                app.selectedOptions = [];
+                app.closeExplanation();
+
+                document.getElementById('questionText').textContent = question.text;
+
+                const flaggedBadge = document.getElementById('flaggedBadge');
+                if (question.isFlagged) {
+                    flaggedBadge.classList.remove('hidden');
+                } else {
+                    flaggedBadge.classList.add('hidden');
+                }
+
+                this.renderOptions(question);
+                this.updateProgress();
+                this.updateStats();
+                this.updateNavigation();
+                this.updateFeedback();
+                this.updateButtons();
+            },
+
+            renderOptions(question) {
+                const container = document.getElementById('optionsContainer');
+                container.innerHTML = '';
+
+                const optionLetters = ['A', 'B', 'C', 'D', 'E', 'F'];
+                const correctAnswers = question.correctAnswers;
+                const examMode = controller.getExamMode();
+                const answersMode = controller.getAnswersMode();
+
+                question.options.forEach((opt, index) => {
+                    const btn = document.createElement('button');
+                    btn.className = 'option-btn';
+                    btn.textContent = opt;
+
+                    const optionLetter = optionLetters[index];
+                    const isSelected = question.isAnswered
+                        ? question.userAnswers.includes(optionLetter)
+                        : app.selectedOptions.includes(optionLetter);
+                    const isCorrectAnswer = correctAnswers.includes(optionLetter);
+
+                    if (question.isAnswered) {
+                        btn.disabled = true;
+                        if (examMode === 'Exam') {
+                            // Exam mode: don't reveal correct/incorrect until End Exam review
+                            if (isSelected) btn.classList.add('selected');
+                        } else {
+                            // Study mode: show correct/incorrect immediately
+                            if (isCorrectAnswer) btn.classList.add('correct');
+                            if (isSelected && !isCorrectAnswer) btn.classList.add('incorrect');
+                        }
+                    } else if (examMode === 'Study' && answersMode === 'Highlight') {
+                        if (isCorrectAnswer) btn.classList.add('correct');
+                        if (isSelected) btn.classList.add('selected');
+                        btn.onclick = () => app.toggleOption(optionLetter);
+                    } else {
+                        if (isSelected) btn.classList.add('selected');
+                        btn.onclick = () => app.toggleOption(optionLetter);
+                    }
+
+                    container.appendChild(btn);
+                });
+            },
+
+            toggleOption(optionLetter) {
+                const question = controller.getCurrentQuestion();
+                const examMode = controller.getExamMode();
+                const answersMode = controller.getAnswersMode();
+                const isMulti = question.correctAnswers.length > 1;
+
+                const idx = app.selectedOptions.indexOf(optionLetter);
+                if (idx > -1) {
+                    app.selectedOptions.splice(idx, 1);
+                } else {
+                    app.selectedOptions.push(optionLetter);
+                }
+
+                this.renderOptions(question);
+                this.updateSubmitButton();
+
+                // Auto-submit only in Study+Highlight mode for single-answer questions
+                if (examMode === 'Study' && answersMode === 'Highlight' && !isMulti && app.selectedOptions.length > 0) {
+                    this.submitAnswer();
+                }
+            },
+
+            updateSubmitButton() {
+                const submitBtn = document.getElementById('submitAnswerBtn');
+                submitBtn.disabled = app.selectedOptions.length === 0;
+            },
+
+            updateProgress() {
+                const progress = controller.getProgress();
+                document.getElementById('progressText').textContent =
+                    `Question ${progress.current} of ${progress.total}`;
+                document.getElementById('progressPercent').textContent =
+                    `${progress.percentage}%`;
+                document.getElementById('progressFill').style.width =
+                    `${progress.percentage}%`;
+            },
+
+            updateStats() {
+                const stats = controller.getStats();
+                document.getElementById('statCorrect').textContent = stats.correct;
+                document.getElementById('statWrong').textContent = stats.missed;
+                document.getElementById('statFlagged').textContent = stats.flagged;
+            },
+
+            updateNavigation() {
+                document.getElementById('prevBtn').disabled = !controller.canGoPrev();
+                document.getElementById('nextBtn').disabled = !controller.canGoNext();
+            },
+
+            updateFeedback() {
+                const question = controller.getCurrentQuestion();
+                const panel = document.getElementById('feedbackPanel');
+                const examMode = controller.getExamMode();
+
+                // In Exam mode, never show feedback — answers revealed only in End Exam review
+                if (!question.isAnswered || examMode === 'Exam') {
+                    panel.className = 'feedback-panel';
+                    return;
+                }
+
+                const correctStr = question.correctAnswers.join(', ');
+                if (question.isCorrect(question.userAnswers)) {
+                    panel.className = 'feedback-panel show correct';
+                    panel.textContent = `✓ Correct! (${correctStr})`;
+                } else {
+                    panel.className = 'feedback-panel show incorrect';
+                    panel.textContent = `✗ Incorrect. The correct answer is ${correctStr}`;
+                }
+            },
+
+            updateButtons() {
+                const question = controller.getCurrentQuestion();
+                const showAnswerBtn = document.getElementById('showAnswerBtn');
+                const flagBtn = document.getElementById('flagBtn');
+                const submitBtn = document.getElementById('submitAnswerBtn');
+
+                const examMode = controller.getExamMode();
+                const answersMode = controller.getAnswersMode();
+                const isMulti = question.correctAnswers.length > 1;
+
+                if (examMode === 'Study') {
+                    // Study mode: Submit only for multi-select; Show Answer only for ShowAnswer+single
+                    submitBtn.style.display = isMulti ? 'inline-flex' : 'none';
+                    submitBtn.disabled = app.selectedOptions.length === 0 || question.isAnswered;
+                    showAnswerBtn.style.display = answersMode === 'ShowAnswer' && !isMulti ? 'inline-flex' : 'none';
+                    showAnswerBtn.disabled = question.isAnswered;
+                } else {
+                    // Exam mode: always show Submit for all question types (no auto-submit, no Show Answer)
+                    submitBtn.style.display = 'inline-flex';
+                    submitBtn.disabled = app.selectedOptions.length === 0 || question.isAnswered;
+                    showAnswerBtn.style.display = 'none';
+                }
+
+                flagBtn.textContent = question.isFlagged ? '⚑ Unflag' : '⚑ Flag for Review';
+
+                // Show Explanation button only when the question has an explanation and is answered
+                const explanationBtn = document.getElementById('explanationBtn');
+                if (question.explanation && question.isAnswered) {
+                    explanationBtn.classList.remove('hidden');
+                } else {
+                    explanationBtn.classList.add('hidden');
+                }
+
+                document.getElementById('exportBtn').disabled = controller.missedQuestions.length === 0;
+
+                const flaggedCount = controller.getFlaggedQuestions().length;
+                document.getElementById('exportFlaggedBtn').disabled = flaggedCount === 0;
+                const reviewFlaggedBtn = document.getElementById('reviewFlaggedBtn');
+                reviewFlaggedBtn.disabled = flaggedCount === 0;
+                reviewFlaggedBtn.textContent = `⚑ Review Flagged (${flaggedCount})`;
+            },
+
+            submitAnswer() {
+                if (app.selectedOptions.length === 0) return;
+                const result = controller.submitAnswer(app.selectedOptions);
+                if (result) {
+                    this.render();
+                    this.saveState();
+                }
+            },
+
+            showExplanation() {
+                const question = controller.getCurrentQuestion();
+                if (!question || !question.explanation) return;
+
+                document.getElementById('explanationText').textContent = question.explanation;
+                const popup = document.getElementById('explanationPopup');
+                popup.classList.remove('hidden');
+
+                // Reset and start countdown
+                if (app._explanationTimer) clearInterval(app._explanationTimer);
+                let remaining = 20;
+                document.getElementById('explanationTimer').textContent = remaining;
+                app._explanationTimer = setInterval(() => {
+                    remaining--;
+                    const timerEl = document.getElementById('explanationTimer');
+                    if (timerEl) timerEl.textContent = remaining;
+                    if (remaining <= 0) app.closeExplanation();
+                }, 1000);
+            },
+
+            closeExplanation() {
+                document.getElementById('explanationPopup').classList.add('hidden');
+                if (app._explanationTimer) {
+                    clearInterval(app._explanationTimer);
+                    app._explanationTimer = null;
+                }
+            },
+
+            showAnswer() {
+                const question = controller.getCurrentQuestion();
+                if (question && !question.isAnswered) {
+                    question.isAnswered = true;
+                    question.userAnswers = [];
+                    this.render();
+                }
+            },
+
+            toggleFlag() {
+                controller.toggleFlag();
+                this.render();
+                this.saveState();
+            },
+
+            next() {
+                if (controller.nextQuestion()) {
+                    this.render();
+                    this.saveState();
+                }
+            },
+
+            prev() {
+                if (controller.prevQuestion()) {
+                    this.render();
+                    this.saveState();
+                }
+            },
+
+            shuffleQuizQuestions() {
+                if (controller.questions.length === 0) return;
+
+                for (let i = controller.questions.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [controller.questions[i], controller.questions[j]] = [controller.questions[j], controller.questions[i]];
+                }
+
+                controller.currentIndex = 0;
+                app.selectedOptions = [];
+                app.render();
+                app.showToast('Questions shuffled', 'success');
+            },
+
+            exportMissed() {
+                const content = controller.exportWrongAnswers();
+                if (!content) {
+                    app.showToast('No wrong answers to export yet.', 'info');
+                    return;
+                }
+
+                const blob = new Blob([content], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'wrong_answers_export.txt';
+                a.click();
+                URL.revokeObjectURL(url);
+            },
+
+            exportFlagged() {
+                const content = controller.exportFlaggedAnswers();
+                if (!content) {
+                    app.showToast('No flagged questions to export.', 'info');
+                    return;
+                }
+
+                const blob = new Blob([content], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'flagged_questions_export.txt';
+                a.click();
+                URL.revokeObjectURL(url);
+            },
+
+            reviewFlagged() {
+                const flaggedQuestions = controller.getFlaggedQuestions();
+                if (flaggedQuestions.length === 0) {
+                    app.showToast('No flagged questions to review.', 'info');
+                    return;
+                }
+
+                const modal = document.getElementById('flaggedModal');
+                const listContainer = document.getElementById('flaggedList');
+                listContainer.innerHTML = '';
+
+                flaggedQuestions.forEach((q, index) => {
+                    const item = document.createElement('div');
+                    item.className = 'flagged-item';
+                    item.innerHTML = `
+                        <div class="flagged-item-number">Question ${index + 1}</div>
+                        <div class="flagged-item-text">${q.text.substring(0, 100)}${q.text.length > 100 ? '...' : ''}</div>
+                    `;
+                    item.onclick = () => this.goToFlaggedQuestion(q);
+                    listContainer.appendChild(item);
+                });
+
+                modal.classList.remove('hidden');
+            },
+
+            closeFlaggedModal() {
+                document.getElementById('flaggedModal').classList.add('hidden');
+            },
+
+            goToFlaggedQuestion(question) {
+                const index = controller.questions.indexOf(question);
+                if (index !== -1) {
+                    controller.currentIndex = index;
+                    this.closeFlaggedModal();
+                    this.render();
+                }
+            },
+
+            endExam() {
+                document.getElementById('studyArea').classList.add('hidden');
+                document.getElementById('reviewArea').classList.remove('hidden');
+                this.renderReviewPage();
+            },
+
+            renderReviewPage() {
+                const questions = controller.questions;
+                const stats = controller.getStats();
+
+                document.getElementById('reviewStats').innerHTML = `
+                    <span class="correct">✓ Correct: ${stats.correct}</span>
+                    <span class="incorrect">✗ Incorrect: ${stats.missed}</span>
+                    <span>Total: ${questions.length}</span>
+                `;
+
+                const reviewList = document.getElementById('reviewList');
+                reviewList.innerHTML = '';
+
+                questions.forEach((q, index) => {
+                    const isAnswered = q.isAnswered && q.userAnswers.length > 0;
+                    const isCorrect = isAnswered && q.isCorrect(q.userAnswers);
+                    const statusClass = !isAnswered ? 'skipped' : (isCorrect ? 'correct' : 'incorrect');
+                    const badgeLabel = !isAnswered ? '— Skipped' : (isCorrect ? '✓ Correct' : '✗ Incorrect');
+                    const preview = q.text.length > 90 ? q.text.substring(0, 90) + '…' : q.text;
+
+                    const item = document.createElement('div');
+                    item.className = `review-list-item ${statusClass}`;
+                    item.innerHTML = `
+                        <span class="review-list-num">${index + 1}.</span>
+                        <span class="review-list-preview">${preview}</span>
+                        <span class="review-list-badge ${statusClass}">${badgeLabel}</span>
+                        <span class="review-list-arrow">›</span>
+                    `;
+                    item.onclick = () => app.showReviewDetail(index);
+                    reviewList.appendChild(item);
+                });
+            },
+
+            showReviewDetail(index) {
+                const q = controller.questions[index];
+                if (!q) return;
+
+                const isAnswered = q.isAnswered && q.userAnswers.length > 0;
+                const isCorrect = isAnswered && q.isCorrect(q.userAnswers);
+                const statusClass = !isAnswered ? 'skipped' : (isCorrect ? 'correct' : 'incorrect');
+                const statusLabel = !isAnswered ? '— Not Answered' : (isCorrect ? '✓ Correct' : '✗ Incorrect');
+
+                const optionLetters = ['A', 'B', 'C', 'D', 'E', 'F'];
+                let optionsHtml = '';
+                q.options.forEach((opt, optIndex) => {
+                    const letter = optionLetters[optIndex];
+                    const isCorrectOption = q.correctAnswers.includes(letter);
+                    const isSelected = q.userAnswers.includes(letter);
+                    let cls = 'review-option';
+                    if (isCorrectOption) cls += ' correct';
+                    if (isSelected) cls += ' selected';
+                    optionsHtml += `<div class="${cls}">${opt}</div>`;
+                });
+
+                const explanationHtml = q.explanation ? `
+                    <div class="review-explanation">
+                        <div class="review-explanation-label">💡 Explanation</div>
+                        ${q.explanation}
+                    </div>` : '';
+
+                document.getElementById('reviewDetailContent').innerHTML = `
+                    <div class="review-question-item ${statusClass}">
+                        <div class="review-question-status ${statusClass}">${statusLabel}</div>
+                        <div class="review-question-text">${index + 1}. ${q.text}</div>
+                        ${optionsHtml}
+                        ${explanationHtml}
+                    </div>
+                `;
+
+                // Store current detail index for prev/next navigation
+                app._reviewDetailIndex = index;
+                const total = controller.questions.length;
+                document.getElementById('reviewDetailPrev').disabled = index === 0;
+                document.getElementById('reviewDetailNext').disabled = index === total - 1;
+
+                document.getElementById('reviewArea').classList.add('hidden');
+                document.getElementById('reviewDetailArea').classList.remove('hidden');
+                window.scrollTo(0, 0);
+            },
+
+            reviewDetailNav(direction) {
+                const next = app._reviewDetailIndex + direction;
+                if (next >= 0 && next < controller.questions.length) {
+                    app.showReviewDetail(next);
+                }
+            },
+
+            backToReviewList() {
+                document.getElementById('reviewDetailArea').classList.add('hidden');
+                document.getElementById('reviewArea').classList.remove('hidden');
+                window.scrollTo(0, 0);
+            },
+
+            closeReview() {
+                document.getElementById('reviewArea').classList.add('hidden');
+                document.getElementById('reviewDetailArea').classList.add('hidden');
+                document.getElementById('studyArea').classList.remove('hidden');
+            }
+        };
+
+        app.init();
+        app.loadState();
+    </script>
+</body>
+</html>

@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ETHE Multi-Row NAV Calculator</title>
+    <style>
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f8fafc; padding: 20px; color: #1e293b; }
+        .wrapper { max-width: 900px; margin: 0 auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+
+        h2 { margin-top: 0; color: #0f172a; border-bottom: 2px solid #f1f5f9; padding-bottom: 10px; }
+
+        /* Grid Header */
+        .row-header { display: grid; grid-template-columns: 60px 1fr 1fr 1.2fr; gap: 15px; margin-bottom: 10px; padding: 0 10px; }
+        .row-header span { font-weight: 600; font-size: 0.85rem; color: #64748b; text-transform: uppercase; }
+
+        /* Rows */
+        .calc-row { display: grid; grid-template-columns: 60px 1fr 1fr 1.2fr; gap: 15px; align-items: center; background: #fff; border-bottom: 1px solid #f1f5f9; padding: 10px; transition: background 0.2s; }
+        .calc-row:hover { background: #fdfdfe; }
+        .row-num { color: #94a3b8; font-weight: bold; font-size: 0.9rem; }
+
+        input { width: 100%; padding: 10px; border: 1.5px solid #e2e8f0; border-radius: 6px; font-size: 0.95rem; box-sizing: border-box; }
+        input:focus { outline: none; border-color: #627eea; box-shadow: 0 0 0 3px rgba(98, 126, 234, 0.1); }
+
+        .nav-output { font-weight: 700; color: #059669; font-size: 1.1rem; padding-left: 10px; }
+
+        button { background: #627eea; color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-weight: 600; }
+        button:hover { background: #4f69d6; }
+
+        .toolbar { display: flex; align-items: center; gap: 20px; background: #0f172a; color: white; padding: 14px 20px; border-radius: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+
+        /* Live price section */
+        .live-price-section { display: flex; align-items: center; gap: 12px; }
+        .live-price-section .label { font-size: 0.8rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; }
+        .live-price-section .price-input { width: 140px; padding: 7px 10px; border: 1px solid #334155; border-radius: 6px; font-size: 1.1rem; font-weight: 700; color: #34d399; background: #1e293b; box-sizing: border-box; }
+        .live-price-section .price-input:focus { outline: none; border-color: #34d399; }
+        .live-price-section .updated-at { font-size: 0.72rem; color: #475569; white-space: nowrap; }
+        .live-price-section button { background: #1e293b; color: #94a3b8; padding: 7px 11px; font-size: 0.8rem; border: 1px solid #334155; }
+        .live-price-section button:hover { background: #334155; color: white; }
+        .live-price-section .fill-btn { background: #064e3b; color: #34d399; border: 1px solid #065f46; }
+        .live-price-section .fill-btn:hover { background: #065f46; }
+
+        /* Divider */
+        .toolbar-divider { width: 1px; background: #334155; align-self: stretch; }
+
+        /* Quick fill ratio section */
+        .ratio-section { display: flex; align-items: center; gap: 10px; }
+        .ratio-section span { font-size: 0.8rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; }
+        .ratio-section input { width: 160px; padding: 7px 10px; border: 1px solid #334155; border-radius: 6px; font-size: 0.9rem; background: #1e293b; color: white; box-sizing: border-box; }
+        .ratio-section input:focus { outline: none; border-color: #627eea; }
+        .ratio-section button { background: #627eea; padding: 7px 12px; font-size: 0.8rem; border: none; }
+    </style>
+</head>
+<body>
+
+<div class="wrapper">
+    <h2>ETHE Portfolio Fair Value Tool</h2>
+
+    <div class="toolbar">
+        <div class="live-price-section">
+            <div>
+                <div class="label">Live ETH Price</div>
+                <input type="number" class="price-input" id="liveEthPrice" placeholder="Loading…">
+                <div class="updated-at" id="priceUpdatedAt"></div>
+            </div>
+            <button onclick="fetchEthPrice()">&#8635; Refresh</button>
+        </div>
+
+        <div class="toolbar-divider"></div>
+
+        <div class="ratio-section">
+            <span>Ether Per Share:</span>
+            <input type="number" id="masterRatio" value="0.00948147" step="0.00000001">
+            <button onclick="calcEtfPrice()">ETF Price</button>
+            <span id="etfPriceDisplay" style="font-size:1.1rem; font-weight:700; color:#34d399; white-space:nowrap;"></span>
+        </div>
+
+        <div class="toolbar-divider"></div>
+
+        <div class="ratio-section">
+            <span>Incremental ($):</span>
+            <input type="number" id="incrementalValue" value="100" step="1">
+            <button onclick="generateIncremental()">Generate</button>
+            <input type="number" id="countValue" value="10" step="1" style="width: 90px;">
+        </div>
+    </div>
+
+    <div id="calculatorRows"></div>
+
+    <div id="generatedTableWrapper" style="display:none; margin-top: 30px;">
+        <h3 style="color:#0f172a; border-bottom: 2px solid #f1f5f9; padding-bottom: 8px; margin-bottom: 12px;">Generated NAV Table</h3>
+        <div style="display:grid; grid-template-columns: 60px 1fr 1fr 1.2fr; gap: 15px; padding: 0 10px; margin-bottom: 8px;">
+            <span style="font-weight:600; font-size:0.85rem; color:#64748b; text-transform:uppercase;">#</span>
+            <span style="font-weight:600; font-size:0.85rem; color:#64748b; text-transform:uppercase;">Ether Price ($)</span>
+            <span style="font-weight:600; font-size:0.85rem; color:#64748b; text-transform:uppercase;">ETH Per Share</span>
+            <span style="font-weight:600; font-size:0.85rem; color:#64748b; text-transform:uppercase;">Est. Fair Value (NAV)</span>
+        </div>
+        <div id="generatedTableRows"></div>
+    </div>
+</div>
+
+<script>
+    function calcEtfPrice() {
+        const ethPrice = parseFloat(document.getElementById('liveEthPrice').value) || 0;
+        const ratio = parseFloat(document.getElementById('masterRatio').value) || 0;
+        const etfPrice = ethPrice * ratio;
+        const display = document.getElementById('etfPriceDisplay');
+        display.textContent = etfPrice > 0 ? '$' + etfPrice.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '—';
+    }
+
+    function generateIncremental() {
+        const basePrice = parseFloat(document.getElementById('liveEthPrice').value) || 0;
+        const ratio = parseFloat(document.getElementById('masterRatio').value) || 0;
+        const increment = parseFloat(document.getElementById('incrementalValue').value) || 0;
+        const count = parseInt(document.getElementById('countValue').value) || 0;
+
+        if (count <= 0 || basePrice <= 0) return;
+
+        const tableRows = document.getElementById('generatedTableRows');
+        tableRows.innerHTML = '';
+
+        for (let i = 0; i < count; i++) {
+            const price = basePrice + increment * i;
+            const nav = price * ratio;
+            const row = document.createElement('div');
+            row.style.cssText = 'display:grid; grid-template-columns: 60px 1fr 1fr 1.2fr; gap: 15px; align-items: center; padding: 10px; border-bottom: 1px solid #f1f5f9;';
+            row.innerHTML = `
+                <div style="color:#94a3b8; font-weight:bold; font-size:0.9rem;">#${i + 1}</div>
+                <div style="font-size:0.95rem;">$${price.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                <div style="font-size:0.95rem;">${ratio}</div>
+                <div style="font-weight:700; color:#059669; font-size:1.1rem;">$${nav.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+            `;
+            tableRows.appendChild(row);
+        }
+
+        document.getElementById('generatedTableWrapper').style.display = 'block';
+    }
+
+    function applyMasterRatio() {
+        const masterVal = document.getElementById('masterRatio').value;
+        const ratios = document.querySelectorAll('.eth-ratio');
+        ratios.forEach(input => {
+            input.value = masterVal;
+            calculateRow(input);
+        });
+    }
+
+    let currentEthPrice = null;
+
+    async function fetchEthPrice() {
+        const el = document.getElementById('liveEthPrice');
+        const updatedEl = document.getElementById('priceUpdatedAt');
+        el.placeholder = 'Loading…';
+        el.value = '';
+        try {
+            const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
+            if (!res.ok) throw new Error('Network error');
+            const data = await res.json();
+            currentEthPrice = data.ethereum.usd;
+            el.value = currentEthPrice.toFixed(2);
+            const now = new Date();
+            updatedEl.textContent = 'Updated ' + now.toLocaleTimeString();
+        } catch (e) {
+            el.placeholder = 'Unavailable';
+            updatedEl.textContent = 'Fetch failed';
+        }
+    }
+
+    // Fetch on load
+    fetchEthPrice();
+</script>
+
+</body>
+</html>

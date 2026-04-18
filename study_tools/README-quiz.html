@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>e-dumper Quiz - Documentation</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            line-height: 1.6;
+            color: #1a1a2e;
+            background: #f5f5f5;
+            text-align: left;
+        }
+        h1 {
+            color: #1a1a2e;
+            border-bottom: 3px solid #e94560;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #16213e;
+            margin-top: 36px;
+        }
+        h3 {
+            color: #e94560;
+        }
+        .toc {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px 20px;
+            margin-bottom: 30px;
+        }
+        .toc h2 {
+            margin-top: 0;
+            font-size: 18px;
+        }
+        .toc ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .toc li {
+            margin: 8px 0;
+        }
+        .toc a {
+            text-decoration: none;
+        }
+        .toc a:hover {
+            text-decoration: underline;
+        }
+        code {
+            background: #eee;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Consolas', monospace;
+        }
+        pre {
+            background: #1a1a2e;
+            color: #fff;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 15px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background: #1a1a2e;
+            color: #fff;
+        }
+        tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+        ul, ol {
+            padding-left: 20px;
+        }
+        li {
+            margin: 5px 0;
+        }
+        .note {
+            background: #fff3cd;
+            border-left: 4px solid #f59e0b;
+            padding: 10px 15px;
+            margin: 15px 0;
+        }
+        .tip {
+            background: #e6fff8;
+            border-left: 4px solid #00a87d;
+            padding: 10px 15px;
+            margin: 15px 0;
+        }
+        a {
+            color: #e94560;
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            padding: 10px 20px;
+            background: #e94560;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+        }
+        .back-link:hover {
+            background: #ff6b8a;
+        }
+    </style>
+</head>
+<body>
+    <a href="e-dumper-quiz.html" class="back-link">← Back to App</a>
+
+    <div class="toc">
+        <h2>Table of Contents</h2>
+        <ul>
+            <li><a href="#quick-start">Quick Start</a></li>
+            <li><a href="#sidebar">Sidebar</a></li>
+            <li><a href="#navigation">Navigation Bar</a></li>
+            <li><a href="#study-modes">Study Modes</a></li>
+            <li><a href="#exam-mode">Exam Mode &amp; Review</a></li>
+            <li><a href="#flagged-questions">Flagged Questions</a></li>
+            <li><a href="#explanation">Explanation</a></li>
+            <li><a href="#file-format">File Format</a></li>
+            <li><a href="#sample-file">Sample File</a></li>
+            <li><a href="#keyboard-shortcuts">Keyboard Shortcuts</a></li>
+            <li><a href="#data-persistence">Data Persistence</a></li>
+            <li><a href="#running-the-app">Running the App</a></li>
+            <li><a href="#browser-support">Browser &amp; Device Support</a></li>
+            <li><a href="#license">License</a></li>
+        </ul>
+    </div>
+
+    <h1 id="top">e-dumper Quiz</h1>
+    <p>A standalone, offline-capable quiz tool for practising multiple-choice questions. Runs entirely in the browser — no server, no account, no installation required. Supports single-answer and multi-select questions with optional per-question explanations.</p>
+
+    <h2 id="quick-start">Quick Start</h2>
+    <ol>
+        <li>Open <code>e-dumper-quiz.html</code> in any modern web browser</li>
+        <li>Click the <strong>☰</strong> toggle to open the sidebar</li>
+        <li>Select a <strong>Mode</strong> — <em>Study</em> for immediate feedback or <em>Exam</em> for a timed, no-feedback test</li>
+        <li>In Study mode, also choose an <strong>Answers</strong> style (<em>Highlight</em> or <em>Show Answer</em>)</li>
+        <li>Click <strong>📂 Import Questions</strong> and select a <code>.txt</code> quiz file</li>
+        <li>Questions load automatically — the sidebar collapses and studying begins</li>
+    </ol>
+
+    <h2 id="sidebar">Sidebar</h2>
+    <p>The sidebar is collapsed by default. Click <strong>☰</strong> to open it and <strong>☰</strong> again to close it. On mobile it is pinned to the top of the screen.</p>
+
+    <table>
+        <tr><th>Control</th><th>Description</th></tr>
+        <tr><td>Mode</td><td>Switch between <strong>Study</strong> and <strong>Exam</strong> mode. Changing mode re-renders the current question. See <a href="#study-modes">Study Modes</a> and <a href="#exam-mode">Exam Mode</a>.</td></tr>
+        <tr><td>Answers</td><td>Study mode only. <strong>Highlight</strong> reveals the correct answer as soon as you click an option. <strong>Show Answer</strong> requires clicking the Show Answer button manually.</td></tr>
+        <tr><td>📂 Import Questions</td><td>Load a <code>.txt</code> quiz file. Replaces the current question set and resets all progress and flags.</td></tr>
+        <tr><td>🔀 Shuffle Questions</td><td>Randomise question order and return to question 1. Disabled until a file is loaded.</td></tr>
+        <tr><td>📥 Export Wrong Answers</td><td>Download all incorrectly answered questions as <code>wrong_answers_export.txt</code>, ready to re-import for a focused retry session. Disabled when there are no wrong answers.</td></tr>
+        <tr><td>📥 Export Flagged</td><td>Download all flagged questions as <code>flagged_questions_export.txt</code>. Disabled when none are flagged.</td></tr>
+        <tr><td>🗑️ Clear Progress</td><td>Wipe all saved state (questions, answers, flags) and reload the app.</td></tr>
+        <tr><td>📖 Documentation</td><td>Opens this page in a new tab.</td></tr>
+    </table>
+
+    <h2 id="navigation">Navigation Bar</h2>
+    <p>The navigation bar sits below the question panel. Buttons appear or are hidden depending on the current mode and question state.</p>
+
+    <table>
+        <tr><th>Button</th><th>When visible</th><th>Action</th></tr>
+        <tr><td>Submit Answer</td><td>Always in Exam mode; multi-select questions only in Study mode</td><td>Submit the selected option(s), record the result, and lock the question.</td></tr>
+        <tr><td>Show Answer</td><td>Study → Show Answer mode, single-answer questions, not yet answered</td><td>Reveal the correct answer without grading (does not count as correct or wrong).</td></tr>
+        <tr><td>💡 Explanation</td><td>After the question is answered and it has an explanation</td><td>Open a popup showing the explanation text for 20 seconds. See <a href="#explanation">Explanation</a>.</td></tr>
+        <tr><td>⚑ Flag / Unflag</td><td>Always</td><td>Toggle a flag on the current question. Label changes to <em>Unflag</em> when flagged.</td></tr>
+        <tr><td>⚑ Review Flagged (N)</td><td>Always; disabled when no flags set</td><td>Open a modal listing all flagged questions. Click any item to jump directly to it.</td></tr>
+        <tr><td>End Exam</td><td>Exam mode only (red button)</td><td>Go to the Exam Review screen immediately.</td></tr>
+        <tr><td>← Previous</td><td>Always; disabled on question 1</td><td>Go to the previous question.</td></tr>
+        <tr><td>Next →</td><td>Always; disabled on the last question</td><td>Go to the next question.</td></tr>
+    </table>
+
+    <h3>Stats bar</h3>
+    <p>The stats bar above the question panel shows live counts of <strong>✓ Correct</strong>, <strong>✗ Wrong</strong>, and <strong>⚑ Flagged</strong> questions, updated after every submission.</p>
+
+    <h2 id="study-modes">Study Modes</h2>
+    <p>Select the mode from the <strong>Mode</strong> dropdown in the sidebar. Both sub-modes display a ✓/✗ feedback panel below the question after answering.</p>
+
+    <h3>Study — Highlight (default)</h3>
+    <p>The correct option is highlighted in green <em>before</em> you answer — useful to see the right answer while studying. For single-answer questions, clicking any option auto-submits immediately. For multi-select questions a <strong>Submit Answer</strong> button appears instead.</p>
+
+    <h3>Study — Show Answer</h3>
+    <p>Options are plain until you interact. Click an option to select it, then click <strong>Show Answer</strong> to reveal the correct answer without being graded. If you want to be graded on a multi-select question, select all options you think are correct and click <strong>Submit Answer</strong>.</p>
+
+    <div class="tip">
+        <strong>Tip:</strong> Multi-select questions (those with more than one correct answer) are automatically detected. The <strong>Submit Answer</strong> button appears for these regardless of Answers mode — select all correct options before submitting.
+    </div>
+
+    <h2 id="exam-mode">Exam Mode &amp; Review</h2>
+    <p>Switch to <strong>Exam</strong> in the Mode dropdown to simulate a real test. The Answers sub-mode dropdown is hidden and no feedback is given during the exam.</p>
+
+    <h3>During the exam</h3>
+    <ul>
+        <li>A <strong>Submit Answer</strong> button is always shown (for both single-answer and multi-select questions).</li>
+        <li>After submitting, options are disabled. Your selected answer is shown highlighted but the correct answer is <strong>not</strong> revealed — no ✓/✗ feedback panel appears.</li>
+        <li>You can navigate freely with <strong>← Previous</strong> and <strong>Next →</strong>, and flag questions with <strong>⚑ Flag</strong> or <kbd>M</kbd>.</li>
+        <li>Click the red <strong>End Exam</strong> button in the navigation bar at any time to go to the review screen.</li>
+    </ul>
+
+    <h3>Exam Review — list view</h3>
+    <p>After clicking <strong>End Exam</strong>, a summary line and a compact scrollable list appear. Each row shows the question number, a text preview, and a colour-coded status badge:</p>
+    <table>
+        <tr><th>Badge</th><th>Border colour</th><th>Meaning</th></tr>
+        <tr><td><span style="color:#00a87d;">✓ Correct</span></td><td style="border-left: 4px solid #00a87d;">Green</td><td>You selected the right answer(s).</td></tr>
+        <tr><td><span style="color:#e94560;">✗ Incorrect</span></td><td style="border-left: 4px solid #e94560;">Red</td><td>You selected a wrong answer.</td></tr>
+        <tr><td style="color:#666;">— Skipped</td><td style="border-left: 4px solid #aaa;">Grey</td><td>You navigated away without submitting an answer.</td></tr>
+    </table>
+    <p>Click <strong>Back to Exam</strong> to return to the question navigator.</p>
+
+    <h3>Exam Review — detail view</h3>
+    <p>Click any row to open the full detail view for that question. It shows:</p>
+    <ul>
+        <li>The status badge and full question text</li>
+        <li>All options with correct answers highlighted green and your wrong pick highlighted red</li>
+        <li>The explanation inline (if the question has one) — no button needed in review</li>
+    </ul>
+    <p>Use <strong>← Previous</strong> and <strong>Next →</strong> to step through questions in order without returning to the list, or click <strong>← Back to List</strong> to return to the summary.</p>
+
+    <div class="note">
+        <strong>Note:</strong> Wrong answers from an Exam session can be exported via <strong>📥 Export Wrong Answers</strong> in the sidebar. The exported <code>.txt</code> file uses the same format as the original quiz and can be re-imported directly for a focused retry.
+    </div>
+
+    <h2 id="flagged-questions">Flagged Questions</h2>
+    <p>Flag any question using the <strong>⚑ Flag for Review</strong> button or the <kbd>M</kbd> key. Flagged questions display an amber <strong>FLAGGED</strong> badge next to the question text.</p>
+    <ul>
+        <li>The navigation bar shows the live count: <em>⚑ Review Flagged (N)</em>. The button is disabled when no questions are flagged.</li>
+        <li>Clicking <strong>Review Flagged</strong> opens a modal listing all flagged questions with a short preview. Click any item to jump directly to that question and close the modal.</li>
+        <li>Flags survive shuffling — the flag travels with the question object regardless of deck order.</li>
+        <li>Flags are saved to <code>localStorage</code> and restored when you reopen the app.</li>
+        <li>Use <strong>📥 Export Flagged</strong> in the sidebar to save flagged questions as a <code>.txt</code> file for a focused follow-up session.</li>
+    </ul>
+
+    <h2 id="explanation">Explanation</h2>
+    <p>Individual questions can carry an optional explanation that is shown after answering.</p>
+
+    <h3>During study / exam</h3>
+    <p>When a question has an explanation and has been answered, a <strong>💡 Explanation</strong> button appears in the action bar. Clicking it opens a popup panel containing the explanation text. The popup closes automatically after <strong>20 seconds</strong> or can be dismissed early with the <strong>×</strong> button. Navigating to another question also closes it.</p>
+
+    <h3>In Exam Review</h3>
+    <p>When viewing a question's detail in the Exam Review, the explanation (if present) is always shown inline — no button needed.</p>
+
+    <h3>Adding explanations to your file</h3>
+    <p>Add an <code>EXPLANATION:</code> line immediately after the <code>Answer:</code> line for any question. It is optional — questions without it are unaffected.</p>
+    <pre><code>Answer: B
+EXPLANATION: Paris has been the capital of France since the 10th century.</code></pre>
+
+    <h2 id="file-format">File Format</h2>
+    <p>Quiz files must be plain text (<code>.txt</code>) with one question block per section. Blank lines between elements are optional but recommended for readability.</p>
+
+    <pre><code>Question 1. What is the capital of France?
+
+A) London
+B) Paris
+C) Berlin
+D) Madrid
+
+Answer: B
+EXPLANATION: Paris has been the capital of France since the 10th century.
+
+Question 2. Which of the following are prime numbers?
+
+A) 2
+B) 4
+C) 5
+D) 6
+
+Answer: A,C</code></pre>
+
+    <h3>Element reference</h3>
+    <table>
+        <tr><th>Element</th><th>Supported formats</th><th>Required</th></tr>
+        <tr><td>Question header</td><td><code>Question N.</code>, <code>Question N:</code>, <code>Question:</code></td><td>Yes</td></tr>
+        <tr><td>Options</td><td><code>A)</code>, <code>A.</code>, or <code>A </code> prefix — letters A through F</td><td>Yes</td></tr>
+        <tr><td>Single answer</td><td><code>Answer: B</code></td><td>Yes</td></tr>
+        <tr><td>Multi-select answer</td><td><code>Answer: A,C</code> — comma-separated, no spaces required</td><td>Yes (for multi-select)</td></tr>
+        <tr><td>Explanation</td><td><code>EXPLANATION: your text here</code> — must follow the Answer line</td><td>No</td></tr>
+    </table>
+
+    <h3>Rules</h3>
+    <ul>
+        <li>Questions with more than one correct answer in <code>Answer:</code> are automatically treated as multi-select.</li>
+        <li>Blank lines are ignored by the parser — they are purely cosmetic.</li>
+        <li>The <code>EXPLANATION:</code> keyword is case-insensitive (<code>Explanation:</code> also works).</li>
+        <li>The last question in the file is included only if it has at least one option and an <code>Answer:</code> line.</li>
+        <li>Lines that do not match any recognised pattern are silently skipped.</li>
+    </ul>
+
+    <h2 id="sample-file">Sample File</h2>
+    <p>Copy this content into a file named <code>sample_quiz.txt</code> to test the app:</p>
+    <pre><code>Question 1. What is the capital of France?
+
+A) London
+B) Paris
+C) Berlin
+D) Madrid
+
+Answer: B
+EXPLANATION: Paris has been the capital of France since the 10th century and is home to the Élysée Palace, the official residence of the President.
+
+Question 2. Which of the following are prime numbers?
+
+A) 2
+B) 4
+C) 5
+D) 6
+
+Answer: A,C
+EXPLANATION: A prime number is only divisible by 1 and itself. 2 and 5 are prime; 4 is divisible by 2, and 6 is divisible by 2 and 3.
+
+Question 3. What is 15 + 27?
+
+A) 40
+B) 42
+C) 44
+D) 45
+
+Answer: B
+
+Question 4. Which planet is known as the Red Planet?
+
+A) Venus
+B) Mars
+C) Jupiter
+D) Saturn
+
+Answer: B
+EXPLANATION: Mars appears red due to iron oxide (rust) on its surface.
+
+Question 5. What is the largest ocean on Earth?
+
+A) Atlantic
+B) Indian
+C) Arctic
+D) Pacific
+
+Answer: D</code></pre>
+
+    <h2 id="keyboard-shortcuts">Keyboard Shortcuts</h2>
+    <table>
+        <tr><th>Key</th><th>Action</th><th>Works in</th></tr>
+        <tr><td><kbd>←</kbd> Left Arrow</td><td>Previous question</td><td>Study &amp; Exam</td></tr>
+        <tr><td><kbd>→</kbd> Right Arrow</td><td>Next question</td><td>Study &amp; Exam</td></tr>
+        <tr><td><kbd>M</kbd></td><td>Flag / unflag current question</td><td>Study &amp; Exam</td></tr>
+    </table>
+
+    <div class="note">
+        <strong>Note:</strong> Keyboard shortcuts are active only when the study area is visible (not during Exam Review). Option selection and answer submission must be done with the mouse or touch — there are no number-key shortcuts for selecting options.
+    </div>
+
+    <h2 id="data-persistence">Data Persistence</h2>
+    <p>Progress is automatically saved to <code>localStorage</code> after every action and restored the next time you open the file in the same browser.</p>
+
+    <h3>What is saved</h3>
+    <ul>
+        <li>The full question list — text, options, correct answers, and explanations</li>
+        <li>Each question's answered state, selected answers, and flag</li>
+        <li>Current question position</li>
+        <li>Correct count, wrong-answer list, and total answered</li>
+        <li>Study / Exam mode and Answers mode selection</li>
+    </ul>
+
+    <h3>What is not saved</h3>
+    <ul>
+        <li>Shuffle order — questions reload in the saved order; re-shuffle manually if desired</li>
+        <li>The Exam review screen state — revisit it by clicking End Exam again</li>
+        <li>The explanation popup state — popup is always closed on load</li>
+    </ul>
+
+    <p>Click <strong>🗑️ Clear Progress</strong> in the sidebar to erase all saved data and start fresh.</p>
+
+    <div class="note">
+        <strong>Note:</strong> <code>localStorage</code> is scoped to the page origin (protocol + hostname + port). If you open the file from a different folder path or a different local server port, previously saved state will not be available.
+    </div>
+
+    <h2 id="running-the-app">Running the App</h2>
+    <p>Double-click <code>e-dumper-quiz.html</code> to open it directly in a browser — no server needed. To serve it locally:</p>
+    <pre><code># Python
+python -m http.server 8000 -d e-dumper/
+
+# Node / npx
+npx serve e-dumper/</code></pre>
+    <p>Then open <code>http://localhost:8000/e-dumper-quiz.html</code> in your browser.</p>
+
+    <h2 id="browser-support">Browser &amp; Device Support</h2>
+    <p>Works in all modern browsers on desktop and mobile:</p>
+    <ul>
+        <li>Chrome / Edge 90+</li>
+        <li>Firefox 90+</li>
+        <li>Safari 14+ (iOS and macOS)</li>
+    </ul>
+    <p>The app is fully responsive. On mobile the sidebar becomes a collapsible panel pinned to the top of the screen. All touch targets meet the 44 px minimum for comfortable tapping, the 300 ms tap delay is removed, and iOS Safari auto-zoom on inputs is suppressed.</p>
+
+    <h2 id="license">License</h2>
+    <p>MIT</p>
+</body>
+</html>
