@@ -25,7 +25,7 @@
 
         .header {
             background: #f5f5f5;
-            padding: 16px 24px;
+            padding: 16px max(24px, env(safe-area-inset-right)) 16px max(24px, env(safe-area-inset-left));
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -54,7 +54,9 @@
             transition: all 0.2s;
             display: inline-flex;
             align-items: center;
+            justify-content: center;
             gap: 8px;
+            min-height: 44px;
             touch-action: manipulation;
             -webkit-tap-highlight-color: transparent;
         }
@@ -92,65 +94,91 @@
             pointer-events: none;
         }
 
-        .app-container {
+        .controls-bar {
             display: flex;
-            min-height: 100vh;
-            min-height: 100dvh;
-        }
-
-        .sidebar {
-            width: 350px;
+            align-items: center;
+            gap: 12px;
+            padding: 12px max(24px, env(safe-area-inset-right)) 12px max(24px, env(safe-area-inset-left));
             background: #f5f5f5;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            border-right: 1px solid #e0e0e0;
-            transition: width 0.3s ease;
+            border-bottom: 2px solid #e94560;
+            flex-wrap: wrap;
         }
 
-        .sidebar.collapsed {
-            width: 50px;
-            padding: 10px 5px;
+        .controls-bar .btn {
+            flex: 1 1 0;
         }
 
-        .sidebar.collapsed .sidebar-content {
+        .controls-bar input[type="file"] {
             display: none;
         }
 
-        .sidebar-toggle {
-            display: block;
-            width: 100%;
-            padding: 8px;
-            background: #e0e0e0;
-            border: none;
-            border-radius: 4px;
+        .voice-select-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .voice-select-wrapper label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #555;
+            white-space: nowrap;
+        }
+
+        .voice-select-wrapper select {
+            padding: 8px 10px;
+            border: 1px solid #e94560;
+            border-radius: 6px;
+            font-size: 13px;
+            background: white;
+            color: #1a1a2e;
             cursor: pointer;
-            font-size: 18px;
-            touch-action: manipulation;
-            -webkit-tap-highlight-color: transparent;
+            min-height: 44px;
         }
 
-        .sidebar .file-input-wrapper {
-            padding-bottom: 20px;
-            border-bottom: 1px solid #e0e0e0;
+        .voice-toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            color: #555;
+            white-space: nowrap;
+            flex: none;
+            padding: 6px 12px;
+            border: 1px solid #e94560;
+            border-radius: 6px;
+            background: white;
+            min-height: 44px;
+            user-select: none;
+            -webkit-user-select: none;
+            transition: background 0.2s, color 0.2s;
         }
 
-        .file-input-wrapper input[type="file"] {
-            display: none;
+        .voice-toggle:hover {
+            background: #fdf0f3;
         }
 
-        .main-wrapper {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
+        .voice-toggle input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+            accent-color: #e94560;
+            flex-shrink: 0;
+        }
+
+        .voice-toggle:has(input:disabled) {
+            opacity: 0.5;
+            cursor: not-allowed;
+            pointer-events: none;
         }
 
         .main-container {
             flex: 1;
             display: flex;
             flex-direction: column;
-            padding: 24px;
+            padding: 24px max(24px, env(safe-area-inset-right)) 24px max(24px, env(safe-area-inset-left));
             max-width: 1400px;
             margin: 0 auto;
             width: 100%;
@@ -212,7 +240,7 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 400px;
+            min-height: 300px;
             text-align: center;
             color: #666;
         }
@@ -273,65 +301,87 @@
         .toast-error   { background: #e94560; }
         .toast-info    { background: #1a1a2e; }
 
+        .top-bars {
+            overflow: hidden;
+            max-height: 300px;
+            transition: max-height 0.35s ease;
+        }
+
+        .top-bars.collapsed {
+            max-height: 0;
+        }
+
+        .collapse-btn {
+            flex: none !important;
+            margin-left: auto;
+            padding: 6px 12px;
+            background: transparent;
+            border: 1px solid #e94560;
+            border-radius: 4px;
+            color: #e94560;
+            cursor: pointer;
+            font-size: 16px;
+            line-height: 1;
+            align-self: center;
+            transition: background 0.2s, color 0.2s;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+            min-height: 36px;
+        }
+
+        .collapse-btn:hover {
+            background: #e94560;
+            color: white;
+        }
+
+        .expand-fab {
+            position: fixed;
+            top: 0;
+            right: max(16px, env(safe-area-inset-right));
+            z-index: 1000;
+            padding: 4px 14px 6px;
+            background: #e94560;
+            color: white;
+            border: none;
+            border-radius: 0 0 8px 8px;
+            cursor: pointer;
+            font-size: 16px;
+            line-height: 1;
+            display: none;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        }
+
+        .expand-fab.visible {
+            display: block;
+        }
+
         @media (max-width: 768px) {
-            .app-container {
-                flex-direction: column;
+            .controls-bar {
+                padding: 10px max(10px, env(safe-area-inset-right)) 10px max(10px, env(safe-area-inset-left));
+                gap: 8px;
             }
 
-            .sidebar {
-                width: 100% !important;
-                flex-direction: row;
-                flex-wrap: wrap;
-                padding: 10px;
-                padding-top: max(10px, env(safe-area-inset-top));
-                padding-left: max(10px, env(safe-area-inset-left));
-                padding-right: max(10px, env(safe-area-inset-right));
-                gap: 10px;
-                border-right: none;
-                border-bottom: 1px solid #e0e0e0;
-                position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                z-index: 100;
-                background: #f5f5f5;
-                max-height: 60vh;
-                overflow-y: auto;
-                -webkit-overflow-scrolling: touch;
-            }
-
-            .sidebar.collapsed {
-                width: 100% !important;
-                max-height: 56px;
-                overflow: hidden;
-            }
-
-            .sidebar-toggle {
-                width: auto;
-                padding: 10px 15px;
-            }
-
-            .sidebar-content {
-                display: flex !important;
-                flex-wrap: wrap;
-                gap: 10px;
-                width: 100%;
-            }
-
-            .sidebar.collapsed .sidebar-content {
-                display: none !important;
-            }
-
-            .file-input-wrapper {
+            /* Voice selector takes its own full row */
+            .voice-select-wrapper {
                 flex: 1 1 100%;
+                width: 100%;
             }
 
-            .file-input-wrapper .btn {
+            .voice-select-wrapper select {
+                flex: 1;
                 width: 100%;
+            }
+
+            /* Buttons and voice toggle fill two per row */
+            .controls-bar .btn,
+            .voice-toggle {
+                flex: 1 1 calc(50% - 4px);
             }
 
             .main-container {
-                padding: 12px;
+                padding: 12px max(12px, env(safe-area-inset-right)) 12px max(12px, env(safe-area-inset-left));
             }
 
             .one-liner-card {
@@ -343,42 +393,31 @@
                 font-size: 20px;
             }
 
-            .btn {
-                padding: 12px 16px;
-                font-size: 14px;
-                min-height: 44px;
-            }
-
             .navigation-buttons {
                 flex-wrap: wrap;
                 gap: 10px;
+                margin-top: 16px;
             }
 
             .navigation-buttons .btn {
-                flex: 1 1 45%;
+                flex: 1 1 calc(50% - 5px);
                 min-width: 100px;
-                justify-content: center;
             }
 
             .progress-section {
                 margin-bottom: 12px;
             }
 
-            h1 {
+            .header h1 {
+                font-size: 18px;
+            }
+
+            .empty-state h2 {
                 font-size: 20px;
             }
 
-            h2 {
-                font-size: 18px;
-            }
-
-            .header h1 {
-                font-size: 18px;
-                margin-right: 10px;
-            }
-
             .toast-container {
-                bottom: 16px;
+                bottom: max(16px, env(safe-area-inset-bottom));
                 right: 16px;
                 left: 16px;
             }
@@ -389,10 +428,6 @@
         }
 
         @media (max-width: 480px) {
-            .sidebar {
-                max-height: 60vh;
-            }
-
             .one-liner-text {
                 font-size: 18px;
             }
@@ -400,77 +435,79 @@
             .navigation-buttons .btn {
                 flex: 1 1 100%;
             }
-
-            .btn {
-                padding: 10px 12px;
-                font-size: 13px;
-            }
         }
     </style>
 </head>
 <body>
-    <div class="app-container">
-        <aside class="sidebar collapsed">
-            <button class="sidebar-toggle" onclick="app.toggleSidebar()">☰</button>
-            <div class="sidebar-content">
-                <div class="file-input-wrapper" style="width: 100%;">
-                    <input type="file" id="oneLinerFileInput" accept=".txt">
-                    <button class="btn btn-primary" onclick="document.getElementById('oneLinerFileInput').click()" style="width: 100%;">
-                        📂 Import Text
-                    </button>
-                </div>
-                <button class="btn btn-secondary" id="shuffleLinesBtn" onclick="app.shuffleLines()" style="width: 100%; margin-top: 20px;" disabled>
-                    🔀 Shuffle
-                </button>
-                <button class="btn btn-secondary" id="clearStateBtn" onclick="app.clearAndReset()" style="width: 100%; margin-top: 20px;">
-                    🗑️ Clear Progress
-                </button>
-                <button class="btn btn-secondary" style="width: 100%; margin-top: 20px;" onclick="window.open('README-oneline-q.html', '_blank')">
-                    📖 Documentation
-                </button>
+    <div class="top-bars" id="topBars">
+        <header class="header">
+            <h1>e-dumper One Liner Q <span style="font-size: 14px; color: #666;">v2.2</span></h1>
+        </header>
+
+        <div class="controls-bar">
+            <input type="file" id="oneLinerFileInput" accept=".txt">
+            <button class="btn btn-primary" onclick="document.getElementById('oneLinerFileInput').click()">
+                📂 Import Text
+            </button>
+            <div class="voice-select-wrapper">
+                <label for="voiceSelect">🔊 Voice</label>
+                <select id="voiceSelect" onchange="app.onVoiceChange()">
+                    <option value="">— select a voice —</option>
+                </select>
             </div>
-        </aside>
+            <label class="voice-toggle">
+                <input type="checkbox" id="voiceCheckbox" checked onchange="app.onVoiceToggle()">
+                Voice
+            </label>
+            <label class="voice-toggle">
+                <input type="checkbox" id="shuffleCheckbox" onchange="app.onShuffleToggle()" disabled>
+                🔀 Shuffle
+            </label>
+            <button class="btn btn-secondary" id="clearStateBtn" onclick="app.clearAndReset()">
+                🗑️ Clear Progress
+            </button>
+            <button class="btn btn-secondary" onclick="window.open('README-oneline-q.html', '_blank')">
+                📖 Documentation
+            </button>
+            <button class="collapse-btn" onclick="app.toggleBars()" title="Hide toolbar">↑</button>
+        </div>
+    </div>
 
-        <main class="main-wrapper">
-            <header class="header">
-                <h1>e-dumper One Liner Q <span style="font-size: 14px; color: #666;">v2.2</span></h1>
-            </header>
+    <button class="expand-fab" id="expandFab" onclick="app.toggleBars()" title="Show toolbar">↓</button>
 
-            <div class="main-container">
-                <div id="emptyState" class="empty-state">
-                    <h2>Welcome to e-dumper One Liner Q</h2>
-                    <p>Import a text file to get started using the button in the sidebar.</p>
+    <div class="main-container">
+        <div id="emptyState" class="empty-state">
+            <h2>Welcome to e-dumper One Liner Q</h2>
+            <p>Import a text file to get started using the Import Text button above.</p>
+        </div>
+
+        <div id="oneLinerArea" class="hidden">
+            <div class="progress-section">
+                <div class="progress-text">
+                    <span id="oneLinerProgressText">Line 0 of 0</span>
+                    <span id="oneLinerProgressPercent">0%</span>
                 </div>
-
-                <div id="oneLinerArea" class="hidden">
-                    <div class="progress-section">
-                        <div class="progress-text">
-                            <span id="oneLinerProgressText">Line 0 of 0</span>
-                            <span id="oneLinerProgressPercent">0%</span>
-                        </div>
-                        <div class="progress-bar">
-                            <div class="progress-fill" id="oneLinerProgressFill" style="width: 0%"></div>
-                        </div>
-                    </div>
-
-                    <div class="one-liner-card">
-                        <div class="one-liner-text" id="oneLinerText">No text loaded</div>
-                    </div>
-
-                    <div class="navigation-buttons">
-                        <button class="btn btn-secondary nav-btn" id="oneLinerPrevBtn" onclick="app.prevOneLiner()">
-                            ← Previous
-                        </button>
-                        <button class="btn btn-secondary nav-btn" onclick="app.speakLine(app.oneLinerLines[app.oneLinerIndex])">
-                            🔊 Replay
-                        </button>
-                        <button class="btn btn-primary nav-btn" id="oneLinerNextBtn" onclick="app.nextOneLiner()">
-                            Next →
-                        </button>
-                    </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="oneLinerProgressFill" style="width: 0%"></div>
                 </div>
             </div>
-        </main>
+
+            <div class="one-liner-card">
+                <div class="one-liner-text" id="oneLinerText">No text loaded</div>
+            </div>
+
+            <div class="navigation-buttons">
+                <button class="btn btn-secondary nav-btn" id="oneLinerPrevBtn" onclick="app.prevOneLiner()">
+                    ← Previous
+                </button>
+                <button class="btn btn-secondary nav-btn" onclick="app.speakLine(app.oneLinerLines[app.oneLinerIndex])">
+                    🔊 Replay
+                </button>
+                <button class="btn btn-primary nav-btn" id="oneLinerNextBtn" onclick="app.nextOneLiner()">
+                    Next →
+                </button>
+            </div>
+        </div>
     </div>
 
     <div class="toast-container" id="toastContainer"></div>
@@ -478,6 +515,7 @@
     <script>
         const app = {
             oneLinerLines: [],
+            originalLines: [],
             oneLinerIndex: 0,
 
             showToast(message, type = 'info') {
@@ -493,6 +531,7 @@
                 try {
                     const state = {
                         lines: app.oneLinerLines,
+                        originalLines: app.originalLines,
                         index: app.oneLinerIndex
                     };
                     localStorage.setItem('edumperOneLinerState', JSON.stringify(state));
@@ -510,6 +549,7 @@
 
                     if (state.lines && state.lines.length > 0) {
                         app.oneLinerLines = state.lines;
+                        app.originalLines = state.originalLines || [...state.lines];
                         app.oneLinerIndex = state.index || 0;
                         app.renderOneLinerCard(true); // silent on load — no user interaction yet
                     }
@@ -536,16 +576,12 @@
                 }
             },
 
-            updateMainWrapperMargin() {
-                if (window.innerWidth > 768) {
-                    document.querySelector('.main-wrapper').style.marginTop = '';
-                    return;
-                }
-                const sidebar = document.querySelector('.sidebar');
-                document.querySelector('.main-wrapper').style.marginTop = sidebar.offsetHeight + 'px';
-            },
-
             init() {
+                if (window.speechSynthesis) {
+                    speechSynthesis.onvoiceschanged = app.populateVoices;
+                    app.populateVoices(); // populate immediately if already loaded (Firefox)
+                }
+
                 document.getElementById('oneLinerFileInput').addEventListener('change', (e) => {
                     const file = e.target.files[0];
                     if (file) {
@@ -564,9 +600,9 @@
                     const oneLinerArea = document.getElementById('oneLinerArea');
                     if (oneLinerArea.classList.contains('hidden')) return;
 
-                    if (e.key === 'ArrowRight') {
+                    if (e.key === 'ArrowRight' || e.key === 'n') {
                         app.nextOneLiner();
-                    } else if (e.key === 'ArrowLeft') {
+                    } else if (e.key === 'ArrowLeft' || e.key === 'p') {
                         app.prevOneLiner();
                     }
                 });
@@ -585,21 +621,6 @@
                     if (dx < 0) app.nextOneLiner();
                     else app.prevOneLiner();
                 }, { passive: true });
-
-                app.updateMainWrapperMargin();
-                window.addEventListener('resize', app.updateMainWrapperMargin);
-            },
-
-            toggleSidebar() {
-                const sidebar = document.querySelector('.sidebar');
-                sidebar.classList.toggle('collapsed');
-                app.updateMainWrapperMargin();
-            },
-
-            collapseSidebar() {
-                const sidebar = document.querySelector('.sidebar');
-                sidebar.classList.add('collapsed');
-                app.updateMainWrapperMargin();
             },
 
             loadOneLiner(content) {
@@ -616,11 +637,11 @@
                     }
 
                     if (app.oneLinerLines.length > 0) {
+                        app.originalLines = [...app.oneLinerLines];
                         app.showToast(`Loaded ${app.oneLinerLines.length} lines`, 'success');
                         document.getElementById('emptyState').classList.add('hidden');
                         document.getElementById('oneLinerArea').classList.remove('hidden');
                         app.renderOneLinerCard();
-                        app.collapseSidebar();
                         app.saveState();
                     } else {
                         app.showToast('No text found in file.', 'error');
@@ -631,15 +652,54 @@
                 }
             },
 
+            onVoiceToggle() {
+                const enabled = document.getElementById('voiceCheckbox').checked;
+                if (!enabled) {
+                    window.speechSynthesis && window.speechSynthesis.cancel();
+                } else if (app.oneLinerLines.length > 0) {
+                    app.speakLine(app.oneLinerLines[app.oneLinerIndex]);
+                }
+            },
+
             speakLine(text) {
                 if (!window.speechSynthesis) return;
+                if (!document.getElementById('voiceCheckbox').checked) return;
                 window.speechSynthesis.cancel();
                 // setTimeout avoids Chrome's cancel+speak race condition
                 setTimeout(() => {
                     const utt = new SpeechSynthesisUtterance(text);
+                    const savedVoiceName = localStorage.getItem('edumperSelectedVoice');
+                    if (savedVoiceName) {
+                        const voice = speechSynthesis.getVoices().find(v => v.name === savedVoiceName);
+                        if (voice) utt.voice = voice;
+                    }
                     utt.onerror = e => console.warn('TTS error:', e.error);
                     window.speechSynthesis.speak(utt);
                 }, 100);
+            },
+
+            populateVoices() {
+                const voices = speechSynthesis.getVoices();
+                if (voices.length === 0) return;
+                const select = document.getElementById('voiceSelect');
+                const saved = localStorage.getItem('edumperSelectedVoice');
+                select.innerHTML = '<option value="">— select a voice —</option>';
+                voices.forEach(v => {
+                    const opt = document.createElement('option');
+                    opt.value = v.name;
+                    opt.textContent = `${v.name} (${v.lang})${v.localService ? '' : ' ☁'}`;
+                    if (v.name === saved) opt.selected = true;
+                    select.appendChild(opt);
+                });
+            },
+
+            onVoiceChange() {
+                const name = document.getElementById('voiceSelect').value;
+                if (name) {
+                    localStorage.setItem('edumperSelectedVoice', name);
+                } else {
+                    localStorage.removeItem('edumperSelectedVoice');
+                }
             },
 
             renderOneLinerCard(silent = false) {
@@ -658,7 +718,7 @@
                 document.getElementById('oneLinerPrevBtn').disabled = app.oneLinerIndex === 0;
                 document.getElementById('oneLinerNextBtn').disabled = app.oneLinerIndex === app.oneLinerLines.length - 1;
 
-                document.getElementById('shuffleLinesBtn').disabled = false;
+                document.getElementById('shuffleCheckbox').disabled = false;
 
                 if (!silent) app.speakLine(line);
             },
@@ -679,18 +739,29 @@
                 }
             },
 
-            shuffleLines() {
+            toggleBars() {
+                const topBars = document.getElementById('topBars');
+                const fab = document.getElementById('expandFab');
+                topBars.classList.toggle('collapsed');
+                fab.classList.toggle('visible');
+            },
+
+            onShuffleToggle() {
                 if (app.oneLinerLines.length === 0) return;
-
-                for (let i = app.oneLinerLines.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [app.oneLinerLines[i], app.oneLinerLines[j]] = [app.oneLinerLines[j], app.oneLinerLines[i]];
+                const checked = document.getElementById('shuffleCheckbox').checked;
+                if (checked) {
+                    for (let i = app.oneLinerLines.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [app.oneLinerLines[i], app.oneLinerLines[j]] = [app.oneLinerLines[j], app.oneLinerLines[i]];
+                    }
+                    app.showToast('Lines shuffled', 'success');
+                } else {
+                    app.oneLinerLines = [...app.originalLines];
+                    app.showToast('Original order restored', 'info');
                 }
-
                 app.oneLinerIndex = 0;
                 app.renderOneLinerCard();
                 app.saveState();
-                app.showToast('Lines shuffled', 'success');
             },
         };
 
