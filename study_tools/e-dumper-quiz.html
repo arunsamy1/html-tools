@@ -104,53 +104,111 @@
             pointer-events: none;
         }
 
-        .app-container {
-            display: flex;
-            min-height: 100vh;
-            min-height: 100dvh;
+        .top-bars {
+            overflow: hidden;
+            max-height: 300px;
+            transition: max-height 0.35s ease;
         }
 
-        .sidebar {
-            width: 350px;
+        .top-bars.collapsed {
+            max-height: 0;
+        }
+
+        .controls-bar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 3px max(24px, env(safe-area-inset-right)) 3px max(24px, env(safe-area-inset-left));
             background: #f5f5f5;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            border-right: 1px solid #e0e0e0;
-            transition: width 0.3s ease;
+            border-bottom: 2px solid #e94560;
+            flex-wrap: wrap;
         }
 
-        .sidebar.collapsed {
-            width: 50px;
-            padding: 10px 5px;
-        }
-
-        .sidebar.collapsed .sidebar-content {
+        .controls-bar input[type="file"] {
             display: none;
         }
 
-        .sidebar-toggle {
-            display: block;
-            width: 100%;
-            padding: 8px;
-            background: #e0e0e0;
-            border: none;
-            border-radius: 4px;
+        .controls-bar .btn {
+            flex: 1 1 0;
+        }
+
+        .controls-bar .doc-btn {
+            flex: 0.5 1 0;
+        }
+
+        .ctrl-select-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex: none;
+        }
+
+        .ctrl-select-wrapper label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #555;
+            white-space: nowrap;
+        }
+
+        .ctrl-select-wrapper select {
+            padding: 6px 10px;
+            border: 1px solid #e94560;
+            border-radius: 6px;
+            font-size: 13px;
+            background: white;
+            color: #1a1a2e;
             cursor: pointer;
-            font-size: 18px;
+            min-height: 44px;
+        }
+
+        .collapse-btn {
+            flex: none !important;
+            margin-left: auto;
+            padding: 8px 28px;
+            background: #e94560;
+            border: none;
+            border-radius: 6px;
+            color: white;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            line-height: 1;
+            align-self: center;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: background 0.2s, transform 0.1s;
             touch-action: manipulation;
             -webkit-tap-highlight-color: transparent;
+            min-height: 48px;
+            min-width: 110px;
         }
 
-        .sidebar .file-input-wrapper {
-            padding-bottom: 20px;
-            border-bottom: 1px solid #e0e0e0;
-        }
+        .collapse-btn:hover { background: #c73652; }
+        .collapse-btn:active { transform: scale(0.97); }
+        .collapse-btn svg { flex-shrink: 0; }
 
-        .file-input-wrapper input[type="file"] {
+        .expand-fab {
+            position: fixed;
+            top: 0;
+            right: max(16px, env(safe-area-inset-right));
+            z-index: 1000;
+            padding: 4px 14px 6px;
+            background: #e94560;
+            color: white;
+            border: none;
+            border-radius: 0 0 8px 8px;
+            cursor: pointer;
+            font-size: 16px;
+            line-height: 1;
             display: none;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
         }
+
+        .expand-fab.visible { display: block; }
 
         .main-wrapper {
             flex: 1;
@@ -704,67 +762,17 @@
         .toast-info    { background: #1a1a2e; }
 
         @media (max-width: 768px) {
-            .app-container {
-                flex-direction: column;
+            .controls-bar {
+                padding: 3px max(10px, env(safe-area-inset-right)) 3px max(10px, env(safe-area-inset-left));
+                gap: 8px;
             }
 
-            .sidebar {
-                width: 100% !important;
-                flex-direction: row;
-                flex-wrap: wrap;
-                padding: 10px;
-                gap: 10px;
-                border-right: none;
-                border-bottom: 1px solid #e0e0e0;
-                position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                z-index: 100;
-                background: #f5f5f5;
-                max-height: 60vh;
-                overflow-y: auto;
-                -webkit-overflow-scrolling: touch;
+            .controls-bar .btn {
+                flex: 1 1 calc(50% - 4px);
             }
 
-            .sidebar.collapsed {
-                width: 100% !important;
-                max-height: 56px;
-                overflow: hidden;
-            }
-
-            .sidebar-toggle {
-                width: auto;
-                padding: 10px 15px;
-            }
-
-            .sidebar-content {
-                display: flex !important;
-                flex-wrap: wrap;
-                gap: 10px;
-                width: 100%;
-            }
-
-            .sidebar.collapsed .sidebar-content {
-                display: none !important;
-            }
-
-            .settings-group {
-                flex: 1 1 auto;
-                min-width: 120px;
-            }
-
-            .settings-group select {
-                flex: 1;
-                width: 120px;
-            }
-
-            .file-input-wrapper {
-                flex: 1 1 100%;
-            }
-
-            .file-input-wrapper .btn {
-                width: 100%;
+            .ctrl-select-wrapper select {
+                font-size: 16px;
             }
 
             .main-container {
@@ -920,14 +928,6 @@
         }
 
         @media (max-width: 480px) {
-            .sidebar {
-                max-height: 60vh;
-            }
-
-            .settings-group {
-                min-width: 100%;
-            }
-
             .navigation-buttons .btn {
                 flex: 1 1 100%;
             }
@@ -958,57 +958,60 @@
     </style>
 </head>
 <body>
-    <div class="app-container">
-        <aside class="sidebar collapsed">
-            <button class="sidebar-toggle" onclick="app.toggleSidebar()">☰</button>
-            <div class="sidebar-content">
-                <div class="settings-group">
-                    <label for="examMode">Mode:</label>
-                    <select id="examMode" onchange="app.onExamModeChange()">
-                        <option value="Study">Study</option>
-                        <option value="Exam">Exam</option>
-                    </select>
-                </div>
-                <div class="settings-group" id="answersModeGroup" style="padding-bottom: 20px; border-bottom: 1px solid #e0e0e0;">
-                    <label for="answersMode">Answers:</label>
-                    <select id="answersMode" onchange="app.onAnswersModeChange()">
-                        <option value="Highlight">Highlight</option>
-                        <option value="ShowAnswer">Show Answer</option>
-                    </select>
-                </div>
-                <div class="file-input-wrapper" style="margin-top: 20px; width: 100%;">
-                    <input type="file" id="fileInput" accept=".txt">
-                    <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()" style="width: 100%;">
-                        📂 Import Questions
-                    </button>
-                </div>
-                <button class="btn btn-secondary" id="shuffleQuizBtn" onclick="app.shuffleQuizQuestions()" style="width: 100%; margin-top: 10px;" disabled>
-                    🔀 Shuffle Questions
-                </button>
-                <button class="btn btn-secondary" id="exportBtn" onclick="app.exportMissed()" style="width: 100%; margin-top: 10px;">
-                    📥 Export Wrong Answers
-                </button>
-                <button class="btn btn-secondary" id="exportFlaggedBtn" onclick="app.exportFlagged()" style="width: 100%; text-align: left; margin-top: 20px;">
-                    📥 Export Flagged
-                </button>
-<button class="btn btn-secondary" id="clearStateBtn" onclick="app.clearAndReset()" style="width: 100%; margin-top: 20px;">
-                    🗑️ Clear Progress
-                </button>
-                <button class="btn btn-secondary" style="width: 100%; margin-top: 20px;" onclick="window.open('README-quiz.html', '_blank')">
-                    📖 Documentation
-                </button>
+    <div class="top-bars" id="topBars">
+        <header class="header">
+            <h1>e-dumper Quiz <span style="font-size: 14px; color: #666;">v2.0</span></h1>
+        </header>
+        <div class="controls-bar">
+            <div class="ctrl-select-wrapper">
+                <label for="examMode">Mode:</label>
+                <select id="examMode" onchange="app.onExamModeChange()">
+                    <option value="Study">Study</option>
+                    <option value="Exam">Exam</option>
+                </select>
             </div>
-        </aside>
+            <div class="ctrl-select-wrapper" id="answersModeGroup">
+                <label for="answersMode">Answers:</label>
+                <select id="answersMode" onchange="app.onAnswersModeChange()">
+                    <option value="Highlight">Highlight</option>
+                    <option value="ShowAnswer">Show Answer</option>
+                </select>
+            </div>
+            <input type="file" id="fileInput" accept=".txt">
+            <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
+                📂 Import Questions
+            </button>
+            <button class="btn btn-secondary" id="shuffleQuizBtn" onclick="app.shuffleQuizQuestions()" disabled>
+                🔀 Shuffle
+            </button>
+            <button class="btn btn-secondary" id="exportBtn" onclick="app.exportMissed()">
+                📥 Export Wrong
+            </button>
+            <button class="btn btn-secondary" id="exportFlaggedBtn" onclick="app.exportFlagged()">
+                📥 Export Flagged
+            </button>
+            <button class="btn btn-secondary" id="clearStateBtn" onclick="app.clearAndReset()">
+                🗑️ Clear
+            </button>
+            <button class="btn btn-secondary doc-btn" onclick="window.open('README-quiz.html', '_blank')">
+                📖 Docs
+            </button>
+            <button class="collapse-btn" onclick="app.toggleBars()" title="Hide toolbar">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+                Hide Bar
+            </button>
+        </div>
+    </div>
 
-        <main class="main-wrapper">
-            <header class="header">
-                <h1>e-dumper Quiz <span style="font-size: 14px; color: #666;">v2.0</span></h1>
-            </header>
+    <button class="expand-fab" id="expandFab" onclick="app.toggleBars()" title="Show toolbar">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
 
+    <main class="main-wrapper">
             <div class="main-container">
                 <div id="emptyState" class="empty-state">
                     <h2>Welcome to e-dumper Quiz</h2>
-                    <p>Import a quiz file to get started using the button in the sidebar.</p>
+                    <p>Import a quiz file to get started using the Import Questions button above.</p>
                 </div>
 
                 <div id="studyArea" class="hidden">
@@ -1102,7 +1105,6 @@
                 </div>
             </div>
         </main>
-    </div>
 
     <div id="explanationPopup" class="explanation-popup hidden">
         <div class="explanation-popup-header">
@@ -1446,13 +1448,9 @@
                 }
             },
 
-            updateMainWrapperMargin() {
-                if (window.innerWidth > 768) {
-                    document.querySelector('.main-wrapper').style.marginTop = '';
-                    return;
-                }
-                const sidebar = document.querySelector('.sidebar');
-                document.querySelector('.main-wrapper').style.marginTop = sidebar.offsetHeight + 'px';
+            toggleBars() {
+                document.getElementById('topBars').classList.toggle('collapsed');
+                document.getElementById('expandFab').classList.toggle('visible');
             },
 
             init() {
@@ -1473,8 +1471,7 @@
                                     document.getElementById('studyArea').classList.remove('hidden');
                                     app.selectedOptions = [];
                                     app.render();
-                                    app.collapseSidebar();
-                                    document.getElementById('shuffleQuizBtn').disabled = false;
+                                                    document.getElementById('shuffleQuizBtn').disabled = false;
                                     app.saveState();
                                 } else {
                                     app.showToast('No questions found. Check your file format.', 'error');
@@ -1501,21 +1498,8 @@
                     }
                 });
 
-                app.updateMainWrapperMargin();
-                window.addEventListener('resize', app.updateMainWrapperMargin);
             },
 
-            toggleSidebar() {
-                const sidebar = document.querySelector('.sidebar');
-                sidebar.classList.toggle('collapsed');
-                app.updateMainWrapperMargin();
-            },
-
-            collapseSidebar() {
-                const sidebar = document.querySelector('.sidebar');
-                sidebar.classList.add('collapsed');
-                app.updateMainWrapperMargin();
-            },
 
             onExamModeChange() {
                 const examMode = document.getElementById('examMode').value;
