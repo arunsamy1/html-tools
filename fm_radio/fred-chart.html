@@ -19,7 +19,7 @@
     }
 
     .card {
-      width: 100%;
+      width: 80%;
     }
 
     h1 {
@@ -33,6 +33,10 @@
       font-size: 0.875rem;
       color: #666;
       margin-bottom: 24px;
+    }
+
+    .chart-wrapper + .chart-wrapper {
+      margin-top: 32px;
     }
 
     .embed-container {
@@ -69,15 +73,32 @@
     <h1>FRED Economic Data</h1>
     <p class="subtitle">Federal Reserve Bank of St. Louis</p>
 
-    <div class="embed-container">
-      <iframe
-        src="https://fred.stlouisfed.org/graph/graph-landing.php?g=1VM8h&width=670&height=475"
-        scrolling="no"
-        frameborder="0"
-        style="overflow:hidden;"
-        allowTransparency="true"
-        loading="lazy">
-      </iframe>
+    <div>
+      <div class="chart-wrapper">
+        <div class="embed-container">
+          <iframe
+            src="https://fred.stlouisfed.org/graph/graph-landing.php?g=1VM8h&width=670&height=475"
+            scrolling="no"
+            frameborder="0"
+            style="overflow:hidden;"
+            allowTransparency="true"
+            loading="lazy">
+          </iframe>
+        </div>
+      </div>
+
+      <div class="chart-wrapper">
+        <div class="embed-container">
+          <iframe
+            src="https://fred.stlouisfed.org/graph/graph-landing.php?g=1VQC6&width=670&height=475"
+            scrolling="no"
+            frameborder="0"
+            style="overflow:hidden;"
+            allowTransparency="true"
+            loading="lazy">
+          </iframe>
+        </div>
+      </div>
     </div>
 
     <p class="source">
