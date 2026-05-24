@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FRED Economic Data Chart</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: #ffffff;
+      margin: 0;
+      padding: 24px;
+    }
+
+    .card {
+      width: 100%;
+    }
+
+    h1 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: #1a1a1a;
+      margin-bottom: 4px;
+    }
+
+    .subtitle {
+      font-size: 0.875rem;
+      color: #666;
+      margin-bottom: 24px;
+    }
+
+    .chart-wrapper + .chart-wrapper {
+      margin-top: 32px;
+    }
+
+    .embed-container {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 670 / 475;
+    }
+
+    .embed-container iframe {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+
+    .source {
+      margin-top: 12px;
+      font-size: 0.75rem;
+      color: #999;
+      text-align: right;
+    }
+
+    .source a {
+      color: #4a7fc1;
+      text-decoration: none;
+    }
+
+    .source a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>FRED Economic Data</h1>
+    <p class="subtitle">Federal Reserve Bank of St. Louis</p>
+
+    <div>
+      <div class="chart-wrapper">
+        <div class="embed-container">
+          <iframe
+            src="https://fred.stlouisfed.org/graph/graph-landing.php?g=1VM8h&width=670&height=475"
+            scrolling="no"
+            frameborder="0"
+            style="overflow:hidden; width:1px; min-width:100%;"
+            allowTransparency="true"
+            loading="lazy">
+          </iframe>
+        </div>
+      </div>
+
+      
+
+      <div class="chart-wrapper">
+        <div class="embed-container"><iframe src="https://fred.stlouisfed.org/graph/graph-landing.php?g=1WzmM&width=670&height=475" scrolling="no" frameborder="0" style="overflow:hidden;" allowTransparency="true" loading="lazy"></iframe></div>
+      </div>
+
+      <div class="chart-wrapper">
+        <div class="embed-container"><iframe src="https://fred.stlouisfed.org/graph/graph-landing.php?g=1W17u&width=670&height=475" scrolling="no" frameborder="0" style="overflow:hidden;" allowTransparency="true" loading="lazy"></iframe></div>
+      </div>
+
+      <div class="chart-wrapper">
+        <div class="embed-container"><iframe src="https://fred.stlouisfed.org/graph/graph-landing.php?g=1Wzou&width=670&height=475" scrolling="no" frameborder="0" style="overflow:hidden;" allowTransparency="true" loading="lazy"></iframe></div>
+      </div>
+    </div>
+
+    <p class="source">
+      Source: <a href="https://fred.stlouisfed.org" target="_blank" rel="noopener">FRED, Federal Reserve Bank of St. Louis</a>
+    </p>
+
+    <iframe style="border: 1px solid #333333; overflow: hidden; width: 190px; height: 490px;" src="//research.stlouisfed.org/fred-glance-widget.php" height="240" width="320" frameborder="0" scrolling="no"></iframe>
+  </div>
+
+  <script src="https://fred.stlouisfed.org/assets/research/fred-graph-react/embed.min.js" type="text/javascript"></script>
+</body>
+</html>
