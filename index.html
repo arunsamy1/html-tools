@@ -85,6 +85,7 @@
     <div class="nav-item active" data-folder="btc" onclick="showFolder('btc')">btc</div>
     <div class="nav-item" data-folder="converters" onclick="showFolder('converters')">converters</div>
     <div class="nav-item" data-folder="finance" onclick="showFolder('finance')">finance</div>
+    <div class="nav-item" data-folder="fin_charts" onclick="showFolder('fin_charts')">fin_charts</div>
     <div class="nav-item" data-folder="fm_radio" onclick="showFolder('fm_radio')">fm_radio</div>
     <div class="nav-item" data-folder="others" onclick="showFolder('others')">others</div>
     <div class="nav-item" data-folder="security" onclick="showFolder('security')">security</div>
@@ -161,6 +162,22 @@
       </tbody>
     </table>
   </div>
+  <div class="folder-panel" id="folder-fin_charts">
+    <h2>fin_charts</h2>
+    <table>
+      <thead><tr><th>#</th><th>File</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td><a href="fin_charts/fed_chart.html" onclick="openFile('fin_charts/fed_chart.html','fed_chart.html'); return false;">fed_chart.html</a><button class="open-btn" onclick="window.open('fin_charts/fed_chart.html','_blank')">Open in new tab</button><button class="download-btn" onclick="downloadFile('fin_charts/fed_chart.html','fed_chart.html')">Download</button></td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td><a href="fin_charts/fed_chart_more.html" onclick="openFile('fin_charts/fed_chart_more.html','fed_chart_more.html'); return false;">fed_chart_more.html</a><button class="open-btn" onclick="window.open('fin_charts/fed_chart_more.html','_blank')">Open in new tab</button><button class="download-btn" onclick="downloadFile('fin_charts/fed_chart_more.html','fed_chart_more.html')">Download</button></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
   <div class="folder-panel" id="folder-fm_radio">
     <h2>fm_radio</h2>
     <table>
@@ -212,34 +229,42 @@
         </tr>
         <tr>
           <td>3</td>
-          <td><a href="security/encryptor.html" onclick="openFile('security/encryptor.html','encryptor.html'); return false;">encryptor.html</a><button class="open-btn" onclick="window.open('security/encryptor.html','_blank')">Open in new tab</button><button class="download-btn" onclick="downloadFile('security/encryptor.html','encryptor.html')">Download</button></td>
+          <td><a href="security/encryptor_backkup_2026-05-14.html" onclick="openFile('security/encryptor_backkup_2026-05-14.html','encryptor_backkup_2026-05-14.html'); return false;">encryptor_backkup_2026-05-14.html</a><button class="open-btn" onclick="window.open('security/encryptor_backkup_2026-05-14.html','_blank')">Open in new tab</button><button class="download-btn" onclick="downloadFile('security/encryptor_backkup_2026-05-14.html','encryptor_backkup_2026-05-14.html')">Download</button></td>
         </tr>
         <tr>
           <td>4</td>
-          <td><a href="security/encryptor_old.html" onclick="openFile('security/encryptor_old.html','encryptor_old.html'); return false;">encryptor_old.html</a><button class="open-btn" onclick="window.open('security/encryptor_old.html','_blank')">Open in new tab</button><button class="download-btn" onclick="downloadFile('security/encryptor_old.html','encryptor_old.html')">Download</button></td>
+          <td><a href="security/encryptor_backup_2026-05-13.html" onclick="openFile('security/encryptor_backup_2026-05-13.html','encryptor_backup_2026-05-13.html'); return false;">encryptor_backup_2026-05-13.html</a><button class="open-btn" onclick="window.open('security/encryptor_backup_2026-05-13.html','_blank')">Open in new tab</button><button class="download-btn" onclick="downloadFile('security/encryptor_backup_2026-05-13.html','encryptor_backup_2026-05-13.html')">Download</button></td>
         </tr>
         <tr>
           <td>5</td>
-          <td><a href="security/htmltest_02.html" onclick="openFile('security/htmltest_02.html','htmltest_02.html'); return false;">htmltest_02.html</a><button class="open-btn" onclick="window.open('security/htmltest_02.html','_blank')">Open in new tab</button><button class="download-btn" onclick="downloadFile('security/htmltest_02.html','htmltest_02.html')">Download</button></td>
+          <td><a href="security/encryptor.html" onclick="openFile('security/encryptor.html','encryptor.html'); return false;">encryptor.html</a><button class="open-btn" onclick="window.open('security/encryptor.html','_blank')">Open in new tab</button><button class="download-btn" onclick="downloadFile('security/encryptor.html','encryptor.html')">Download</button></td>
         </tr>
         <tr>
           <td>6</td>
-          <td><a href="security/htmltest.html" onclick="openFile('security/htmltest.html','htmltest.html'); return false;">htmltest.html</a><button class="open-btn" onclick="window.open('security/htmltest.html','_blank')">Open in new tab</button><button class="download-btn" onclick="downloadFile('security/htmltest.html','htmltest.html')">Download</button></td>
+          <td><a href="security/encryptor_old.html" onclick="openFile('security/encryptor_old.html','encryptor_old.html'); return false;">encryptor_old.html</a><button class="open-btn" onclick="window.open('security/encryptor_old.html','_blank')">Open in new tab</button><button class="download-btn" onclick="downloadFile('security/encryptor_old.html','encryptor_old.html')">Download</button></td>
         </tr>
         <tr>
           <td>7</td>
-          <td><a href="security/pkikeypair.html" onclick="openFile('security/pkikeypair.html','pkikeypair.html'); return false;">pkikeypair.html</a><button class="open-btn" onclick="window.open('security/pkikeypair.html','_blank')">Open in new tab</button><button class="download-btn" onclick="downloadFile('security/pkikeypair.html','pkikeypair.html')">Download</button></td>
+          <td><a href="security/htmltest_02.html" onclick="openFile('security/htmltest_02.html','htmltest_02.html'); return false;">htmltest_02.html</a><button class="open-btn" onclick="window.open('security/htmltest_02.html','_blank')">Open in new tab</button><button class="download-btn" onclick="downloadFile('security/htmltest_02.html','htmltest_02.html')">Download</button></td>
         </tr>
         <tr>
           <td>8</td>
-          <td><a href="security/sha3512384256224.html" onclick="openFile('security/sha3512384256224.html','sha3512384256224.html'); return false;">sha3512384256224.html</a><button class="open-btn" onclick="window.open('security/sha3512384256224.html','_blank')">Open in new tab</button><button class="download-btn" onclick="downloadFile('security/sha3512384256224.html','sha3512384256224.html')">Download</button></td>
+          <td><a href="security/htmltest.html" onclick="openFile('security/htmltest.html','htmltest.html'); return false;">htmltest.html</a><button class="open-btn" onclick="window.open('security/htmltest.html','_blank')">Open in new tab</button><button class="download-btn" onclick="downloadFile('security/htmltest.html','htmltest.html')">Download</button></td>
         </tr>
         <tr>
           <td>9</td>
-          <td><a href="security/test123.html" onclick="openFile('security/test123.html','test123.html'); return false;">test123.html</a><button class="open-btn" onclick="window.open('security/test123.html','_blank')">Open in new tab</button><button class="download-btn" onclick="downloadFile('security/test123.html','test123.html')">Download</button></td>
+          <td><a href="security/pkikeypair.html" onclick="openFile('security/pkikeypair.html','pkikeypair.html'); return false;">pkikeypair.html</a><button class="open-btn" onclick="window.open('security/pkikeypair.html','_blank')">Open in new tab</button><button class="download-btn" onclick="downloadFile('security/pkikeypair.html','pkikeypair.html')">Download</button></td>
         </tr>
         <tr>
           <td>10</td>
+          <td><a href="security/sha3512384256224.html" onclick="openFile('security/sha3512384256224.html','sha3512384256224.html'); return false;">sha3512384256224.html</a><button class="open-btn" onclick="window.open('security/sha3512384256224.html','_blank')">Open in new tab</button><button class="download-btn" onclick="downloadFile('security/sha3512384256224.html','sha3512384256224.html')">Download</button></td>
+        </tr>
+        <tr>
+          <td>11</td>
+          <td><a href="security/test123.html" onclick="openFile('security/test123.html','test123.html'); return false;">test123.html</a><button class="open-btn" onclick="window.open('security/test123.html','_blank')">Open in new tab</button><button class="download-btn" onclick="downloadFile('security/test123.html','test123.html')">Download</button></td>
+        </tr>
+        <tr>
+          <td>12</td>
           <td><a href="security/test4_base64.html" onclick="openFile('security/test4_base64.html','test4_base64.html'); return false;">test4_base64.html</a><button class="open-btn" onclick="window.open('security/test4_base64.html','_blank')">Open in new tab</button><button class="download-btn" onclick="downloadFile('security/test4_base64.html','test4_base64.html')">Download</button></td>
         </tr>
       </tbody>
@@ -252,11 +277,11 @@
       <tbody>
         <tr>
           <td>1</td>
-          <td><a href="study_tools/e-dumper-oneline-q.html" onclick="openFile('study_tools/e-dumper-oneline-q.html','e-dumper-oneline-q.html'); return false;">e-dumper-oneline-q.html</a><button class="open-btn" onclick="window.open('study_tools/e-dumper-oneline-q.html','_blank')">Open in new tab</button><button class="download-btn" onclick="downloadFile('study_tools/e-dumper-oneline-q.html','e-dumper-oneline-q.html')">Download</button></td>
+          <td><a href="study_tools/e-dumper-oneliner-q.html" onclick="openFile('study_tools/e-dumper-oneliner-q.html','e-dumper-oneliner-q.html'); return false;">e-dumper-oneliner-q.html</a><button class="open-btn" onclick="window.open('study_tools/e-dumper-oneliner-q.html','_blank')">Open in new tab</button><button class="download-btn" onclick="downloadFile('study_tools/e-dumper-oneliner-q.html','e-dumper-oneliner-q.html')">Download</button></td>
         </tr>
         <tr>
           <td>2</td>
-          <td><a href="study_tools/e-dumper-oneline-q-voice.html" onclick="openFile('study_tools/e-dumper-oneline-q-voice.html','e-dumper-oneline-q-voice.html'); return false;">e-dumper-oneline-q-voice.html</a><button class="open-btn" onclick="window.open('study_tools/e-dumper-oneline-q-voice.html','_blank')">Open in new tab</button><button class="download-btn" onclick="downloadFile('study_tools/e-dumper-oneline-q-voice.html','e-dumper-oneline-q-voice.html')">Download</button></td>
+          <td><a href="study_tools/e-dumper-oneliner-q-voice.html" onclick="openFile('study_tools/e-dumper-oneliner-q-voice.html','e-dumper-oneliner-q-voice.html'); return false;">e-dumper-oneliner-q-voice.html</a><button class="open-btn" onclick="window.open('study_tools/e-dumper-oneliner-q-voice.html','_blank')">Open in new tab</button><button class="download-btn" onclick="downloadFile('study_tools/e-dumper-oneliner-q-voice.html','e-dumper-oneliner-q-voice.html')">Download</button></td>
         </tr>
         <tr>
           <td>3</td>
