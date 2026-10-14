@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Revise with Q (Standalone)</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Segoe UI', Tahoma, sans-serif;
+  background: #ffffff;
+  color: #1a1a2e;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* ── Top bars ── */
+.top-bars {
+  max-height: 400px;
+  overflow: hidden;
+  transition: max-height 0.35s ease;
+}
+.top-bars.collapsed { max-height: 0; }
+
+.header {
+  background: #f5f5f5;
+  border-bottom: 2px solid #0ea5e9;
+  padding: 12px max(16px, env(safe-area-inset-left));
+  display: flex;
+  align-items: center;
+}
+.header h1 {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1a1a2e;
+}
+.header h1::before { content: '💬 '; }
+.header h1 span {
+  font-size: 13px;
+  color: #888;
+  font-weight: 400;
+  margin-left: 6px;
+}
+
+.controls-bar {
+  background: #f5f5f5;
+  border-bottom: 2px solid #0ea5e9;
+  padding: 10px max(12px, env(safe-area-inset-left));
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+/* ── Buttons ── */
+.btn {
+  min-height: 44px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.15s, background 0.15s, box-shadow 0.15s;
+  white-space: nowrap;
+}
+.btn:active { transform: scale(0.96); }
+.btn:disabled { opacity: 0.5; pointer-events: none; }
+
+.btn-primary {
+  background: #0ea5e9;
+  color: #fff;
+}
+.btn-primary:hover {
+  background: #38bdf8;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(14,165,233,0.35);
+}
+
+.btn-secondary {
+  background: #f0f0f0;
+  color: #1a1a2e;
+  border: 1px solid #0ea5e9;
+}
+.btn-secondary:hover {
+  background: #0284c7;
+  color: #fff;
+  transform: translateY(-2px);
+}
+
+.btn-success { background: #38bdf8; color: #fff; }
+.btn-success:hover { background: #7dd3fc; transform: translateY(-2px); }
+
+.collapse-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: 6px;
+  color: #555;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  min-height: 44px;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.collapse-btn:hover { background: #e8e8e8; }
+
+/* ── Voice selector ── */
+.voice-select-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 1 360px;
+}
+.voice-select-wrapper label { font-size: 13px; white-space: nowrap; }
+#voiceSelect {
+  flex: 1;
+  max-width: 240px;
+  min-height: 36px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 13px;
+  background: #fff;
+  color: #1a1a2e;
+}
+
+/* ── Toggle (voice / shuffle) ── */
+.voice-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  user-select: none;
+  min-height: 44px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  border: 1px solid #0ea5e9;
+  background: #f0f0f0;
+  color: #1a1a2e;
+  white-space: nowrap;
+}
+.voice-toggle input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #0ea5e9;
+  cursor: pointer;
+}
+.voice-toggle:has(input:checked) {
+  background: #0ea5e9;
+  color: #fff;
+}
+
+/* ── Expand FAB ── */
+.expand-fab {
+  position: fixed;
+  top: 0;
+  right: max(16px, env(safe-area-inset-right));
+  background: #0ea5e9;
+  color: #fff;
+  border: none;
+  border-radius: 0 0 20px 20px;
+  padding: 6px 14px 10px;
+  cursor: pointer;
+  z-index: 100;
+  display: none;
+  align-items: center;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  box-shadow: 0 3px 10px rgba(14,165,233,0.4);
+}
+.expand-fab.visible { display: flex; }
+.expand-fab svg { width: 20px; height: 20px; }
+
+/* ── Main container ── */
+.main-container {
+  flex: 1;
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 24px max(24px, env(safe-area-inset-left));
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Empty state ── */
+#emptyState {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 16px;
+  color: #555;
+}
+#emptyState h2 { font-size: 24px; color: #1a1a2e; }
+#emptyState p { font-size: 15px; max-width: 420px; line-height: 1.6; }
+
+.format-notice {
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-left: 4px solid #f59e0b;
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  color: #7c2d12;
+  font-size: 15px;
+  line-height: 1.55;
+}
+.format-notice.hidden { display: none; }
+.format-notice strong { display: block; margin-bottom: 6px; font-size: 16px; }
+.format-notice a { color: #b45309; font-weight: 600; }
+
+/* ── One-liner area ── */
+#oneLinerArea { display: flex; flex-direction: column; gap: 20px; }
+#oneLinerArea.hidden { display: none; }
+
+/* Progress */
+.progress-section { display: flex; flex-direction: column; gap: 6px; }
+.progress-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  color: #555;
+  font-weight: 500;
+}
+.progress-bar {
+  height: 8px;
+  background: #e8e8e8;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #0ea5e9, #38bdf8);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+  width: 0%;
+}
+
+/* Card */
+.one-liner-card {
+  position: relative;
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 30px;
+  min-height: 200px;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  user-select: none;
+}
+/* Flag badge — shown on the card when the current line is flagged */
+.flagged-indicator {
+  display: none;
+  position: absolute;
+  top: 14px;
+  right: 18px;
+  padding: 3px 10px;
+  background: #f59e0b;
+  color: #fff;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+.one-liner-card.flagged { padding-top: 48px; }
+.one-liner-card.flagged .flagged-indicator { display: inline-block; }
+.one-liner-text {
+  font-size: 32px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: #1a1a2e;
+  text-align: left;
+  width: 100%;
+}
+
+/* Navigation */
+.navigation-buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.navigation-buttons .btn { min-width: 120px; }
+
+/* ── Toast ── */
+.toast-container {
+  position: fixed;
+  bottom: max(20px, env(safe-area-inset-bottom));
+  right: max(16px, env(safe-area-inset-right));
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+.toast {
+  padding: 12px 18px;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  max-width: 320px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+  animation: toastIn 0.25s ease;
+}
+.toast-success { background: #00a87d; }
+.toast-error   { background: #e94560; }
+.toast-info    { background: #0284c7; }
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .controls-bar { padding: 8px max(8px, env(safe-area-inset-left)); }
+  .voice-select-wrapper { flex: 1 1 100%; }
+  .btn, .voice-toggle { flex: 1 1 calc(50% - 4px); justify-content: center; }
+  .collapse-btn { flex: 0 0 auto; }
+  .one-liner-card { padding: 20px; min-height: 150px; }
+  .one-liner-text { font-size: 20px; }
+  .navigation-buttons .btn { flex: 1 1 calc(50% - 5px); }
+  .header h1 { font-size: 18px; }
+  .main-container { padding: 16px max(16px, env(safe-area-inset-left)); }
+}
+@media (max-width: 480px) {
+  .one-liner-text { font-size: 18px; }
+  .navigation-buttons .btn { flex: 1 1 100%; }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   PHONE WIDTHS — tuned for 6.7" phone screens
+   (~430×932 CSS px, e.g. iPhone Pro Max / Galaxy S Ultra, portrait)
+   Reduced button sizes + tighter spacing for small touchscreens.
+   Wins over the desktop/tablet rules above via !important, and only
+   engages at phone widths, so this one file serves phone, tablet and
+   desktop — there is no separate desktop build.
+   ═══════════════════════════════════════════════════════════════════ */
+@media (max-width: 600px) {
+  html { -webkit-text-size-adjust: 100%; }
+
+  .header { padding: 8px 12px !important; }
+  .header h1 { font-size: 16px !important; }
+
+  .controls-bar {
+    padding: 6px max(8px, env(safe-area-inset-right)) 6px max(8px, env(safe-area-inset-left)) !important;
+    gap: 6px !important;
+  }
+
+  /* Buttons — reduced size for compact mobile touch targets */
+  .btn, .btn-primary, .btn-secondary, .btn-success, .btn-danger, .quiz-summary-actions .btn {
+    padding: 7px 11px !important;
+    font-size: 12.5px !important;
+    min-height: 34px !important;
+    gap: 5px !important;
+    border-radius: 6px !important;
+    white-space: nowrap;
+  }
+  .collapse-btn {
+    padding: 5px 12px !important;
+    min-height: 30px !important;
+    min-width: 74px !important;
+    font-size: 11px !important;
+    gap: 4px !important;
+  }
+  .expand-fab { padding: 3px 10px 4px !important; font-size: 13px !important; }
+
+  .ctrl-select-wrapper, .voice-select-wrapper { gap: 4px !important; }
+  .ctrl-select-wrapper label, .voice-select-wrapper label { font-size: 11px !important; }
+  .ctrl-select-wrapper select, .voice-select-wrapper select {
+    min-height: 34px !important;
+    padding: 4px 8px !important;
+    font-size: 16px; /* keep >=16px: smaller triggers unwanted iOS auto-zoom on focus */
+  }
+  .ctrl-toggle, .voice-toggle { font-size: 11px !important; gap: 4px !important; }
+
+  .main-container { padding: 10px max(10px, env(safe-area-inset-left)) !important; }
+
+  /* Question / card panels */
+  .question-panel { padding: 14px !important; min-height: auto !important; }
+  .question-text { font-size: 15px !important; margin-bottom: 14px !important; }
+  .option-btn, .quiz-option {
+    padding: 9px 11px !important;
+    font-size: 13px !important;
+  }
+  .options-container, .quiz-options { gap: 8px !important; }
+
+  .qa-card, .fill-card, .one-liner-card, .word-card { padding: 16px !important; min-height: auto !important; }
+  .card-question, .sentence-text, .one-liner-text, .word-text { font-size: 16px !important; }
+  .card-answer { font-size: 14px !important; }
+
+  .answer-input, .blank-slot { font-size: 14px !important; padding: 6px 8px !important; }
+
+  .action-buttons, .navigation-buttons {
+    gap: 6px !important;
+    margin-top: 12px !important;
+  }
+  .action-buttons .btn, .navigation-buttons .btn, .navigation-buttons .voice-toggle {
+    flex: 1 1 100% !important;
+    justify-content: center !important;
+  }
+  .show-answer-btn, .nav-btn { min-width: 0 !important; }
+
+  .stats-bar { padding: 8px 10px !important; font-size: 11px !important; gap: 8px !important; }
+  .feedback-panel, .feedback-row { font-size: 12.5px !important; padding: 8px 10px !important; }
+  .progress-text, .progress-labels { font-size: 12px !important; }
+
+  /* Modals / popups */
+  .modal-content { padding: 14px !important; width: 94% !important; }
+  .modal-header h2 { font-size: 17px !important; }
+  .explanation-popup { padding: 14px !important; left: 10px !important; right: 10px !important; bottom: 10px !important; max-width: none !important; width: auto !important; }
+  .flagged-item { padding: 10px !important; }
+
+  /* Review */
+  .review-list-item { padding: 10px 12px !important; }
+  .review-question-item { padding: 14px !important; }
+  .review-question-text { font-size: 15px !important; }
+  .review-header h2, .empty-state h2, .quiz-summary h2 { font-size: 20px !important; }
+
+  /* Toasts */
+  .toast-container { bottom: 10px !important; right: 10px !important; left: 10px !important; }
+  .toast { max-width: 100% !important; font-size: 12.5px !important; padding: 9px 12px !important; }
+
+  .jump-to-container { gap: 6px !important; }
+  .score-badge { font-size: 12px !important; padding: 3px 8px !important; }
+}
+</style>
+</head>
+<body>
+
+<!-- Expand FAB (shown when toolbar collapsed) -->
+<button class="expand-fab" id="expandFab" onclick="app.toggleBars()" aria-label="Expand toolbar" title="Show bar (B)">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <polyline points="6 9 12 15 18 9"/>
+  </svg>
+</button>
+
+<!-- Top bars -->
+<div class="top-bars" id="topBars">
+  <header class="header">
+    <h1>Revise with Q <span>Standalone</span></h1>
+  </header>
+
+  <div class="controls-bar">
+    <input type="file" id="oneLinerFileInput" accept=".txt" style="display:none">
+
+    <button class="btn btn-primary" onclick="document.getElementById('oneLinerFileInput').click()">
+      📂 Import Text
+    </button>
+
+    <div class="voice-select-wrapper">
+      <label for="voiceSelect">🔊 Voice</label>
+      <select id="voiceSelect" onchange="app.onVoiceChange()" title="English voices only">
+        <option value="">Default</option>
+      </select>
+    </div>
+
+    <label class="voice-toggle" title="Enable / disable text-to-speech">
+      <input type="checkbox" id="voiceCheckbox" onchange="app.onVoiceToggle()">
+      🔊 Voice
+    </label>
+
+    <label class="voice-toggle" title="Shuffle lines">
+      <input type="checkbox" id="shuffleCheckbox" disabled onchange="app.onShuffleToggle()">
+      🔀 Shuffle
+    </label>
+
+    <button class="btn btn-secondary" id="reviewFlaggedBtn" onclick="app.reviewFlags()" disabled>⚑ Review Flagged (0)</button>
+    <button class="btn btn-secondary" id="exportFlaggedBtn" onclick="app.exportFlags()" disabled>📥 Export Flagged</button>
+
+    <button class="btn btn-secondary" onclick="app.clearAndReset()">🗑️ Clear Progress</button>
+
+    <button class="collapse-btn" onclick="app.toggleBars()" title="Hide bar (B)">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="18 15 12 9 6 15"/>
+      </svg>
+      Hide Bar
+    </button>
+  </div>
+</div>
+
+<!-- Main -->
+<main class="main-container">
+  <div id="formatNotice" class="format-notice hidden">
+    <strong id="formatNoticeTitle"></strong>
+    <span id="formatNoticeBody"></span>
+  </div>
+
+  <div id="emptyState">
+    <h2>Welcome to Revise with Q</h2>
+    <p>Import a <strong>.txt</strong> file with one item per line. Everything runs in this browser tab — no server needed. Each line will be displayed as a card and read aloud. Navigate with the buttons, keyboard arrows, or swipe.</p>
+    <p style="margin-top:12px;font-size:14px;color:#666">Question-and-answer files belong in
+    <a href="7_one_liner_qa.html" style="color:#0284c7;font-weight:600">Study with QA</a> — if you import one
+    here, this app will say so rather than splitting the answers into their own cards.</p>
+  </div>
+
+  <div id="oneLinerArea" class="hidden">
+    <div class="progress-section">
+      <div class="progress-labels">
+        <span id="progressLabel">Line 1 of 1</span>
+        <span id="progressPct">0%</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+    </div>
+
+    <div class="one-liner-card" id="oneLinerCard">
+      <p class="one-liner-text" id="oneLinerText"></p>
+      <span class="flagged-indicator" id="flaggedBadge">FLAGGED</span>
+    </div>
+
+    <div class="navigation-buttons">
+      <button class="btn btn-secondary" id="oneLinerPrevBtn" onclick="app.prevOneLiner()">← Previous</button>
+      <button class="btn btn-secondary" onclick="app.speakLine(app.oneLinerLines[app.oneLinerIndex])" title="Replay (R)">🔊 Replay</button>
+      <button class="btn btn-success" id="flagBtn" onclick="app.toggleFlag()">⚑ Flag</button>
+      <button class="btn btn-primary"   id="oneLinerNextBtn" onclick="app.nextOneLiner()">Next →</button>
+    </div>
+  </div>
+</main>
+
+<!-- Toast container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+const app = {
+  STATE_KEY: 'oneLinerQStandaloneState',
+
+  oneLinerLines:   [],
+  originalLines:   [],
+  oneLinerIndex:   0,
+  flagged:         new Set(),
+  flaggedReviewIndex: 0,
+
+  init() {
+    if (speechSynthesis.onvoiceschanged !== undefined) {
+      speechSynthesis.onvoiceschanged = () => this.populateVoices();
+    }
+    this.populateVoices();
+
+    // Read the file here rather than POSTing it to /api/upload. The server
+    // stripped blank lines, and a blank line between pairs is exactly what
+    // identifies a Q&A file — which belongs in Study with QA, not here.
+    document.getElementById('oneLinerFileInput').addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      e.target.value = '';
+      const reader = new FileReader();
+      reader.onload = evt => this.loadFromText(evt.target.result);
+      reader.onerror = () => this.showToast('Could not read file.', 'error');
+      reader.readAsText(file);
+    });
+
+    // Keyboard
+    document.addEventListener('keydown', e => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA') return;
+      if (e.key === 'b' || e.key === 'B') this.toggleBars();
+      if (e.key === 'r' || e.key === 'R') this.speakLine(this.oneLinerLines[this.oneLinerIndex]);
+      if (e.key === 'ArrowRight' || e.key === 'n') this.nextOneLiner();
+      if (e.key === 'ArrowLeft'  || e.key === 'p') this.prevOneLiner();
+      if (e.key === 'm' || e.key === 'M') this.toggleFlag();
+    });
+
+    // Touch swipe
+    let touchStartX = 0, touchStartY = 0;
+    const area = document.getElementById('oneLinerArea');
+    area.addEventListener('touchstart', e => {
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+    }, { passive: true });
+    area.addEventListener('touchend', e => {
+      const dx = e.changedTouches[0].clientX - touchStartX;
+      const dy = e.changedTouches[0].clientY - touchStartY;
+      if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) {
+        dx < 0 ? this.nextOneLiner() : this.prevOneLiner();
+      }
+    }, { passive: true });
+  },
+
+  // ── Format detection ────────────────────────────────────────
+  // This app shows one item per line. Two other shapes get dropped on it by
+  // mistake, and both belong in Study with QA:
+  //
+  //   Q&A pairs      — a question then its answer, so the answers would show
+  //                    up here as separate cards. Refused outright.
+  //   term,definition or question|answer — arguably readable one-per-line, so
+  //                    these load but say what they are.
+  //
+  // Measured over the library, the Q&A test matches all 400 `*_qa.txt` files
+  // and none of the 335 questions-only `*_q.txt` files or 290 vocabulary
+  // references.
+
+  looksLikeQaFile(text, lines) {
+    // Blank-line-separated blocks where most blocks carry an answer line.
+    // Requiring the answer line is what keeps a merely blank-line-spaced
+    // one-per-line list out of this.
+    const hasBlankSeparator = /\r?\n[ \t]*\r?\n/.test(text.trim());
+    if (hasBlankSeparator) {
+      const blocks = text.split(/\r?\n\s*\r?\n+/)
+        .map(b => b.split(/\r?\n/).filter(l => l.trim()))
+        .filter(b => b.length);
+      if (blocks.filter(b => b.length >= 2).length > blocks.length / 2) return true;
+    }
+    // Some lines numbered but not all, numbers increasing — a Q&A file whose
+    // pairs have no blank line between them, or a single-pair file. In a
+    // questions-only file every line is numbered, so this stays clear of it.
+    const marks = lines.map(l => /^(\d+)\.\s/.exec(l));
+    const numbered = marks.filter(Boolean).length;
+    if (numbered === 0 || numbered === lines.length) return false;
+    let previous = 0;
+    for (const m of marks) {
+      if (!m) continue;
+      const n = Number(m[1]);
+      if (n <= previous) return false;
+      previous = n;
+    }
+    return true;
+  },
+
+  looksLikeVocab(lines) {
+    if (!lines.length || lines.some(l => /^\d+\.\s/.test(l))) return false;
+    const withComma = lines.filter(l => l.includes(','));
+    if (withComma.length < lines.length * 0.9) return false;
+    const words = withComma.map(l => l.split(',')[0].trim().split(/\s+/).length).sort((a, b) => a - b);
+    return words[Math.floor(words.length / 2)] <= 6;
+  },
+
+  showNotice(title, body) {
+    document.getElementById('formatNoticeTitle').textContent = title;
+    document.getElementById('formatNoticeBody').innerHTML   = body;
+    document.getElementById('formatNotice').classList.remove('hidden');
+  },
+
+  loadFromText(text) {
+    const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    if (!lines.length) { this.showToast('No lines found in file.', 'error'); return; }
+
+    if (this.looksLikeQaFile(text, lines)) {
+      this.showNotice('This looks like a question-and-answer file.',
+        'Each question is followed by its answer, so this app would show the answers as ' +
+        'separate cards. Open it in <a href="7_one_liner_qa.html">Study with QA</a> instead — that app ' +
+        'shows the question and reveals the answer.');
+      this.showToast('Q&A file — open it in Study with QA.', 'error');
+      return;
+    }
+
+    document.getElementById('formatNotice').classList.add('hidden');
+    this.loadOneLiner(lines);
+
+    // These two load fine as one item per line, but Study with QA makes more of
+    // them, so say so rather than refusing.
+    if (this.looksLikeVocab(lines)) {
+      this.showNotice('This looks like a vocabulary or command reference.',
+        'Loaded as one item per line. <a href="7_one_liner_qa.html">Study with QA</a> would show each ' +
+        'entry as a term card with the definition on reveal, and can quiz you on them.');
+    } else if (lines.filter(l => l.includes('|')).length > lines.length / 2) {
+      this.showNotice('This looks like a question | answer file.',
+        'Loaded as one item per line, pipes and all. <a href="7_one_liner_qa.html">Study with QA</a> ' +
+        'would split each line into a question and a revealable answer.');
+    }
+  },
+
+  loadOneLiner(lines) {
+    if (!lines.length) {
+      this.showToast('No lines found in file.', 'error');
+      return;
+    }
+    this.oneLinerLines  = [...lines];
+    this.originalLines  = [...lines];
+    this.oneLinerIndex  = 0;
+    this.flagged        = new Set();
+    this.flaggedReviewIndex = 0;
+    document.getElementById('oneLinerArea').classList.remove('hidden');
+    document.getElementById('emptyState').style.display = 'none';
+    this.renderOneLinerCard();
+    this.saveState();
+    this.showToast(`Loaded ${lines.length} line${lines.length !== 1 ? 's' : ''}.`, 'success');
+  },
+
+  renderOneLinerCard(silent = false) {
+    const { oneLinerLines: lines, oneLinerIndex: idx } = this;
+    const line = lines[idx] ?? '';
+    document.getElementById('oneLinerText').textContent = line;
+
+    const total = lines.length;
+    const pct   = total > 1 ? Math.round((idx / (total - 1)) * 100) : 100;
+    document.getElementById('progressLabel').textContent = `Line ${idx + 1} of ${total}`;
+    document.getElementById('progressPct').textContent   = `${pct}%`;
+    document.getElementById('progressFill').style.width  = `${pct}%`;
+
+    document.getElementById('oneLinerPrevBtn').disabled = idx === 0;
+    document.getElementById('oneLinerNextBtn').disabled = idx === total - 1;
+    document.getElementById('shuffleCheckbox').disabled = false;
+
+    this.updateFlagUI();
+
+    if (!silent) this.speakLine(line);
+  },
+
+  nextOneLiner() {
+    if (this.oneLinerIndex < this.oneLinerLines.length - 1) {
+      this.oneLinerIndex++;
+      this.renderOneLinerCard();
+      this.saveState();
+    }
+  },
+
+  prevOneLiner() {
+    if (this.oneLinerIndex > 0) {
+      this.oneLinerIndex--;
+      this.renderOneLinerCard();
+      this.saveState();
+    }
+  },
+
+  _flagKey(line) { return line; },
+
+  // ── Flagging ────────────────────────────────────────────────
+
+  toggleFlag() {
+    if (!this.oneLinerLines.length) return;
+    const key = this._flagKey(this.oneLinerLines[this.oneLinerIndex]);
+    if (this.flagged.has(key)) this.flagged.delete(key); else this.flagged.add(key);
+    this.updateFlagUI();
+    this.saveState();
+  },
+
+  updateFlagUI() {
+    const item = this.oneLinerLines[this.oneLinerIndex];
+    const isFlagged = item !== undefined && this.flagged.has(this._flagKey(item));
+    document.getElementById('oneLinerCard').classList.toggle('flagged', isFlagged);
+    document.getElementById('flagBtn').textContent = isFlagged ? '⚑ Unflag' : '⚑ Flag';
+    const count = this.originalLines.filter(i => this.flagged.has(this._flagKey(i))).length;
+    document.getElementById('reviewFlaggedBtn').textContent = `⚑ Review Flagged (${count})`;
+    document.getElementById('reviewFlaggedBtn').disabled = count === 0;
+    document.getElementById('exportFlaggedBtn').disabled = count === 0;
+  },
+
+  reviewFlags() {
+    const flaggedAt = this.oneLinerLines.map((item, i) => i).filter(i => this.flagged.has(this._flagKey(this.oneLinerLines[i])));
+    if (!flaggedAt.length) { this.showToast('No flagged items.', 'info'); return; }
+    this.flaggedReviewIndex = this.flaggedReviewIndex % flaggedAt.length;
+    this.oneLinerIndex = flaggedAt[this.flaggedReviewIndex];
+    this.flaggedReviewIndex++;
+    this.renderOneLinerCard();
+    this.saveState();
+  },
+
+  exportFlags() {
+    const flagged = this.originalLines.filter(i => this.flagged.has(this._flagKey(i)));
+    if (!flagged.length) { this.showToast('No flagged items to export.', 'info'); return; }
+    const content = flagged.join('\n');
+    this._download(content, 'flagged_lines.txt');
+  },
+
+  _download(content, filename) {
+    const url = URL.createObjectURL(new Blob([content], { type: 'text/plain' }));
+    const a = Object.assign(document.createElement('a'), { href: url, download: filename });
+    a.click();
+    URL.revokeObjectURL(url);
+  },
+
+  speakLine(text) {
+    if (!('speechSynthesis' in window)) return;
+    if (!document.getElementById('voiceCheckbox').checked) return;
+    speechSynthesis.cancel();
+    setTimeout(() => {
+      const utt        = new SpeechSynthesisUtterance(text);
+      const savedVoice = localStorage.getItem('edumperSelectedVoice');
+      if (savedVoice) {
+        const voice = speechSynthesis.getVoices().find(v => v.name === savedVoice);
+        if (voice) utt.voice = voice;
+      }
+      utt.onerror = e => console.warn('TTS error:', e.error);
+      speechSynthesis.speak(utt);
+    }, 100);
+  },
+
+  // Firefox on Linux hands back the whole espeak-ng set — a hundred-odd
+  // languages — where Chrome ships about twenty curated voices. The cards are
+  // English, so only English voices are listed. Falls back to the full list if
+  // a platform reports no English voice, so the dropdown is never empty.
+  englishVoices() {
+    const voices  = speechSynthesis.getVoices();
+    const english = voices.filter(v => /^en([-_]|$)/i.test(v.lang || ''));
+    return english.length ? english : voices;
+  },
+
+  populateVoices() {
+    const voices  = this.englishVoices();
+    const sel     = document.getElementById('voiceSelect');
+    let   saved   = localStorage.getItem('edumperSelectedVoice') || '';
+    // getVoices() is empty until the voice list loads, so only drop a saved
+    // voice once there is a list to check it against. Without this, a voice
+    // picked before the list was filtered would stay in use by speak() while
+    // the dropdown showed "Default".
+    if (saved && voices.length && !voices.some(v => v.name === saved)) {
+      localStorage.removeItem('edumperSelectedVoice');
+      saved = '';
+    }
+    sel.innerHTML = '<option value="">Default</option>';
+    voices.forEach(v => {
+      const opt       = document.createElement('option');
+      opt.value       = v.name;
+      opt.textContent = `${v.name} (${v.lang})${v.localService ? '' : ' ☁'}`;
+      if (v.name === saved) opt.selected = true;
+      sel.appendChild(opt);
+    });
+  },
+
+  onVoiceChange() {
+    const name = document.getElementById('voiceSelect').value;
+    if (name) localStorage.setItem('edumperSelectedVoice', name);
+    else      localStorage.removeItem('edumperSelectedVoice');
+  },
+
+  onVoiceToggle() {
+    const on = document.getElementById('voiceCheckbox').checked;
+    if (!on) {
+      speechSynthesis.cancel();
+    } else if (this.oneLinerLines.length) {
+      this.speakLine(this.oneLinerLines[this.oneLinerIndex]);
+    }
+  },
+
+  onShuffleToggle() {
+    const checked = document.getElementById('shuffleCheckbox').checked;
+    if (checked) {
+      const arr = [...this.oneLinerLines];
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      this.oneLinerLines = arr;
+      this.showToast('Lines shuffled.', 'info');
+    } else {
+      this.oneLinerLines = [...this.originalLines];
+      this.showToast('Original order restored.', 'info');
+    }
+    this.oneLinerIndex = 0;
+    this.renderOneLinerCard();
+    this.saveState();
+  },
+
+  toggleBars() {
+    document.getElementById('topBars').classList.toggle('collapsed');
+    document.getElementById('expandFab').classList.toggle('visible');
+  },
+
+  // Fire-and-forget: POST state to server
+  // ── State (persisted to localStorage — no server involved) ──
+
+  saveState() {
+    try {
+      localStorage.setItem(this.STATE_KEY, JSON.stringify({
+        lines:         this.oneLinerLines,
+        originalLines: this.originalLines,
+        index:         this.oneLinerIndex,
+        flagged:       [...this.flagged],
+      }));
+    } catch (err) {
+      console.warn('Save state failed:', err);
+    }
+  },
+
+  // Restore state from server on page load (silent — no TTS)
+  loadState() {
+    try {
+      const raw = localStorage.getItem(this.STATE_KEY);
+      if (!raw) return;
+      const state = JSON.parse(raw);
+      if (!state || !Array.isArray(state.lines) || !state.lines.length) return;
+      this.oneLinerLines  = state.lines;
+      this.originalLines  = state.originalLines || state.lines;
+      this.oneLinerIndex  = state.index || 0;
+      this.flagged        = new Set(Array.isArray(state.flagged) ? state.flagged : []);
+      document.getElementById('oneLinerArea').classList.remove('hidden');
+      document.getElementById('emptyState').style.display = 'none';
+      this.renderOneLinerCard(true);
+    } catch (err) {
+      console.warn('Load state failed:', err);
+    }
+  },
+
+  clearAndReset() {
+    if (!confirm('Clear all progress and start over?')) return;
+    try { localStorage.removeItem(this.STATE_KEY); } catch (err) { console.warn('Clear state failed:', err); }
+    location.reload();
+  },
+
+  showToast(msg, type = 'info') {
+    const container = document.getElementById('toastContainer');
+    const toast     = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.textContent = msg;
+    container.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+  },
+};
+
+app.init();
+app.loadState();
+</script>
+</body>
+</html>

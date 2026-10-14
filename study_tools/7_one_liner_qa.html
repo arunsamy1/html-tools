@@ -1,0 +1,1612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Study with QA (Standalone)</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Segoe UI', Tahoma, sans-serif;
+  background: #ffffff;
+  color: #1a1a2e;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.top-bars {
+  max-height: 400px;
+  overflow: hidden;
+  transition: max-height 0.35s ease;
+}
+.top-bars.collapsed { max-height: 0; }
+
+.header {
+  background: #f5f5f5;
+  border-bottom: 2px solid #0ea5e9;
+  padding: 12px max(16px, env(safe-area-inset-left));
+  display: flex;
+  align-items: center;
+}
+.header h1 { font-size: 22px; font-weight: 700; color: #1a1a2e; }
+.header h1::before { content: '❓ '; }
+.header h1 span { font-size: 13px; color: #888; font-weight: 400; margin-left: 6px; }
+
+.controls-bar {
+  background: #f5f5f5;
+  border-bottom: 2px solid #0ea5e9;
+  padding: 10px max(12px, env(safe-area-inset-left));
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.btn {
+  min-height: 44px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.15s, background 0.15s, box-shadow 0.15s;
+  white-space: nowrap;
+}
+.btn:active { transform: scale(0.96); }
+.btn:disabled { opacity: 0.5; pointer-events: none; }
+
+.btn-primary { background: #0ea5e9; color: #fff; }
+.btn-primary:hover { background: #38bdf8; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(14,165,233,0.35); }
+
+.btn-secondary { background: #f0f0f0; color: #1a1a2e; border: 1px solid #0ea5e9; }
+.btn-secondary:hover { background: #0284c7; color: #fff; transform: translateY(-2px); }
+
+.btn-success { background: #38bdf8; color: #fff; }
+.btn-success:hover { background: #7dd3fc; transform: translateY(-2px); }
+
+.collapse-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: 6px;
+  color: #555;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  min-height: 44px;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.collapse-btn:hover { background: #e8e8e8; }
+
+.voice-select-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 1 360px;
+}
+.voice-select-wrapper label { font-size: 13px; white-space: nowrap; }
+#voiceSelect {
+  flex: 1;
+  max-width: 240px;
+  min-height: 36px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 13px;
+  background: #fff;
+  color: #1a1a2e;
+}
+
+.voice-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  user-select: none;
+  min-height: 44px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  border: 1px solid #0ea5e9;
+  background: #f0f0f0;
+  color: #1a1a2e;
+  white-space: nowrap;
+}
+.voice-toggle input[type="checkbox"] { width: 18px; height: 18px; accent-color: #0ea5e9; cursor: pointer; }
+.voice-toggle:has(input:checked) { background: #0ea5e9; color: #fff; }
+
+.expand-fab {
+  position: fixed;
+  top: 0;
+  right: max(16px, env(safe-area-inset-right));
+  background: #0ea5e9;
+  color: #fff;
+  border: none;
+  border-radius: 0 0 20px 20px;
+  padding: 6px 14px 10px;
+  cursor: pointer;
+  z-index: 100;
+  display: none;
+  align-items: center;
+  touch-action: manipulation;
+  box-shadow: 0 3px 10px rgba(14,165,233,0.4);
+}
+.expand-fab.visible { display: flex; }
+.expand-fab svg { width: 20px; height: 20px; }
+
+.main-container {
+  flex: 1;
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 24px max(24px, env(safe-area-inset-left));
+  display: flex;
+  flex-direction: column;
+}
+
+#emptyState {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 16px;
+  color: #555;
+}
+#emptyState h2 { font-size: 24px; color: #1a1a2e; }
+#emptyState p { font-size: 15px; max-width: 440px; line-height: 1.6; }
+#emptyState code { background: #f0f0f0; padding: 2px 6px; border-radius: 4px; font-size: 13px; }
+.format-notice {
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-left: 4px solid #f59e0b;
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  color: #7c2d12;
+  font-size: 15px;
+  line-height: 1.55;
+}
+.format-notice.hidden { display: none; }
+.format-notice strong { display: block; margin-bottom: 6px; font-size: 16px; }
+.format-notice a { color: #b45309; font-weight: 600; }
+
+#emptyState pre {
+  background: #f0f0f0;
+  border-radius: 6px;
+  padding: 10px 14px;
+  font-size: 13px;
+  text-align: left;
+  max-width: 480px;
+  overflow-x: auto;
+}
+
+#cardArea { display: flex; flex-direction: column; gap: 20px; }
+#cardArea.hidden { display: none; }
+
+.progress-section { display: flex; flex-direction: column; gap: 6px; }
+.progress-labels { display: flex; justify-content: space-between; font-size: 14px; color: #555; font-weight: 500; }
+.progress-bar { height: 8px; background: #e8e8e8; border-radius: 4px; overflow: hidden; }
+.progress-fill { height: 100%; background: linear-gradient(90deg, #0ea5e9, #38bdf8); border-radius: 4px; transition: width 0.3s ease; width: 0%; }
+
+.qa-card {
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 30px;
+  min-height: 360px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+  overflow: hidden;
+}
+.qa-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 4px;
+  background: #0ea5e9;
+}
+.qa-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+
+.card-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.card-label-q { color: #0284c7; }
+.card-label-a { color: #38bdf8; }
+
+.card-question {
+  font-size: 28px;
+  font-weight: 600;
+  color: #1a1a2e;
+  line-height: 1.4;
+  white-space: pre-wrap;
+}
+
+.answer-section {
+  margin-top: 40px;
+  display: none;
+}
+.answer-section.visible { display: block; }
+
+.card-divider {
+  height: 1px;
+  background: #e8e8e8;
+  margin-bottom: 16px;
+}
+
+.card-answer {
+  font-size: 24px;
+  font-weight: 500;
+  color: #333;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  max-height: 45vh;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+/* A multi-line answer — a list, or a tab-indented outline from
+   11_multi_liner_qa.txt — reads better smaller and looser. These are the
+   sizes the former Multi Liner QA app used; applied per card, so a one-word
+   answer keeps the large type. */
+.qa-card.long-answer .card-question { font-size: 24px; }
+.qa-card.long-answer .card-answer   { font-size: 18px; line-height: 1.65; }
+
+.reveal-hint {
+  position: absolute;
+  bottom: 14px;
+  right: 18px;
+  font-size: 12px;
+  color: #aaa;
+}
+
+/* Flag badge — shown on the card when the current item is flagged */
+.flagged-indicator {
+  display: none;
+  position: absolute;
+  top: 14px;
+  right: 18px;
+  padding: 3px 10px;
+  background: #f59e0b;
+  color: #fff;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+.qa-card.flagged .flagged-indicator { display: inline-block; }
+
+/* ── Fill-in-the-blank items (merged in from the former Fill In The Blanks app) ── */
+.blank-slot {
+  display: inline-block;
+  min-width: 100px;
+  padding: 0 8px;
+  border-bottom: 3px solid #0ea5e9;
+  color: #0ea5e9;
+  font-weight: 700;
+  text-align: center;
+}
+.blank-slot.correct  { border-color: #00a87d; color: #00a87d; }
+.blank-slot.wrong    { border-color: #e94560; color: #e94560; }
+.blank-slot.revealed { border-color: #f59e0b; color: #f59e0b; }
+
+.answer-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 28px;
+  width: 100%;
+  flex-wrap: wrap;
+  cursor: auto;
+  user-select: text;
+}
+.answer-row.hidden { display: none; }
+.answer-input {
+  flex: 1 1 240px;
+  padding: 12px 14px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 17px;
+  font-family: inherit;
+  color: #1a1a2e;
+}
+.answer-input:focus { outline: none; border-color: #0ea5e9; }
+
+.feedback-row {
+  margin-top: 22px;
+  padding: 14px 18px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  width: 100%;
+  cursor: auto;
+  user-select: text;
+}
+.feedback-row.hidden { display: none; }
+.feedback-row.feedback-correct { background: #e6fff8; color: #00a87d; }
+.feedback-row.feedback-wrong   { background: #fff0f3; color: #e94560; }
+
+.score-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 10px;
+  background: #0284c7;
+  color: #fff;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.score-badge.hidden { display: none; }
+
+/* ── Quiz mode (merged in from the former Vocabulary Builder app) ── */
+.quiz-options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  margin-top: 24px;
+  cursor: auto;
+  user-select: text;
+}
+.quiz-options.hidden { display: none; }
+.btn.hidden, .jump-to-container.hidden { display: none; }
+.quiz-option {
+  padding: 14px 20px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 17px;
+  text-align: left;
+  transition: border-color 0.15s, background 0.15s;
+  color: #1a1a2e;
+  font-family: inherit;
+  white-space: pre-wrap;
+  max-height: 24vh;
+  overflow: auto;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.quiz-option:hover:not(:disabled) { border-color: #0ea5e9; background: #f0f9ff; }
+.quiz-option.correct { border-color: #00a87d; background: #e6fff8; color: #00a87d; font-weight: 600; }
+.quiz-option.wrong   { border-color: #e94560; background: #fff0f3; color: #e94560; }
+.quiz-option:disabled { cursor: default; }
+
+.quiz-summary {
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 48px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+.quiz-summary.hidden { display: none; }
+.quiz-summary h2 { font-size: 30px; color: #1a1a2e; margin-bottom: 8px; }
+.quiz-summary .score-big { font-size: 66px; font-weight: 700; color: #0ea5e9; line-height: 1; margin: 18px 0 10px; }
+.quiz-summary .score-pct { font-size: 22px; color: #666; margin-bottom: 8px; }
+.quiz-summary .score-msg { font-size: 17px; color: #1a1a2e; margin-bottom: 26px; }
+.quiz-summary-actions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+.quiz-summary-actions .btn { min-width: 0; }
+
+.jump-to-container { display: flex; align-items: center; gap: 8px; }
+.jump-to-container input {
+  width: 56px;
+  padding: 8px;
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  font-size: 14px;
+  text-align: center;
+}
+.jump-to-container .btn { min-width: 0; padding: 8px 14px; font-size: 14px; }
+
+.navigation-buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.navigation-buttons .btn { min-width: 120px; }
+
+.toast-container {
+  position: fixed;
+  bottom: max(20px, env(safe-area-inset-bottom));
+  right: max(16px, env(safe-area-inset-right));
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+.toast {
+  padding: 12px 18px;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  max-width: 320px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+  animation: toastIn 0.25s ease;
+}
+.toast-success { background: #00a87d; }
+.toast-error   { background: #e94560; }
+.toast-info    { background: #0284c7; }
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 768px) {
+  .controls-bar { padding: 8px max(8px, env(safe-area-inset-left)); }
+  .voice-select-wrapper { flex: 1 1 100%; }
+  .btn, .voice-toggle { flex: 1 1 calc(50% - 4px); justify-content: center; }
+  .collapse-btn { flex: 0 0 auto; }
+  .qa-card { padding: 20px; min-height: 260px; }
+  .card-question { font-size: 20px; }
+  .card-answer { font-size: 17px; max-height: 38vh; }
+  .qa-card.long-answer .card-question { font-size: 19px; }
+  .qa-card.long-answer .card-answer   { font-size: 16px; }
+  .navigation-buttons .btn { flex: 1 1 calc(50% - 5px); }
+  .header h1 { font-size: 18px; }
+  .main-container { padding: 16px max(16px, env(safe-area-inset-left)); }
+}
+@media (max-width: 480px) {
+  .card-question { font-size: 18px; }
+  .navigation-buttons .btn { flex: 1 1 100%; }
+  .jump-to-container { flex: 1 1 100%; justify-content: center; }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   PHONE WIDTHS — tuned for 6.7" phone screens
+   (~430×932 CSS px, e.g. iPhone Pro Max / Galaxy S Ultra, portrait)
+   Reduced button sizes + tighter spacing for small touchscreens.
+   Wins over the desktop/tablet rules above via !important, and only
+   engages at phone widths, so this one file serves phone, tablet and
+   desktop — there is no separate desktop build.
+   ═══════════════════════════════════════════════════════════════════ */
+@media (max-width: 600px) {
+  html { -webkit-text-size-adjust: 100%; }
+
+  .header { padding: 8px 12px !important; }
+  .header h1 { font-size: 16px !important; }
+
+  .controls-bar {
+    padding: 6px max(8px, env(safe-area-inset-right)) 6px max(8px, env(safe-area-inset-left)) !important;
+    gap: 6px !important;
+  }
+
+  /* Buttons — reduced size for compact mobile touch targets */
+  .btn, .btn-primary, .btn-secondary, .btn-success, .btn-danger, .quiz-summary-actions .btn {
+    padding: 7px 11px !important;
+    font-size: 12.5px !important;
+    min-height: 34px !important;
+    gap: 5px !important;
+    border-radius: 6px !important;
+    white-space: nowrap;
+  }
+  .collapse-btn {
+    padding: 5px 12px !important;
+    min-height: 30px !important;
+    min-width: 74px !important;
+    font-size: 11px !important;
+    gap: 4px !important;
+  }
+  .expand-fab { padding: 3px 10px 4px !important; font-size: 13px !important; }
+
+  .ctrl-select-wrapper, .voice-select-wrapper { gap: 4px !important; }
+  .ctrl-select-wrapper label, .voice-select-wrapper label { font-size: 11px !important; }
+  .ctrl-select-wrapper select, .voice-select-wrapper select {
+    min-height: 34px !important;
+    padding: 4px 8px !important;
+    font-size: 16px; /* keep >=16px: smaller triggers unwanted iOS auto-zoom on focus */
+  }
+  .ctrl-toggle, .voice-toggle { font-size: 11px !important; gap: 4px !important; }
+
+  .main-container { padding: 10px max(10px, env(safe-area-inset-left)) !important; }
+
+  /* Question / card panels */
+  .question-panel { padding: 14px !important; min-height: auto !important; }
+  .question-text { font-size: 15px !important; margin-bottom: 14px !important; }
+  .option-btn, .quiz-option {
+    padding: 9px 11px !important;
+    font-size: 13px !important;
+  }
+  .options-container, .quiz-options { gap: 8px !important; }
+
+  .qa-card, .fill-card, .one-liner-card, .word-card { padding: 16px !important; min-height: auto !important; }
+  .card-question, .sentence-text, .one-liner-text, .word-text { font-size: 16px !important; }
+  .card-answer { font-size: 14px !important; }
+
+  .answer-input, .blank-slot { font-size: 14px !important; padding: 6px 8px !important; }
+
+  .action-buttons, .navigation-buttons {
+    gap: 6px !important;
+    margin-top: 12px !important;
+  }
+  .action-buttons .btn, .navigation-buttons .btn, .navigation-buttons .voice-toggle {
+    flex: 1 1 100% !important;
+    justify-content: center !important;
+  }
+  .show-answer-btn, .nav-btn { min-width: 0 !important; }
+
+  .stats-bar { padding: 8px 10px !important; font-size: 11px !important; gap: 8px !important; }
+  .feedback-panel, .feedback-row { font-size: 12.5px !important; padding: 8px 10px !important; }
+  .progress-text, .progress-labels { font-size: 12px !important; }
+
+  /* Modals / popups */
+  .modal-content { padding: 14px !important; width: 94% !important; }
+  .modal-header h2 { font-size: 17px !important; }
+  .explanation-popup { padding: 14px !important; left: 10px !important; right: 10px !important; bottom: 10px !important; max-width: none !important; width: auto !important; }
+  .flagged-item { padding: 10px !important; }
+
+  /* Review */
+  .review-list-item { padding: 10px 12px !important; }
+  .review-question-item { padding: 14px !important; }
+  .review-question-text { font-size: 15px !important; }
+  .review-header h2, .empty-state h2, .quiz-summary h2 { font-size: 20px !important; }
+
+  /* Toasts */
+  .toast-container { bottom: 10px !important; right: 10px !important; left: 10px !important; }
+  .toast { max-width: 100% !important; font-size: 12.5px !important; padding: 9px 12px !important; }
+
+  .jump-to-container { gap: 6px !important; }
+  .score-badge { font-size: 12px !important; padding: 3px 8px !important; }
+}
+</style>
+</head>
+<body>
+
+<button class="expand-fab" id="expandFab" onclick="app.toggleBars()" aria-label="Expand toolbar" title="Show bar (B)">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <polyline points="6 9 12 15 18 9"/>
+  </svg>
+</button>
+
+<div class="top-bars" id="topBars">
+  <header class="header">
+    <h1>Study with QA <span>Standalone</span></h1>
+  </header>
+  <div class="controls-bar">
+    <input type="file" id="fileInput" accept=".txt,.csv" style="display:none">
+    <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">📂 Import Text</button>
+
+    <div class="voice-select-wrapper">
+      <label for="voiceSelect">🔊 Voice</label>
+      <select id="voiceSelect" onchange="app.onVoiceChange()" title="English voices only">
+        <option value="">Default</option>
+      </select>
+    </div>
+
+    <label class="voice-toggle" title="Enable / disable text-to-speech">
+      <input type="checkbox" id="voiceCheckbox" onchange="app.onVoiceToggle()">
+      🔊 Voice
+    </label>
+
+    <label class="voice-toggle" title="Shuffle cards">
+      <input type="checkbox" id="shuffleCheckbox" disabled onchange="app.onShuffleToggle()">
+      🔀 Shuffle
+    </label>
+
+    <label class="voice-toggle" title="Show the answer first and guess the question">
+      <input type="checkbox" id="swapCheckbox" disabled onchange="app.onSwapToggle()">
+      🔄 Swap
+    </label>
+
+    <label class="voice-toggle" title="Multiple-choice quiz over the loaded cards">
+      <input type="checkbox" id="quizCheckbox" disabled onchange="app.onQuizToggle()">
+      🎯 Quiz
+    </label>
+
+    <button class="btn btn-secondary" id="reviewFlaggedBtn" onclick="app.reviewFlags()" disabled>⚑ Review Flagged (0)</button>
+    <button class="btn btn-secondary" id="exportFlaggedBtn" onclick="app.exportFlags()" disabled>📥 Export Flagged</button>
+
+    <button class="btn btn-secondary" onclick="app.clearAndReset()">🗑️ Clear Progress</button>
+
+    <button class="collapse-btn" onclick="app.toggleBars()" title="Hide bar (B)">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="18 15 12 9 6 15"/>
+      </svg>
+      Hide Bar
+    </button>
+  </div>
+</div>
+
+<main class="main-container">
+  <div id="formatNotice" class="format-notice hidden">
+    <strong>This looks like a questions-only file.</strong>
+    <span id="formatNoticeBody"></span>
+  </div>
+
+  <div id="emptyState">
+    <h2>Welcome to Study with QA</h2>
+    <p>Import a <strong>.txt</strong> or <strong>.csv</strong> file — everything runs in this
+    browser tab, no server needed. Three layouts are recognised automatically:</p>
+    <p><strong>Q&amp;A</strong> — a question line, its answer on the next, a blank line between
+    pairs. An answer may run to as many lines as you need, indentation and all, so a list or an
+    outline stays readable. Tap a card to reveal it.</p>
+    <pre>What are the three types of MPM?
+1. prefork
+2. worker
+3. event
+
+What are the different ways to manage the Apache service?
+	- apachectl
+		- Start, stop and restart commands
+	- systemctl
+		- Service name on Debian vs RHEL</pre>
+    <p><strong>Vocabulary / commands</strong> — <code>term, definition</code>, one per line, no blank
+    lines. Also reads the <code>.csv</code> form with its header row.<br>
+    <strong>One per line</strong> — <code>question | answer</code>.</p>
+    <p>Any item whose text contains a <code>___</code> blank becomes a fill-in-the-blank card: type
+    your answer and check it. <strong>Swap</strong> shows the answer first, and <strong>Quiz</strong>
+    turns the whole set into multiple choice.</p>
+  </div>
+
+  <div id="cardArea" class="hidden">
+    <div class="progress-section">
+      <div class="progress-labels">
+        <span id="progressLabel">Card 1 of 1</span>
+        <span id="scoreDisplay" class="score-badge hidden">🎯 0/0</span>
+        <span id="progressPct">0%</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+    </div>
+
+    <div class="qa-card" id="qaCard" onclick="app.onCardClick(event)" tabindex="0"
+         role="button" aria-label="Tap to reveal answer">
+      <div class="card-label card-label-q" id="cardLabelQ">Question</div>
+      <div class="card-question" id="cardQuestion"></div>
+      <div class="answer-row hidden" id="answerRow">
+        <input type="text" id="answerInput" class="answer-input" placeholder="Type your answer…" autocomplete="off">
+        <button class="btn btn-primary" onclick="app.checkAnswer()">✓ Check</button>
+      </div>
+      <div class="feedback-row hidden" id="feedbackRow"></div>
+      <div class="quiz-options hidden" id="quizOptions"></div>
+      <div class="answer-section" id="answerSection">
+        <div class="card-divider"></div>
+        <div class="card-label card-label-a" id="cardLabelA">Answer</div>
+        <div class="card-answer" id="cardAnswer"></div>
+      </div>
+      <span class="reveal-hint" id="revealHint">Tap to reveal</span>
+      <span class="flagged-indicator" id="flaggedBadge">FLAGGED</span>
+    </div>
+
+    <div class="navigation-buttons">
+      <button class="btn btn-secondary" id="firstBtn" onclick="app.goToFirst()">⏮ First</button>
+      <button class="btn btn-secondary" id="prevBtn" onclick="app.prev()">← Previous</button>
+      <button class="btn btn-secondary" onclick="app.replay()" title="Replay (R)">🔊 Replay</button>
+      <button class="btn btn-primary"   id="nextBtn" onclick="app.next()">Next →</button>
+    </div>
+    <div class="navigation-buttons">
+      <button class="btn btn-primary" id="showAnswerBtn" onclick="app.toggleAnswer()">👁 Show Answer</button>
+      <button class="btn btn-success" id="flagBtn" onclick="app.toggleFlag()">⚑ Flag</button>
+      <button class="btn btn-secondary hidden" id="endQuizBtn" onclick="app.showQuizSummary()">⏹ End Quiz</button>
+      <div class="jump-to-container" id="jumpToContainer">
+        <input type="number" id="jumpToInput" min="1" placeholder="#">
+        <button class="btn btn-secondary" onclick="app.jumpTo()">Go</button>
+      </div>
+    </div>
+
+    <div class="quiz-summary hidden" id="quizSummaryArea">
+      <h2>Quiz Complete!</h2>
+      <div class="score-big" id="quizSummaryScore">0/0</div>
+      <div class="score-pct" id="quizSummaryPercent">0%</div>
+      <div class="score-msg" id="quizSummaryMessage"></div>
+      <div class="quiz-summary-actions">
+        <button class="btn btn-primary" onclick="app.restartQuiz()">🔄 Restart Quiz</button>
+        <button class="btn btn-secondary hidden" id="exportWrongBtn" onclick="app.exportQuizWrong()">📥 Export Wrong Answers</button>
+        <button class="btn btn-secondary" onclick="app.exitQuiz()">Exit Quiz Mode</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+// Three or more underscores mark a fill-in-the-blank item. chapter_support
+// files use eight (________); the older hand-written examples use three.
+const BLANK_RE = /_{3,}/;
+
+const app = {
+  pairs: [],
+  originalPairs: [],
+  index: 0,
+  revealed: false,
+  peeking: false,
+  flagged: new Set(),
+  flaggedReviewIndex: 0,
+
+  STATE_KEY: 'oneLinerQaStandaloneState',
+
+  swapMode: false,
+  quizMode: false,
+  quizAnswered: false,
+  quizCorrect: 0,
+  quizTotal: 0,
+  quizWrong: [],
+
+  // The layout the imported file was written in — 'block', 'pipe' or 'vocab' —
+  // plus the two details that only matter for a vocabulary file: the header
+  // row it carried, if any, and the extension it came in under. An export has
+  // to come back in this layout, not in whatever layout its contents happen to
+  // suggest, so a flagged set can be re-imported and diffed against the file
+  // it came from.
+  sourceFormat: '',
+  vocabHeader: '',
+  sourceExt: '',
+
+  init() {
+    if (speechSynthesis.onvoiceschanged !== undefined) {
+      speechSynthesis.onvoiceschanged = () => this.populateVoices();
+    }
+    this.populateVoices();
+
+    document.getElementById('fileInput').addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      e.target.value = '';
+      const reader = new FileReader();
+      reader.onload = evt => this.loadFromText(evt.target.result, file.name);
+      reader.onerror = () => this.showToast('Upload failed — could not read file.', 'error');
+      reader.readAsText(file);
+    });
+
+    document.getElementById('answerInput').addEventListener('keypress', e => {
+      if (e.key === 'Enter') { e.preventDefault(); this.checkAnswer(); }
+    });
+
+    document.getElementById('jumpToInput').addEventListener('keypress', e => {
+      if (e.key === 'Enter') this.jumpTo();
+    });
+
+    document.addEventListener('keydown', e => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+      if (e.key === 'b' || e.key === 'B') this.toggleBars();
+      if (e.key === 'r' || e.key === 'R') this.replay();
+      if (e.key === 'ArrowRight' || e.key === 'n') this.next();
+      if (e.key === 'ArrowLeft'  || e.key === 'p') this.prev();
+      if (e.key === 'm' || e.key === 'M') this.toggleFlag();
+      if (e.key === ' ' || e.key === 'Enter' || e.key === 'ArrowUp') { e.preventDefault(); this.toggleAnswer(); }
+    });
+
+    let touchStartX = 0, touchStartY = 0;
+    const area = document.getElementById('cardArea');
+    area.addEventListener('touchstart', e => {
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+    }, { passive: true });
+    area.addEventListener('touchend', e => {
+      const dx = e.changedTouches[0].clientX - touchStartX;
+      const dy = e.changedTouches[0].clientY - touchStartY;
+      if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) {
+        dx < 0 ? this.next() : this.prev();
+      }
+    }, { passive: true });
+  },
+
+  parsePairs(text) {
+    const nonBlankLines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    // A pipe-delimited file carries one "question | answer" per line, so it
+    // never needs blank-line separators. Treating a single pipe as proof of
+    // that format broke ordinary block files whose answer happens to contain
+    // a shell pipeline (e.g. "apachectl -V | grep -i mpm"), so require both
+    // signals: no blank-line separator anywhere, and a pipe on most lines.
+    const hasBlankSeparator = /\r?\n[ \t]*\r?\n/.test(text.trim());
+    const pipedCount = nonBlankLines.filter(l => l.includes('|')).length;
+    if (!hasBlankSeparator && pipedCount > nonBlankLines.length / 2) {
+      this.sourceFormat = 'pipe';
+      return nonBlankLines.map(line => {
+        const pipeIdx = line.indexOf('|');
+        if (pipeIdx === -1) return this._newPair(line, '');
+        return this._newPair(line.slice(0, pipeIdx).trim(), line.slice(pipeIdx + 1).trim());
+      }).filter(p => p.q);
+    }
+    if (!hasBlankSeparator && this.looksLikeVocab(nonBlankLines)) {
+      this.sourceFormat = 'vocab';
+      return this.parseVocabLines(nonBlankLines);
+    }
+    // Blocks are separated by one or more blank lines.
+    // Within a block, the first line is the question and every remaining
+    // line is the answer, so an answer can span multiple lines.
+    this.sourceFormat = 'block';
+    const rawBlocks = text.split(/\r?\n\s*\r?\n+/);
+    return rawBlocks.map(block => {
+      const lines = block.split(/\r?\n/).map(l => l.replace(/\s+$/, ''));
+      while (lines.length && lines[0].trim() === '') lines.shift();
+      while (lines.length && lines[lines.length - 1].trim() === '') lines.pop();
+      if (!lines.length) return null;
+      const q = lines[0].trim();
+      // Not trimmed: .trim() on the joined answer strips the two ends of the
+      // whole string, which means the first line's indentation — so a nested
+      // answer lost the leading tab on its first line while every line below
+      // kept one. Nothing here needs trimming anyway: trailing whitespace is
+      // already gone per line above, and a block cannot contain a blank line
+      // because a blank line is what separates blocks.
+      const a = lines.slice(1).join('\n');
+      return q ? this._newPair(q, a) : null;
+    }).filter(Boolean);
+  },
+
+  _newPair(q, a, vocab) { return { q, a, vocab: !!vocab, attempted: false, correct: null, userAnswer: '' }; },
+
+  _enableModeToggles() {
+    ['shuffleCheckbox', 'swapCheckbox', 'quizCheckbox']
+      .forEach(id => { document.getElementById(id).disabled = false; });
+  },
+
+  // ── Vocabulary / command-reference files ────────────────────
+  // `term, definition` (or `item, description`), one per line, no blank lines
+  // — the layout of chapter_support's 04_1_vocab.* and 02_1_commands_config.*.
+  //
+  // Telling that apart from a Q&A file matters, because mis-detecting one
+  // would silently mangle it. Three independent signals are required, each
+  // measured over the whole library so the margins are known:
+  //   - no numbered line. Every one of the 13,589 questions-only lines starts
+  //     with an `N. ` prefix, and none of the 7,429 vocabulary lines does.
+  //   - a comma on at least 90% of lines (vocabulary files: 100% of lines;
+  //     the worst Q&A or questions-only file: 34%).
+  //   - a short first field (vocabulary median: 2 words; questions-only
+  //     median: 12), since a question carrying a comma has a long clause in
+  //     front of it.
+  // All three together leave single-entry files detectable, which matters —
+  // a few chapters have a one-line commands reference.
+
+  VOCAB_HEADER_RE: /^(word\s*,\s*definition|item\s*,\s*description)$/i,
+  NUMBERED_RE: /^\d+\.\s/,
+
+  looksLikeVocab(lines) {
+    const body = lines.filter(l => !this.VOCAB_HEADER_RE.test(l));
+    if (!body.length) return false;
+    if (body.some(l => this.NUMBERED_RE.test(l))) return false;
+    const withComma = body.filter(l => l.includes(','));
+    if (withComma.length < body.length * 0.9) return false;
+    const firstFieldWords = withComma
+      .map(l => l.split(',')[0].trim().split(/\s+/).length)
+      .sort((x, y) => x - y);
+    const median = firstFieldWords[Math.floor(firstFieldWords.length / 2)];
+    return median <= 6;
+  },
+
+  // A .csv carries a header row and double-quotes any field containing a
+  // comma, doubling a quote inside it; the .txt equivalents have neither.
+  unquoteField(field) {
+    field = field.trim();
+    return /^"[\s\S]*"$/.test(field) ? field.slice(1, -1).replace(/""/g, '"') : field;
+  },
+
+  parseVocabLines(lines) {
+    const pairs = [];
+    this.vocabHeader = '';
+    for (const line of lines) {
+      if (!pairs.length && this.VOCAB_HEADER_RE.test(line)) { this.vocabHeader = line; continue; }
+      const commaIdx = line.indexOf(',');
+      if (commaIdx === -1) continue;
+      const term = this.unquoteField(line.slice(0, commaIdx));
+      const def  = this.unquoteField(line.slice(commaIdx + 1));
+      if (term) pairs.push(this._newPair(term, def, true));
+    }
+    return pairs;
+  },
+
+  // ── Card faces and labels ──────────────────────────────────
+
+  // The two faces of a card. Swap flips them — except on a fill-in-the-blank
+  // item, where the sentence has to stay on the front for the blank to mean
+  // anything, so those ignore Swap.
+  faces(pair) {
+    if (!pair) return { front: '', back: '' };
+    return (this.swapMode && !this.isBlank(pair))
+      ? { front: pair.a, back: pair.q }
+      : { front: pair.q, back: pair.a };
+  },
+
+  frontLabel(pair) {
+    if (this.isBlank(pair)) return 'Fill in the blank';
+    if (pair && pair.vocab)  return this.swapMode ? 'Definition' : 'Term';
+    return this.swapMode ? 'Answer' : 'Question';
+  },
+
+  backLabel(pair) {
+    if (this.isBlank(pair)) return 'Answer';
+    if (pair && pair.vocab)  return this.swapMode ? 'Term' : 'Definition';
+    return this.swapMode ? 'Question' : 'Answer';
+  },
+
+  // ── Fill-in-the-blank helpers ───────────────────────────────
+
+  isBlank(pair) { return !!pair && BLANK_RE.test(pair.q); },
+
+  escapeHtml(str) {
+    return str.replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+  },
+
+  // Renders the sentence with its blank as a slot. A replacer function is used
+  // rather than a replacement string so that a `$&`/`$1` inside an answer
+  // (Terraform interpolations, for one) is inserted literally.
+  renderSentence(pair, filledText, filledClass) {
+    const filler = filledText !== undefined
+      ? `<span class="blank-slot ${filledClass || ''}">${this.escapeHtml(filledText)}</span>`
+      : '<span class="blank-slot">&nbsp;</span>';
+    return this.escapeHtml(pair.q).replace(BLANK_RE, () => filler);
+  },
+
+  // A questions-only file (chapter_support's `*_q.txt`) is every line a
+  // numbered question with no answers and no blank lines — so this app would
+  // read the whole file as one block and show a single card with a
+  // several-hundred-line answer. Recognise the shape and point at Revise with Q,
+  // which is the app for one item per line.
+  //
+  // The test is that every line is numbered and the numbers strictly increase.
+  // Requiring them to increase is what makes it safe: a list answer restarts
+  // its numbering at 1, so a single-item 05_list_qa.txt ("1. question" then
+  // "1. …", "2. …") repeats a number and is not mistaken for this. Measured
+  // over the library, that matches all 335 questions-only files and none of
+  // the 690 Q&A or vocabulary files.
+  looksLikeQuestionsOnly(lines) {
+    if (!lines.length) return false;
+    let previous = 0;
+    for (const line of lines) {
+      const m = /^(\d+)\.\s/.exec(line);
+      if (!m) return false;
+      const n = Number(m[1]);
+      if (n <= previous) return false;
+      previous = n;
+    }
+    return true;
+  },
+
+  showQuestionsOnlyNotice(count) {
+    document.getElementById('formatNoticeBody').innerHTML =
+      `All ${count} line${count !== 1 ? 's are' : ' is a'} numbered question${count !== 1 ? 's' : ''} with no answers, and there are no blank lines, ` +
+      `so this app would show the whole file as a single card. Open it in ` +
+      `<a href="8_one_liner_q.html">Revise with Q</a> instead — that app is built for one item per line.`;
+    document.getElementById('formatNotice').classList.remove('hidden');
+    this.showToast('Questions-only file — open it in Revise with Q.', 'error');
+  },
+
+  loadFromText(text, filename = '') {
+    this.sourceExt = /\.[a-z0-9]+$/i.test(filename)
+      ? filename.slice(filename.lastIndexOf('.')).toLowerCase() : '';
+    const nonBlankLines    = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    const hasBlankSeparator = /\r?\n[ \t]*\r?\n/.test(text.trim());
+    if (!hasBlankSeparator && this.looksLikeQuestionsOnly(nonBlankLines)) {
+      this.showQuestionsOnlyNotice(nonBlankLines.length);
+      return;
+    }
+    document.getElementById('formatNotice').classList.add('hidden');
+
+    const pairs = this.parsePairs(text);
+    if (!pairs.length) { this.showToast('No valid entries found.', 'error'); return; }
+    this.pairs         = pairs;
+    this.originalPairs = [...pairs];
+    this.index         = 0;
+    this.flagged       = new Set();
+    this.flaggedReviewIndex = 0;
+    document.getElementById('cardArea').classList.remove('hidden');
+    document.getElementById('emptyState').style.display = 'none';
+    this._enableModeToggles();
+    this.renderCard();
+    this.updateScoreDisplay();
+    this.saveState();
+    const blanks = pairs.filter(p => this.isBlank(p)).length;
+    const vocab  = pairs.length && pairs.every(p => p.vocab);
+    const noun   = vocab ? 'term' : 'pair';
+    const detail = blanks ? ` (${blanks} fill-in-the-blank)` : '';
+    this.showToast(`Loaded ${pairs.length} ${noun}${pairs.length !== 1 ? 's' : ''}${detail}.`, 'success');
+  },
+
+  renderCard(silent = false) {
+    const { pairs, index } = this;
+    const pair = pairs[index];
+    this.revealed = false;
+    this.peeking  = false;
+
+    const blank = this.isBlank(pair);
+    const quiz  = this.quizMode;
+    const { front, back } = this.faces(pair);
+    document.getElementById('cardLabelQ').textContent = quiz ? 'Pick the answer' : this.frontLabel(pair);
+    document.getElementById('cardLabelA').textContent = this.backLabel(pair);
+
+    if (quiz) {
+      document.getElementById('cardQuestion').textContent = front;
+      document.getElementById('answerRow').classList.add('hidden');
+      document.getElementById('feedbackRow').classList.add('hidden');
+    } else if (blank && pair.attempted) {
+      this.showFeedback(pair, false);
+    } else if (blank) {
+      document.getElementById('cardQuestion').innerHTML = this.renderSentence(pair);
+      document.getElementById('answerRow').classList.remove('hidden');
+      document.getElementById('feedbackRow').classList.add('hidden');
+      const input = document.getElementById('answerInput');
+      input.value = '';
+      input.disabled = false;
+    } else {
+      document.getElementById('cardQuestion').textContent = front;
+      document.getElementById('answerRow').classList.add('hidden');
+      document.getElementById('feedbackRow').classList.add('hidden');
+    }
+
+    document.getElementById('cardAnswer').textContent   = back;
+    document.getElementById('qaCard').classList.toggle('long-answer', back.includes('\n'));
+    document.getElementById('answerSection').classList.remove('visible');
+    document.getElementById('revealHint').style.display = (!quiz && !blank && back) ? '' : 'none';
+
+    const total = pairs.length;
+    const pct   = total > 1 ? Math.round((index / (total - 1)) * 100) : 100;
+    document.getElementById('progressLabel').textContent = `Card ${index + 1} of ${total}`;
+    document.getElementById('progressPct').textContent   = `${pct}%`;
+    document.getElementById('progressFill').style.width  = `${pct}%`;
+
+    document.getElementById('firstBtn').disabled = index === 0;
+    document.getElementById('prevBtn').disabled = index === 0;
+    document.getElementById('nextBtn').disabled = index === total - 1;
+    document.getElementById('jumpToInput').max = total;
+    const showBtn = document.getElementById('showAnswerBtn');
+    showBtn.disabled    = !back || (blank && pair.attempted);
+    showBtn.textContent = blank ? '👁 Peek' : '👁 Show Answer';
+
+    // Quiz mode hides the study controls that would give the answer away.
+    document.getElementById('quizOptions').classList.toggle('hidden', !quiz);
+    document.getElementById('endQuizBtn').classList.toggle('hidden', !quiz);
+    document.getElementById('jumpToContainer').classList.toggle('hidden', quiz);
+    showBtn.classList.toggle('hidden', quiz);
+    document.getElementById('firstBtn').classList.toggle('hidden', quiz);
+    document.getElementById('prevBtn').classList.toggle('hidden', quiz);
+
+    this.updateFlagUI();
+
+    if (quiz) {
+      this.quizAnswered = false;
+      document.getElementById('nextBtn').disabled = true;
+      this.renderQuizOptions(silent);
+      return;
+    }
+
+    if (!silent) this.speak(blank ? front.replace(BLANK_RE, 'blank') : front);
+  },
+
+  showFeedback(pair, doSpeak) {
+    const cls   = pair.correct ? 'correct' : 'wrong';
+    const shown = pair.correct ? pair.userAnswer : pair.a;
+    document.getElementById('cardQuestion').innerHTML = this.renderSentence(pair, shown, cls);
+    document.getElementById('answerRow').classList.add('hidden');
+
+    const fb = document.getElementById('feedbackRow');
+    if (pair.correct) {
+      fb.textContent = '✓ Correct!';
+      fb.className   = 'feedback-row feedback-correct';
+    } else {
+      fb.textContent = `✗ Your answer: "${pair.userAnswer}" — Correct: ${pair.a}`;
+      fb.className   = 'feedback-row feedback-wrong';
+    }
+    if (doSpeak) this.speak(pair.correct ? 'Correct!' : 'Incorrect. The answer is ' + pair.a);
+  },
+
+  checkAnswer() {
+    const pair = this.pairs[this.index];
+    if (!this.isBlank(pair) || pair.attempted) return;
+    const value = document.getElementById('answerInput').value.trim();
+    if (!value) { this.showToast('Type an answer first.', 'error'); return; }
+    pair.attempted  = true;
+    pair.userAnswer = value;
+    pair.correct    = value.toLowerCase() === pair.a.trim().toLowerCase();
+    this.peeking    = false;
+    this.showFeedback(pair, true);
+    this.updateScoreDisplay();
+    this.saveState();
+  },
+
+  // In quiz mode this is the running quiz score; otherwise it counts the
+  // fill-in-the-blank items, and hides itself for a file that has none.
+  updateScoreDisplay() {
+    const badge  = document.getElementById('scoreDisplay');
+    if (this.quizMode) {
+      badge.classList.remove('hidden');
+      badge.textContent = `🎯 ${this.quizCorrect}/${this.quizTotal}`;
+      return;
+    }
+    const blanks = this.pairs.filter(p => this.isBlank(p));
+    badge.classList.toggle('hidden', !blanks.length);
+    if (!blanks.length) return;
+    const attempted = blanks.filter(p => p.attempted);
+    const correct   = attempted.filter(p => p.correct).length;
+    badge.textContent = `🎯 ${correct}/${attempted.length}`;
+  },
+
+  jumpTo() {
+    const input = document.getElementById('jumpToInput');
+    const n = parseInt(input.value, 10);
+    if (isNaN(n) || n < 1 || n > this.pairs.length) {
+      this.showToast(`Enter a number between 1 and ${this.pairs.length}.`, 'error');
+      return;
+    }
+    this.index  = n - 1;
+    input.value = '';
+    this.renderCard();
+    this.saveState();
+  },
+
+  // ── Swap and Quiz (merged in from the former Vocabulary Builder) ───
+
+  onSwapToggle() {
+    this.swapMode = document.getElementById('swapCheckbox').checked;
+    const blanks = this.pairs.filter(p => this.isBlank(p)).length;
+    if (this.swapMode && blanks && blanks === this.pairs.length) {
+      this.showToast('Swap has no effect on fill-in-the-blank cards.', 'info');
+    }
+    this.renderCard(true);
+    this.saveState();
+  },
+
+  onQuizToggle() {
+    const box = document.getElementById('quizCheckbox');
+    if (box.checked && this.pairs.length < 2) {
+      box.checked = false;
+      this.showToast('Quiz mode needs at least 2 cards.', 'error');
+      return;
+    }
+    this.quizMode     = box.checked;
+    this.quizCorrect  = 0;
+    this.quizTotal    = 0;
+    this.quizAnswered = false;
+    this.quizWrong    = [];
+    document.getElementById('quizSummaryArea').classList.add('hidden');
+    if (this.pairs.length) {
+      this.index = 0;
+      this.renderCard();
+    }
+    this.updateScoreDisplay();
+    this.saveState();
+  },
+
+  _shuffleInPlace(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  },
+
+  // Four options: the right answer plus up to three distractors drawn from the
+  // other cards' answers. Unlike the Vocabulary Builder original, the pool is
+  // de-duplicated and anything equal to the right answer is dropped — 36 of
+  // the library's 140 Q&A files reuse one answer across several questions (up
+  // to 16% of items), which would otherwise offer the right answer twice.
+  buildQuizOptions() {
+    const correct = this.faces(this.pairs[this.index]).back;
+    const seen = new Set([correct]);
+    const pool = [];
+    this.pairs.forEach((p, i) => {
+      if (i === this.index) return;
+      const v = this.faces(p).back;
+      if (!v || seen.has(v)) return;
+      seen.add(v);
+      pool.push(v);
+    });
+    this._shuffleInPlace(pool);
+    return { options: this._shuffleInPlace([correct, ...pool.slice(0, 3)]), correct };
+  },
+
+  renderQuizOptions(silent) {
+    const container = document.getElementById('quizOptions');
+    const { options, correct } = this.buildQuizOptions();
+    container.innerHTML = '';
+    // The right button is held by reference rather than found by comparing
+    // text later, since two options can read the same when answers repeat.
+    let correctBtn = null;
+    options.forEach(option => {
+      const btn = document.createElement('button');
+      btn.className   = 'quiz-option';
+      btn.textContent = option;
+      const isCorrect = option === correct && !correctBtn;
+      if (isCorrect) correctBtn = btn;
+      btn.onclick = () => this.answerQuiz(btn, correctBtn, isCorrect, container);
+      container.appendChild(btn);
+    });
+    if (!silent) this.speak(this.faces(this.pairs[this.index]).front);
+  },
+
+  answerQuiz(chosenBtn, correctBtn, isCorrect, container) {
+    if (this.quizAnswered) return;
+    this.quizAnswered = true;
+    this.quizTotal++;
+    if (isCorrect) {
+      this.quizCorrect++;
+      chosenBtn.classList.add('correct');
+      this.speak('Correct!');
+    } else {
+      chosenBtn.classList.add('wrong');
+      if (correctBtn) correctBtn.classList.add('correct');
+      this.quizWrong.push(this.pairs[this.index]);
+      this.speak('Wrong. ' + this.faces(this.pairs[this.index]).back);
+    }
+    container.querySelectorAll('.quiz-option').forEach(b => { b.disabled = true; });
+    document.getElementById('nextBtn').disabled = false;
+    this.updateScoreDisplay();
+    this.saveState();
+    if (this.index === this.pairs.length - 1) setTimeout(() => this.showQuizSummary(), 900);
+  },
+
+  showQuizSummary() {
+    const area = document.getElementById('quizSummaryArea');
+    area.classList.remove('hidden');
+    const pct = this.quizTotal ? Math.round((this.quizCorrect / this.quizTotal) * 100) : 0;
+    document.getElementById('quizSummaryScore').textContent   = `${this.quizCorrect}/${this.quizTotal}`;
+    document.getElementById('quizSummaryPercent').textContent = `${pct}% correct`;
+    let msg;
+    if (pct === 100)    msg = 'Perfect score! 🎉';
+    else if (pct >= 80) msg = 'Great work! 👍';
+    else if (pct >= 60) msg = 'Good effort — keep going!';
+    else                msg = 'More practice will help. You got this!';
+    document.getElementById('quizSummaryMessage').textContent = msg;
+    document.getElementById('exportWrongBtn').classList.toggle('hidden', !this.quizWrong.length);
+  },
+
+  restartQuiz() {
+    this.quizCorrect = 0; this.quizTotal = 0;
+    this.quizAnswered = false; this.quizWrong = [];
+    this.index = 0;
+    document.getElementById('quizSummaryArea').classList.add('hidden');
+    this.renderCard();
+    this.updateScoreDisplay();
+    this.saveState();
+  },
+
+  exitQuiz() {
+    document.getElementById('quizCheckbox').checked = false;
+    this.onQuizToggle();
+  },
+
+  exportQuizWrong() {
+    if (!this.quizWrong.length) { this.showToast('No wrong answers to export.', 'info'); return; }
+    this._download(this._exportFormat(this.quizWrong), this._exportName('quiz_wrong_answers'));
+  },
+
+  // The card is click-to-reveal, but it now holds an input, buttons and quiz
+  // options — ignore clicks that land inside any of those.
+  onCardClick(e) {
+    if (e.target.closest('.answer-row, .feedback-row, .quiz-options')) return;
+    this.toggleAnswer();
+  },
+
+  toggleAnswer() {
+    const pair = this.pairs[this.index];
+    if (!pair || this.quizMode) return;
+    const { back } = this.faces(pair);
+    if (!back) return;
+
+    // A fill-in-the-blank item peeks its answer into the blank rather than
+    // opening the answer section; once checked, the feedback already shows it.
+    if (this.isBlank(pair)) {
+      if (pair.attempted) return;
+      this.peeking = !this.peeking;
+      const qEl = document.getElementById('cardQuestion');
+      const btn = document.getElementById('showAnswerBtn');
+      if (this.peeking) {
+        qEl.innerHTML   = this.renderSentence(pair, pair.a, 'revealed');
+        btn.textContent = '🙈 Hide';
+        this.speak(pair.a);
+      } else {
+        qEl.innerHTML   = this.renderSentence(pair);
+        btn.textContent = '👁 Peek';
+      }
+      return;
+    }
+
+    this.revealed = !this.revealed;
+    const section = document.getElementById('answerSection');
+    const hint    = document.getElementById('revealHint');
+    const btn     = document.getElementById('showAnswerBtn');
+    if (this.revealed) {
+      section.classList.add('visible');
+      hint.style.display = 'none';
+      btn.textContent = '🙈 Hide Answer';
+      this.speak(back);
+    } else {
+      section.classList.remove('visible');
+      hint.style.display = '';
+      btn.textContent = '👁 Show Answer';
+    }
+  },
+
+  goToFirst() {
+    if (this.index === 0) return;
+    this.index = 0;
+    this.renderCard();
+    this.saveState();
+  },
+
+  replay() {
+    const pair = this.pairs[this.index];
+    if (!pair) return;
+    if (this.isBlank(pair)) {
+      const filled = pair.attempted || this.peeking;
+      this.speak(pair.q.replace(BLANK_RE, () => filled ? pair.a : 'blank'));
+      return;
+    }
+    const { front, back } = this.faces(pair);
+    this.speak(this.revealed && !this.quizMode ? front + '. ' + back : front);
+  },
+
+  next() {
+    if (this.index < this.pairs.length - 1) {
+      this.index++;
+      this.renderCard();
+      this.saveState();
+    }
+  },
+
+  prev() {
+    if (this.index > 0) {
+      this.index--;
+      this.renderCard();
+      this.saveState();
+    }
+  },
+
+  onShuffleToggle() {
+    const checked = document.getElementById('shuffleCheckbox').checked;
+    if (checked) {
+      const arr = [...this.pairs];
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      this.pairs = arr;
+      this.showToast('Cards shuffled.', 'info');
+    } else {
+      this.pairs = [...this.originalPairs];
+      this.showToast('Original order restored.', 'info');
+    }
+    this.index = 0;
+    this.renderCard();
+    this.saveState();
+  },
+
+  speak(text) {
+    if (!('speechSynthesis' in window)) return;
+    if (!document.getElementById('voiceCheckbox').checked) return;
+    speechSynthesis.cancel();
+    setTimeout(() => {
+      const utt = new SpeechSynthesisUtterance(text);
+      const saved = localStorage.getItem('qaSelectedVoice');
+      if (saved) {
+        const voice = speechSynthesis.getVoices().find(v => v.name === saved);
+        if (voice) utt.voice = voice;
+      }
+      utt.onerror = e => console.warn('TTS error:', e.error);
+      speechSynthesis.speak(utt);
+    }, 100);
+  },
+
+  // Firefox on Linux hands back the whole espeak-ng set — a hundred-odd
+  // languages — where Chrome ships about twenty curated voices. The cards are
+  // English, so only English voices are listed. Falls back to the full list if
+  // a platform reports no English voice, so the dropdown is never empty.
+  englishVoices() {
+    const voices  = speechSynthesis.getVoices();
+    const english = voices.filter(v => /^en([-_]|$)/i.test(v.lang || ''));
+    return english.length ? english : voices;
+  },
+
+  populateVoices() {
+    const voices = this.englishVoices();
+    const sel    = document.getElementById('voiceSelect');
+    let   saved  = localStorage.getItem('qaSelectedVoice') || '';
+    // getVoices() is empty until the voice list loads, so only drop a saved
+    // voice once there is a list to check it against. Without this, a voice
+    // picked before the list was filtered would stay in use by speak() while
+    // the dropdown showed "Default".
+    if (saved && voices.length && !voices.some(v => v.name === saved)) {
+      localStorage.removeItem('qaSelectedVoice');
+      saved = '';
+    }
+    sel.innerHTML = '<option value="">Default</option>';
+    voices.forEach(v => {
+      const opt = document.createElement('option');
+      opt.value = v.name;
+      opt.textContent = `${v.name} (${v.lang})${v.localService ? '' : ' ☁'}`;
+      if (v.name === saved) opt.selected = true;
+      sel.appendChild(opt);
+    });
+  },
+
+  onVoiceChange() {
+    const name = document.getElementById('voiceSelect').value;
+    if (name) localStorage.setItem('qaSelectedVoice', name);
+    else      localStorage.removeItem('qaSelectedVoice');
+  },
+
+  onVoiceToggle() {
+    if (!document.getElementById('voiceCheckbox').checked) speechSynthesis.cancel();
+  },
+
+  _flagKey(pair) { return pair.q + '\u0000' + pair.a; },
+
+  // ── Flagging ────────────────────────────────────────────────
+
+  toggleFlag() {
+    if (!this.pairs.length) return;
+    const key = this._flagKey(this.pairs[this.index]);
+    if (this.flagged.has(key)) this.flagged.delete(key); else this.flagged.add(key);
+    this.updateFlagUI();
+    this.saveState();
+  },
+
+  updateFlagUI() {
+    const item = this.pairs[this.index];
+    const isFlagged = item !== undefined && this.flagged.has(this._flagKey(item));
+    document.getElementById('qaCard').classList.toggle('flagged', isFlagged);
+    document.getElementById('flagBtn').textContent = isFlagged ? '⚑ Unflag' : '⚑ Flag';
+    const count = this.originalPairs.filter(i => this.flagged.has(this._flagKey(i))).length;
+    document.getElementById('reviewFlaggedBtn').textContent = `⚑ Review Flagged (${count})`;
+    document.getElementById('reviewFlaggedBtn').disabled = count === 0;
+    document.getElementById('exportFlaggedBtn').disabled = count === 0;
+  },
+
+  reviewFlags() {
+    const flaggedAt = this.pairs.map((item, i) => i).filter(i => this.flagged.has(this._flagKey(this.pairs[i])));
+    if (!flaggedAt.length) { this.showToast('No flagged items.', 'info'); return; }
+    this.flaggedReviewIndex = this.flaggedReviewIndex % flaggedAt.length;
+    this.index = flaggedAt[this.flaggedReviewIndex];
+    this.flaggedReviewIndex++;
+    this.renderCard();
+    this.saveState();
+  },
+
+  exportFlags() {
+    const flagged = this.originalPairs.filter(i => this.flagged.has(this._flagKey(i)));
+    if (!flagged.length) { this.showToast('No flagged items to export.', 'info'); return; }
+    this._download(this._exportFormat(flagged), this._exportName('flagged'));
+  },
+
+  // Writes the set back out in the layout its file arrived in, so an export
+  // re-imports unchanged and lines up against the original. Question text is
+  // copied verbatim — a leading `12. ` keeps its own number rather than being
+  // renumbered, so a flagged item stays findable in the file it came from.
+  //
+  // sourceFormat is only missing for state saved before it was tracked; the
+  // old content-based guess covers that case. A multi-line answer has no
+  // single-line representation, so it always goes out as a block whatever the
+  // recorded layout says.
+  _exportFormat(pairs) {
+    const multiline = pairs.some(p => p.a && p.a.includes('\n'));
+    const fmt = multiline ? 'block' : (this.sourceFormat || this._guessFormat(pairs));
+
+    let body;
+    if (fmt === 'vocab') {
+      const csv = v => /[,"]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+      const rows = pairs.map(p => `${csv(p.q)},${csv(p.a)}`);
+      if (this.vocabHeader) rows.unshift(this.vocabHeader);
+      body = rows.join('\n');
+    } else if (fmt === 'pipe') {
+      // A source line with no answer carried no pipe either.
+      body = pairs.map(p => p.a ? `${p.q} | ${p.a}` : p.q).join('\n');
+    } else {
+      body = pairs.map(p => p.a ? `${p.q}\n${p.a}` : p.q).join('\n\n');
+    }
+    return body + '\n';
+  },
+
+  // Only for a session saved before sourceFormat was tracked. `vocab` is
+  // stored per pair, so that much is known; the layout is not, and the old
+  // code guessed `pipe` from single-line answers — which is what reshaped
+  // block files on export. Blocks are the canonical Q&A layout and the one
+  // that re-imports whatever the content, so an unknown layout goes out as
+  // blocks rather than being guessed at. Re-importing the file once records
+  // its real layout and this stops being consulted.
+  _guessFormat(pairs) {
+    return pairs.every(p => p.vocab) ? 'vocab' : 'block';
+  },
+
+  // A vocabulary set keeps the extension it was imported under; everything
+  // else is plain text.
+  _exportName(stem) {
+    return this.sourceFormat === 'vocab' && this.sourceExt === '.csv'
+      ? `${stem}_vocab.csv`
+      : `${stem}_qa.txt`;
+  },
+
+  _download(content, filename) {
+    const url = URL.createObjectURL(new Blob([content], { type: 'text/plain' }));
+    const a = Object.assign(document.createElement('a'), { href: url, download: filename });
+    a.click();
+    URL.revokeObjectURL(url);
+  },
+
+  toggleBars() {
+    document.getElementById('topBars').classList.toggle('collapsed');
+    document.getElementById('expandFab').classList.toggle('visible');
+  },
+
+  // ── State (persisted to localStorage — no server involved) ──
+
+  saveState() {
+    try {
+      localStorage.setItem(this.STATE_KEY, JSON.stringify({
+        pairs: this.pairs, originalPairs: this.originalPairs, index: this.index,
+        flagged: [...this.flagged], swapMode: this.swapMode,
+        sourceFormat: this.sourceFormat, vocabHeader: this.vocabHeader,
+        sourceExt: this.sourceExt,
+      }));
+    } catch (err) {
+      console.warn('Save state failed:', err);
+    }
+  },
+
+  loadState() {
+    try {
+      const raw = localStorage.getItem(this.STATE_KEY);
+      if (!raw) return;
+      const state = JSON.parse(raw);
+      if (!state || !Array.isArray(state.pairs) || !state.pairs.length) return;
+      this.pairs         = state.pairs;
+      this.originalPairs = state.originalPairs || state.pairs;
+      this.index         = state.index || 0;
+      this.flagged       = new Set(Array.isArray(state.flagged) ? state.flagged : []);
+      this.swapMode      = !!state.swapMode;
+      this.sourceFormat  = state.sourceFormat || '';
+      this.vocabHeader   = state.vocabHeader  || '';
+      this.sourceExt     = state.sourceExt    || '';
+      document.getElementById('swapCheckbox').checked = this.swapMode;
+      // In memory the two arrays hold the same objects, so per-item progress is
+      // shared; a JSON round-trip splits them. Re-link, or unticking Shuffle
+      // after a reload would restore a stale copy and reset the score.
+      const byKey = new Map(this.pairs.map(p => [this._flagKey(p), p]));
+      this.originalPairs = this.originalPairs.map(p => byKey.get(this._flagKey(p)) || p);
+      document.getElementById('cardArea').classList.remove('hidden');
+      document.getElementById('emptyState').style.display = 'none';
+      this._enableModeToggles();
+      this.renderCard(true);
+      this.updateScoreDisplay();
+    } catch (err) {
+      console.warn('Load state failed:', err);
+    }
+  },
+
+  clearAndReset() {
+    if (!confirm('Clear all progress and start over?')) return;
+    try { localStorage.removeItem(this.STATE_KEY); } catch (err) { console.warn('Clear state failed:', err); }
+    location.reload();
+  },
+
+  showToast(msg, type = 'info') {
+    const container = document.getElementById('toastContainer');
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.textContent = msg;
+    container.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+  },
+};
+
+app.init();
+app.loadState();
+</script>
+</body>
+</html>

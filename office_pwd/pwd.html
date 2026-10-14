@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Password</title>
+<style>
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    font-family: sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    margin: 0;
+    padding: 16px;
+    background: #f4f4f4;
+  }
+  .box {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    max-width: 420px;
+    background: #fff;
+    padding: 16px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .pwd {
+    flex: 1 1 100%;
+    font-family: monospace;
+    font-size: 1.1em;
+    padding: 10px;
+    min-height: 44px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+  }
+  button {
+    flex: 1 1 auto;
+    padding: 10px 12px;
+    min-height: 44px;
+    font-size: 1em;
+    cursor: pointer;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    background: #f0f0f0;
+  }
+</style>
+</head>
+<body>
+  <div class="box">
+    <input class="pwd" type="password" value="" readonly>
+    <button onclick="toggleVisibility(event)">Show</button>
+    <button onclick="copyText(event)">Copy</button>
+    <button class="editBtn" onclick="toggleEdit(event)">Update</button>
+  </div>
+  <div class="box">
+    <input class="pwd" type="password" value="t" readonly>
+    <button onclick="toggleVisibility(event)">Show</button>
+    <button onclick="copyText(event)">Copy</button>
+    <button class="editBtn" onclick="toggleEdit(event)">Update</button>
+  </div>
+<script>
+function copyText(event) {
+  const box = event.target.closest('.box');
+  const field = box.querySelector('.pwd');
+  navigator.clipboard.writeText(field.value);
+}
+
+function toggleVisibility(event) {
+  const btn = event.target;
+  const box = btn.closest('.box');
+  const field = box.querySelector('.pwd');
+  if (field.type === 'password') {
+    field.type = 'text';
+    btn.textContent = 'Hide';
+  } else {
+    field.type = 'password';
+    btn.textContent = 'Show';
+  }
+}
+
+function toggleEdit(event) {
+  const editBtn = event.target;
+  const box = editBtn.closest('.box');
+  const field = box.querySelector('.pwd');
+  if (field.readOnly) {
+    field.readOnly = false;
+    field.type = 'text';
+    field.focus();
+    editBtn.textContent = 'Save';
+  } else {
+    field.readOnly = true;
+    field.type = 'password';
+    editBtn.textContent = 'Update';
+  }
+}
+</script>
+</body>
+</html>
