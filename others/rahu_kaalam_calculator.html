@@ -52,7 +52,7 @@
   .inputs { display: flex; flex-wrap: wrap; gap: 18px; align-items: flex-end; }
   label { display: block; font-size: 0.8rem; text-transform: uppercase;
           letter-spacing: 0.05em; color: var(--muted); margin-bottom: 6px; }
-  input[type=time], select {
+  input[type=date], input[type=time], select {
     font: inherit; padding: 8px 10px; color: var(--ink);
     background: var(--bg); border: 1px solid var(--line); border-radius: 6px;
   }
@@ -64,6 +64,13 @@
   .derived { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line);
              display: flex; flex-wrap: wrap; gap: 24px; font-size: 0.95rem; }
   .derived span { color: var(--muted); }
+  .source { margin-top: 12px; font-size: 0.9rem; color: var(--muted); }
+  .source b { color: var(--ink); font-weight: 600; }
+  .linkbtn {
+    font: inherit; font-size: 0.9rem; padding: 2px 8px; margin-left: 8px;
+    border-radius: 99px; border: 1px solid var(--line);
+    background: transparent; color: var(--accent); cursor: pointer;
+  }
   .derived b { font-variant-numeric: tabular-nums; font-weight: 600; }
   .err { color: var(--rahu); margin-top: 14px; font-size: 0.95rem; }
   .wrap { overflow-x: auto; }
@@ -113,10 +120,15 @@
 <body>
 <main>
   <h1>Rahu Kaalam Calculator</h1>
-  <p class="sub">Rahu kaalam, Yama gandam and Kuligai for each weekday, from the day&rsquo;s sunrise and sunset.</p>
+  <p class="sub">Rahu kaalam, Yama gandam and Kuligai for each weekday, from the day&rsquo;s sunrise and sunset &mdash;
+    sunrise and sunset filled in for Omaha, NE, or typed in by hand.</p>
 
   <section class="card">
     <div class="inputs">
+      <div>
+        <label for="date">Date</label>
+        <input type="date" id="date">
+      </div>
       <div>
         <label for="sunrise">Sunrise</label>
         <input type="time" id="sunrise" value="06:45" step="1">
@@ -135,6 +147,7 @@
       <div><span>Day length</span> <b id="len">&mdash;</b></div>
       <div><span>One part (&#8539; of day)</span> <b id="part">&mdash;</b></div>
     </div>
+    <p class="source" id="source"></p>
     <div class="err" id="err" hidden></div>
   </section>
 
@@ -202,15 +215,117 @@
     yama:    [5, 4, 3, 2, 1, 7, 6],
     kuligai: [7, 6, 5, 4, 3, 2, 1]
   };
-  var DEFAULTS = { sunrise: '06:45', sunset: '20:08' };
+  var OMAHA = { name: 'Omaha, NE', lat: 41.2565, lng: -95.9345, tz: 'America/Chicago' };
 
   var $ = function (id) { return document.getElementById(id); };
-  var sunrise = $('sunrise'), sunset = $('sunset'), daySel = $('day');
+  var sunrise = $('sunrise'), sunset = $('sunset'), daySel = $('day'), dateEl = $('date');
+  var manual = false;   // true once sunrise/sunset have been typed in by hand
+
+  // --- time zone -------------------------------------------------------
+  function zoneParts(ms, extra) {
+    var opts = {
+      timeZone: OMAHA.tz, hour12: false,
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit'
+    };
+    if (extra) opts.timeZoneName = extra;
+    var out = {};
+    new Intl.DateTimeFormat('en-US', opts).formatToParts(new Date(ms))
+      .forEach(function (p) { if (p.type !== 'literal') out[p.type] = p.value; });
+    return out;
+  }
+
+  // minutes that Omaha is offset from UTC at the given instant (handles DST)
+  function zoneOffset(ms) {
+    var p = zoneParts(ms);
+    var asUTC = Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour % 24, +p.minute, +p.second);
+    return Math.round((asUTC - ms) / 60000);
+  }
+
+  function zoneOffsetOn(y, m, d) {
+    return zoneOffset(Date.UTC(y, m - 1, d, 12));   // noon UTC is mid-morning in Omaha
+  }
+
+  function zoneName(y, m, d) {
+    return zoneParts(Date.UTC(y, m - 1, d, 18), 'short').timeZoneName || '';
+  }
+
+  function todayInZone() {
+    var p = zoneParts(Date.now());
+    return { iso: p.year + '-' + p.month + '-' + p.day,
+             seconds: (+p.hour % 24) * 3600 + (+p.minute) * 60 + (+p.second) };
+  }
+
+  // --- sunrise / sunset (NOAA solar calculations) ----------------------
+  var RAD = Math.PI / 180;
+
+  function julianDay(y, m, d) {
+    if (m <= 2) { y -= 1; m += 12; }
+    var a = Math.floor(y / 100), b = 2 - a + Math.floor(a / 4);
+    return Math.floor(365.25 * (y + 4716)) + Math.floor(30.6001 * (m + 1)) + d + b - 1524.5;
+  }
+
+  // returns minutes after local midnight, or null when the sun never rises or sets
+  function solarTimes(y, m, d, lat, lng, tzMin) {
+    var jd = julianDay(y, m, d) + 0.5 - tzMin / 1440;   // local solar noon, roughly
+    var t = (jd - 2451545) / 36525;
+    var L0 = ((280.46646 + t * (36000.76983 + t * 0.0003032)) % 360 + 360) % 360;
+    var M = 357.52911 + t * (35999.05029 - 0.0001537 * t);
+    var e = 0.016708634 - t * (0.000042037 + 0.0000001267 * t);
+    var C = Math.sin(M * RAD) * (1.914602 - t * (0.004817 + 0.000014 * t))
+          + Math.sin(2 * M * RAD) * (0.019993 - 0.000101 * t)
+          + Math.sin(3 * M * RAD) * 0.000289;
+    var lambda = L0 + C - 0.00569 - 0.00478 * Math.sin((125.04 - 1934.136 * t) * RAD);
+    var e0 = 23 + (26 + (21.448 - t * (46.815 + t * (0.00059 - t * 0.001813))) / 60) / 60;
+    var ec = e0 + 0.00256 * Math.cos((125.04 - 1934.136 * t) * RAD);
+    var decl = Math.asin(Math.sin(ec * RAD) * Math.sin(lambda * RAD));
+    var vy = Math.tan(ec / 2 * RAD); vy *= vy;
+    var eq = 4 / RAD * (vy * Math.sin(2 * L0 * RAD) - 2 * e * Math.sin(M * RAD)
+           + 4 * e * vy * Math.sin(M * RAD) * Math.cos(2 * L0 * RAD)
+           - 0.5 * vy * vy * Math.sin(4 * L0 * RAD) - 1.25 * e * e * Math.sin(2 * M * RAD));
+    var cosHA = Math.cos(90.833 * RAD) / (Math.cos(lat * RAD) * Math.cos(decl))
+              - Math.tan(lat * RAD) * Math.tan(decl);
+    if (cosHA > 1 || cosHA < -1) return null;
+    var ha = Math.acos(cosHA) / RAD;
+    var noon = 720 - 4 * lng - eq + tzMin;
+    return { sunrise: noon - 4 * ha, sunset: noon + 4 * ha };
+  }
+
+  function timeValue(minutes) {
+    var s = Math.round(minutes * 60) % 86400;
+    if (s < 0) s += 86400;
+    var pad = function (n) { return (n < 10 ? '0' : '') + n; };
+    return pad(Math.floor(s / 3600)) + ':' + pad(Math.floor(s % 3600 / 60)) + ':' + pad(s % 60);
+  }
+
+  function parseDate(value) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value || '');
+    return m ? { y: +m[1], m: +m[2], d: +m[3] } : null;
+  }
+
+  // fill the sunrise/sunset inputs from the date, unless they were typed by hand
+  function fillFromOmaha() {
+    var p = parseDate(dateEl.value);
+    if (!p) return null;
+    var tzMin = zoneOffsetOn(p.y, p.m, p.d);
+    var sun = solarTimes(p.y, p.m, p.d, OMAHA.lat, OMAHA.lng, tzMin);
+    if (!sun) return null;
+    sunrise.value = timeValue(sun.sunrise);
+    sunset.value = timeValue(sun.sunset);
+    return p;
+  }
 
   DAYS.forEach(function (name, i) {
     daySel.add(new Option(name, String(i)));
   });
-  daySel.value = String(new Date().getDay());
+  function weekdayOf(p) {
+    return new Date(Date.UTC(p.y, p.m - 1, p.d)).getUTCDay();
+  }
+
+  function syncDay() {
+    var p = parseDate(dateEl.value);
+    if (p) daySel.value = String(weekdayOf(p));
+  }
 
   function toSeconds(value) {
     var m = /^(\d{1,2}):(\d{2})(?::(\d{2}))?$/.exec(value || '');
@@ -254,7 +369,36 @@
     });
   }
 
+  function renderSource() {
+    var line = $('source');
+    line.textContent = '';
+    var p = parseDate(dateEl.value);
+
+    if (manual || !p) {
+      line.appendChild(document.createTextNode('Sunrise and sunset entered by hand.'));
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'linkbtn';
+      btn.textContent = 'Use Omaha times';
+      btn.addEventListener('click', function () {
+        manual = false;
+        if (!parseDate(dateEl.value)) dateEl.value = todayInZone().iso;
+        fillFromOmaha();
+        syncDay();
+        render();
+      });
+      line.appendChild(btn);
+      return;
+    }
+
+    var zone = zoneName(p.y, p.m, p.d);
+    line.innerHTML = 'Sunrise and sunset for <b>' + OMAHA.name + '</b> ' +
+      '(41.26&deg;N, 95.93&deg;W)' + (zone ? ', <b>' + zone + '</b>' : '') +
+      ' &mdash; calculated for this date, no network needed.';
+  }
+
   function render() {
+    renderSource();
     var rise = toSeconds(sunrise.value), set = toSeconds(sunset.value);
     var err = $('err'), body = $('body');
     body.textContent = '';
@@ -280,10 +424,11 @@
     $('len').textContent = duration(dayLength);
     $('part').textContent = duration(part);
 
-    var today = new Date().getDay();
-    var nowSeconds = (function (d) {
-      return d.getHours() * 3600 + d.getMinutes() * 60 + d.getSeconds();
-    })(new Date());
+    // the badge only makes sense while the table shows Omaha's current date
+    var now = todayInZone();
+    var selected = parseDate(dateEl.value);
+    var today = (selected && dateEl.value === now.iso) ? weekdayOf(selected) : -1;
+    var nowSeconds = now.seconds;
     DAYS.forEach(function (name, i) {
       var tr = document.createElement('tr');
       if (i === highlight) tr.className = 'today';
@@ -317,17 +462,31 @@
     });
   }
 
-  [sunrise, sunset, daySel].forEach(function (el) {
-    el.addEventListener('input', render);
-    el.addEventListener('change', render);
+  [sunrise, sunset].forEach(function (el) {
+    ['input', 'change'].forEach(function (evt) {
+      el.addEventListener(evt, function () { manual = true; render(); });
+    });
+  });
+  ['input', 'change'].forEach(function (evt) {
+    dateEl.addEventListener(evt, function () {
+      manual = false;          // a new date means new Omaha times
+      fillFromOmaha();
+      syncDay();
+      render();
+    });
+    daySel.addEventListener(evt, render);
   });
   $('reset').addEventListener('click', function () {
-    sunrise.value = DEFAULTS.sunrise;
-    sunset.value = DEFAULTS.sunset;
-    daySel.value = String(new Date().getDay());
+    manual = false;
+    dateEl.value = todayInZone().iso;
+    fillFromOmaha();
+    syncDay();
     render();
   });
 
+  dateEl.value = todayInZone().iso;
+  fillFromOmaha();
+  syncDay();
   render();
 })();
 </script>
