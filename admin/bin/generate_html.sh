@@ -2,8 +2,47 @@
 
 # Generate index.html with folder nav in left pane and files in right pane
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PARENT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
-OUTPUT="$PARENT_DIR/index.html"
+
+# The folder holding the HTML files comes from a properties file rather than
+# being assumed to be the script's grandparent directory.
+PROPERTIES_FILE="${GENERATE_HTML_PROPERTIES:-$SCRIPT_DIR/generate_html.properties}"
+
+if [ ! -f "$PROPERTIES_FILE" ]; then
+  echo "Error: properties file not found: $PROPERTIES_FILE" >&2
+  exit 1
+fi
+
+# Read "key=value" from the properties file; '#' comment lines are ignored and
+# surrounding whitespace plus optional quotes are stripped. Last value wins.
+get_property() {
+  local key_re="${1//./\\.}"
+  sed -n "s/^[[:space:]]*${key_re}[[:space:]]*=[[:space:]]*//p" "$PROPERTIES_FILE" \
+    | tr -d '\r' | tail -n 1 \
+    | sed -e 's/[[:space:]]*$//' -e 's/^"\(.*\)"$/\1/' -e "s/^'\(.*\)'$/\1/"
+}
+
+html_dir="$(get_property 'html.dir')"
+if [ -z "$html_dir" ]; then
+  echo "Error: 'html.dir' is not set in $PROPERTIES_FILE" >&2
+  exit 1
+fi
+
+# A relative value is resolved against the properties file's own directory.
+case "$html_dir" in
+  /*) ;;
+  *) html_dir="$(dirname "$PROPERTIES_FILE")/$html_dir" ;;
+esac
+
+HTML_DIR="$(cd "$html_dir" 2>/dev/null && pwd)"
+if [ -z "$HTML_DIR" ]; then
+  echo "Error: html.dir is not an existing directory: $html_dir" >&2
+  exit 1
+fi
+
+output_file="$(get_property 'output.file')"
+[ -z "$output_file" ] && output_file="index.html"
+
+OUTPUT="$HTML_DIR/$output_file"
 
 # Collect unique folders in sorted order
 # Skip hidden dirs (.Trash-*, .git), the filesystem's lost+found, and admin itself.
@@ -11,8 +50,8 @@ OUTPUT="$PARENT_DIR/index.html"
 # filter is done below with a case glob instead.
 PRUNE=( '(' -name '.*' -o -name 'lost+found' -o -name 'admin' ')' -prune -o )
 
-mapfile -t folders < <(find "$PARENT_DIR" "${PRUNE[@]}" -name "*.html" -print | sort | while IFS= read -r f; do
-  rel="${f#$PARENT_DIR/}"
+mapfile -t folders < <(find "$HTML_DIR" "${PRUNE[@]}" -name "*.html" -print | sort | while IFS= read -r f; do
+  rel="${f#$HTML_DIR/}"
   case "$rel" in */*) dirname "$rel" ;; esac
 done | awk '!seen[$0]++')
 
@@ -123,7 +162,7 @@ for folder in "${folders[@]}"; do
 
   file_num=0
   while IFS= read -r filepath; do
-    relpath="${filepath#$PARENT_DIR/}"
+    relpath="${filepath#$HTML_DIR/}"
     filename="$(basename "$relpath")"
     file_num=$((file_num + 1))
     total_count=$((total_count + 1))
@@ -131,7 +170,7 @@ for folder in "${folders[@]}"; do
     echo "          <td>$file_num</td>" >> "$OUTPUT"
     echo "          <td><a class=\"file-path\" href=\"$relpath\" target=\"_blank\" rel=\"noopener\">$relpath</a><button class=\"download-btn\" onclick=\"downloadFile('$relpath','$filename')\">Download</button></td>" >> "$OUTPUT"
     echo "        </tr>" >> "$OUTPUT"
-  done < <(find "$PARENT_DIR/$folder" -maxdepth 1 -name "*.html" | sort)
+  done < <(find "$HTML_DIR/$folder" -maxdepth 1 -name "*.html" | sort)
 
   echo "      </tbody>" >> "$OUTPUT"
   echo "    </table>" >> "$OUTPUT"

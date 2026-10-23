@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rahu Kaalam Calculator</title>
+<style>
+  :root {
+    --bg: #f6f5f2;
+    --card: #ffffff;
+    --ink: #1c1b19;
+    --muted: #6b6762;
+    --line: #e2ded7;
+    --accent: #8a4b1f;
+    --rahu: #b3261e;
+    --yama: #8a5a00;
+    --kuligai: #2f5d3a;
+    --today: #fdf6e3;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #17161a;
+      --card: #201f24;
+      --ink: #eceaE6;
+      --muted: #9d9892;
+      --line: #35333a;
+      --accent: #e0a070;
+      --rahu: #ff8a80;
+      --yama: #e8bb63;
+      --kuligai: #8fcf9f;
+      --today: #2a2720;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 28px 16px 56px;
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  main { max-width: 860px; margin: 0 auto; }
+  h1 { font-size: 1.6rem; margin: 0 0 4px; letter-spacing: -0.01em; }
+  .sub { color: var(--muted); margin: 0 0 24px; font-size: 0.95rem; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 18px;
+    margin-bottom: 20px;
+  }
+  .inputs { display: flex; flex-wrap: wrap; gap: 18px; align-items: flex-end; }
+  label { display: block; font-size: 0.8rem; text-transform: uppercase;
+          letter-spacing: 0.05em; color: var(--muted); margin-bottom: 6px; }
+  input[type=time], select {
+    font: inherit; padding: 8px 10px; color: var(--ink);
+    background: var(--bg); border: 1px solid var(--line); border-radius: 6px;
+  }
+  button {
+    font: inherit; padding: 8px 14px; border-radius: 6px; cursor: pointer;
+    border: 1px solid var(--line); background: var(--bg); color: var(--ink);
+  }
+  button:hover { border-color: var(--accent); color: var(--accent); }
+  .derived { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line);
+             display: flex; flex-wrap: wrap; gap: 24px; font-size: 0.95rem; }
+  .derived span { color: var(--muted); }
+  .derived b { font-variant-numeric: tabular-nums; font-weight: 600; }
+  .err { color: var(--rahu); margin-top: 14px; font-size: 0.95rem; }
+  .wrap { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+  caption { text-align: left; font-size: 0.8rem; color: var(--muted);
+            padding-bottom: 10px; }
+  th, td { padding: 9px 10px; text-align: left; border-bottom: 1px solid var(--line);
+           white-space: nowrap; }
+  thead th { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;
+             color: var(--muted); font-weight: 600; }
+  .group { text-align: center; border-bottom: 2px solid var(--line); }
+  .group.r { color: var(--rahu); }
+  .group.y { color: var(--yama); }
+  .group.k { color: var(--kuligai); }
+  tbody th { font-weight: 600; }
+  tr.today { background: var(--today); }
+  tr.today tbody th, tr.today th { color: var(--accent); }
+  td.sep { border-left: 1px solid var(--line); }
+  .callout {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--tone);
+    border-radius: 10px;
+    padding: 16px 18px;
+    margin-bottom: 20px;
+  }
+  .callout.yama { --tone: var(--yama); }
+  .callout.kuligai { --tone: var(--kuligai); }
+  .callout h2 { color: var(--tone); margin-bottom: 8px; }
+  .callout p { margin: 0; }
+  .note { font-size: 0.85rem; color: var(--muted); margin: 14px 0 0; }
+  .note code { font-size: 0.95em; }
+  h2 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;
+       color: var(--muted); margin: 0 0 12px; }
+  .parts { width: auto; min-width: 100%; }
+  .parts th, .parts td { text-align: center; }
+  .parts thead th.r { color: var(--rahu); }
+  .parts thead th.y { color: var(--yama); }
+  .parts thead th.k { color: var(--kuligai); }
+  .parts tbody th { text-align: left; }
+  .parts tbody td { font-weight: 600; }
+  .now { display: inline-block; margin-left: 8px; padding: 1px 7px; border-radius: 99px;
+         background: var(--rahu); color: #fff; font-size: 0.7rem; letter-spacing: 0.04em;
+         text-transform: uppercase; vertical-align: 1px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Rahu Kaalam Calculator</h1>
+  <p class="sub">Rahu kaalam, Yama gandam and Kuligai for each weekday, from the day&rsquo;s sunrise and sunset.</p>
+
+  <section class="card">
+    <div class="inputs">
+      <div>
+        <label for="sunrise">Sunrise</label>
+        <input type="time" id="sunrise" value="06:45" step="1">
+      </div>
+      <div>
+        <label for="sunset">Sunset</label>
+        <input type="time" id="sunset" value="20:08" step="1">
+      </div>
+      <div>
+        <label for="day">Highlight day</label>
+        <select id="day"></select>
+      </div>
+      <button type="button" id="reset">Reset</button>
+    </div>
+    <div class="derived">
+      <div><span>Day length</span> <b id="len">&mdash;</b></div>
+      <div><span>One part (&#8539; of day)</span> <b id="part">&mdash;</b></div>
+    </div>
+    <div class="err" id="err" hidden></div>
+  </section>
+
+  <section class="card wrap">
+    <table id="tbl">
+      <caption>Each period is one eighth of the daytime. Start and end times update as you change sunrise or sunset.</caption>
+      <thead>
+        <tr>
+          <th rowspan="2">Day</th>
+          <th class="group r" colspan="2">Rahu Kaalam</th>
+          <th class="group y" colspan="2">Yama Gandam</th>
+          <th class="group k" colspan="2">Kuligai</th>
+        </tr>
+        <tr>
+          <th>Start</th><th>End</th>
+          <th>Start</th><th>End</th>
+          <th>Start</th><th>End</th>
+        </tr>
+      </thead>
+      <tbody id="body"></tbody>
+    </table>
+  </section>
+
+  <aside class="callout yama">
+    <h2>Yama Gandam</h2>
+    <p>Yamakandan will cause an unexpected evil thing. So, it is better to avoid for such
+      things in which we could not tolerate if it went negatively.</p>
+  </aside>
+
+  <aside class="callout kuligai">
+    <h2>Kuligai</h2>
+    <p>Kuligan is not like that. If any thing is done in that period it will get a repetition,
+      so, we can use this for subha karyams and avoid for all ashubha kaaryams (death rituals)</p>
+  </aside>
+
+  <section class="card">
+    <h2>Part numbers</h2>
+    <div class="wrap">
+      <table class="parts">
+        <caption>Which eighth of the daytime each period occupies, counted from sunrise.</caption>
+        <thead>
+          <tr>
+            <th>Day</th>
+            <th class="r">Rahu Kaalam</th>
+            <th class="y">Yama Gandam</th>
+            <th class="k">Kuligai</th>
+          </tr>
+        </thead>
+        <tbody id="parts-body"></tbody>
+      </table>
+    </div>
+    <p class="note">
+      A period runs from <code>sunrise + (n&minus;1) &times; part</code> to
+      <code>sunrise + n &times; part</code>, where <code>part</code> is one eighth of the daytime.
+    </p>
+  </section>
+</main>
+
+<script>
+(function () {
+  var DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  // part number counted from sunrise, Sunday first - same values as the spreadsheet
+  var PARTS = {
+    rahu:    [8, 2, 7, 5, 6, 4, 3],
+    yama:    [5, 4, 3, 2, 1, 7, 6],
+    kuligai: [7, 6, 5, 4, 3, 2, 1]
+  };
+  var DEFAULTS = { sunrise: '06:45', sunset: '20:08' };
+
+  var $ = function (id) { return document.getElementById(id); };
+  var sunrise = $('sunrise'), sunset = $('sunset'), daySel = $('day');
+
+  DAYS.forEach(function (name, i) {
+    daySel.add(new Option(name, String(i)));
+  });
+  daySel.value = String(new Date().getDay());
+
+  function toSeconds(value) {
+    var m = /^(\d{1,2}):(\d{2})(?::(\d{2}))?$/.exec(value || '');
+    if (!m) return null;
+    return (+m[1]) * 3600 + (+m[2]) * 60 + (+(m[3] || 0));
+  }
+
+  function clock(seconds) {
+    var s = Math.floor(seconds) % 86400;   // truncate, as the spreadsheet does
+    if (s < 0) s += 86400;
+    var h = Math.floor(s / 3600), min = Math.floor(s % 3600 / 60), sec = s % 60;
+    var suffix = h < 12 ? 'AM' : 'PM';
+    var h12 = h % 12 || 12;
+    var pad = function (n) { return (n < 10 ? '0' : '') + n; };
+    return h12 + ':' + pad(min) + ':' + pad(sec) + ' ' + suffix;
+  }
+
+  function duration(seconds) {
+    var h = Math.floor(seconds / 3600),
+        min = Math.floor(seconds % 3600 / 60),
+        sec = Math.round(seconds % 60);
+    return h + 'h ' + min + 'm' + (sec ? ' ' + sec + 's' : '');
+  }
+
+  function renderParts(highlight) {
+    var body = $('parts-body');
+    body.textContent = '';
+    DAYS.forEach(function (name, i) {
+      var tr = document.createElement('tr');
+      if (i === highlight) tr.className = 'today';
+      var th = document.createElement('th');
+      th.scope = 'row';
+      th.textContent = name;
+      tr.appendChild(th);
+      ['rahu', 'yama', 'kuligai'].forEach(function (key) {
+        var td = document.createElement('td');
+        td.textContent = PARTS[key][i];
+        tr.appendChild(td);
+      });
+      body.appendChild(tr);
+    });
+  }
+
+  function render() {
+    var rise = toSeconds(sunrise.value), set = toSeconds(sunset.value);
+    var err = $('err'), body = $('body');
+    body.textContent = '';
+
+    var highlight = parseInt(daySel.value, 10);
+    renderParts(highlight);   // fixed numbers, so draw them before any time check
+
+    if (rise === null || set === null) {
+      err.textContent = 'Enter both a sunrise and a sunset time.';
+      err.hidden = false;
+      $('len').textContent = $('part').textContent = '—';
+      return;
+    }
+    if (set <= rise) {
+      err.textContent = 'Sunset must be later than sunrise.';
+      err.hidden = false;
+      $('len').textContent = $('part').textContent = '—';
+      return;
+    }
+    err.hidden = true;
+
+    var dayLength = set - rise, part = dayLength / 8;
+    $('len').textContent = duration(dayLength);
+    $('part').textContent = duration(part);
+
+    var today = new Date().getDay();
+    var nowSeconds = (function (d) {
+      return d.getHours() * 3600 + d.getMinutes() * 60 + d.getSeconds();
+    })(new Date());
+    DAYS.forEach(function (name, i) {
+      var tr = document.createElement('tr');
+      if (i === highlight) tr.className = 'today';
+
+      var th = document.createElement('th');
+      th.scope = 'row';
+      th.textContent = name;
+      tr.appendChild(th);
+
+      ['rahu', 'yama', 'kuligai'].forEach(function (key, col) {
+        var n = PARTS[key][i];
+        var start = rise + (n - 1) * part, end = rise + n * part;
+
+        var tdStart = document.createElement('td');
+        if (col) tdStart.className = 'sep';
+        tdStart.textContent = clock(start);
+        if (i === today && nowSeconds >= start && nowSeconds < end) {
+          var tag = document.createElement('span');
+          tag.className = 'now';
+          tag.textContent = 'now';
+          tdStart.appendChild(tag);
+        }
+        tr.appendChild(tdStart);
+
+        var tdEnd = document.createElement('td');
+        tdEnd.textContent = clock(end);
+        tr.appendChild(tdEnd);
+      });
+
+      body.appendChild(tr);
+    });
+  }
+
+  [sunrise, sunset, daySel].forEach(function (el) {
+    el.addEventListener('input', render);
+    el.addEventListener('change', render);
+  });
+  $('reset').addEventListener('click', function () {
+    sunrise.value = DEFAULTS.sunrise;
+    sunset.value = DEFAULTS.sunset;
+    daySel.value = String(new Date().getDay());
+    render();
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
