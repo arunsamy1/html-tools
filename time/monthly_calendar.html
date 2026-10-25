@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Three Month Calendar</title>
+<style>
+  :root, :root[data-theme="light"] {
+    color-scheme: light;
+    --bg: #ffffff;
+    --card: #ffffff;
+    --text: #1a1a18;
+    --muted: #767672;
+    --line: #d8d8d4;
+    --accent: #2f6fed;
+    --weekend: #f4f4f1;
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #17171a;
+    --card: #202024;
+    --text: #ececea;
+    --muted: #94949a;
+    --line: #34343c;
+    --accent: #6c9bff;
+    --weekend: #26262b;
+  }
+  * { box-sizing: border-box; }
+  html {
+    background: var(--bg);
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+  body {
+    margin: 0;
+    padding: 40px 16px 56px;
+    background: var(--bg);
+    color: var(--text);
+    font: 19px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  header {
+    max-width: 1500px;
+    margin: 0 auto 28px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 14px;
+  }
+  h1 { font-size: 30px; font-weight: 600; margin: 0 auto 0 0; }
+  button {
+    font: inherit;
+    font-size: 18px;
+    padding: 10px 18px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--card);
+    color: var(--text);
+    cursor: pointer;
+  }
+  button:hover { border-color: var(--accent); color: var(--accent); }
+  .months {
+    max-width: 1500px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+    gap: 28px;
+  }
+  .month {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 24px;
+  }
+  .month h2 {
+    font-size: 24px;
+    font-weight: 600;
+    margin: 0 0 18px;
+    text-align: center;
+  }
+  table { width: 100%; border-collapse: collapse; }
+  th {
+    font-size: 15px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--muted);
+    padding-bottom: 10px;
+  }
+  td {
+    text-align: center;
+    padding: 0;
+    height: 64px;
+    width: 14.28%;
+    font-size: 22px;
+    border-radius: 10px;
+  }
+  td.weekend { background: var(--weekend); }
+  td.empty { background: none; }
+  td.today {
+    background: var(--accent);
+    color: #ffffff;
+    font-weight: 700;
+  }
+  @media (max-width: 700px) {
+    body {
+      padding: 24px 12px calc(40px + env(safe-area-inset-bottom));
+    }
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      margin: -24px -12px 20px;
+      padding: 12px;
+      gap: 8px;
+      background: var(--bg);
+      border-bottom: 1px solid var(--line);
+    }
+    h1 { font-size: 24px; width: 100%; margin: 0; }
+    button { font-size: 16px; padding: 10px 14px; flex: 1; min-height: 44px; }
+    .months { grid-template-columns: 1fr; gap: 20px; }
+    .month { padding: 14px; }
+    td { height: 52px; font-size: 19px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1 id="range">Calendar</h1>
+  <button id="theme" type="button">&#9789; Dark mode</button>
+  <button id="prev" type="button">&larr; Prev</button>
+  <button id="today" type="button">Today</button>
+  <button id="next" type="button">Next &rarr;</button>
+</header>
+
+<div class="months" id="months"></div>
+
+<script>
+  var MONTHS = ["January","February","March","April","May","June",
+                "July","August","September","October","November","December"];
+  var DAYS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+
+  var now = new Date();
+  var start = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  /* ---- theme ---- */
+
+  var themeBtn = document.getElementById('theme');
+
+  function applyTheme(mode) {
+    document.documentElement.setAttribute('data-theme', mode);
+    themeBtn.innerHTML = mode === 'dark' ? '☀ Light mode' : '☽ Dark mode';
+    try { localStorage.setItem('calendar-theme', mode); } catch (e) {}
+  }
+
+  function storedTheme() {
+    try { return localStorage.getItem('calendar-theme'); } catch (e) { return null; }
+  }
+
+  applyTheme(storedTheme() === 'dark' ? 'dark' : 'light');
+
+  themeBtn.onclick = function () {
+    var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    applyTheme(isDark ? 'light' : 'dark');
+  };
+
+  /* ---- calendar ---- */
+
+  function renderMonth(year, month) {
+    var first = new Date(year, month, 1).getDay();
+    var total = new Date(year, month + 1, 0).getDate();
+    var t = new Date();
+    var isCurrent = t.getFullYear() === year && t.getMonth() === month;
+
+    var html = '<div class="month"><h2>' + MONTHS[month] + ' ' + year + '</h2><table><thead><tr>';
+    for (var d = 0; d < 7; d++) html += '<th>' + DAYS[d] + '</th>';
+    html += '</tr></thead><tbody><tr>';
+
+    for (var i = 0; i < first; i++) html += '<td class="empty"></td>';
+
+    for (var day = 1; day <= total; day++) {
+      var weekday = (first + day - 1) % 7;
+      var cls = [];
+      if (weekday === 0 || weekday === 6) cls.push('weekend');
+      if (isCurrent && day === t.getDate()) cls.push('today');
+      html += '<td class="' + cls.join(' ') + '">' + day + '</td>';
+      if (weekday === 6 && day !== total) html += '</tr><tr>';
+    }
+
+    var trailing = (7 - ((first + total) % 7)) % 7;
+    for (var j = 0; j < trailing; j++) html += '<td class="empty"></td>';
+
+    return html + '</tr></tbody></table></div>';
+  }
+
+  function render() {
+    var out = '';
+    for (var k = 0; k < 3; k++) {
+      var m = new Date(start.getFullYear(), start.getMonth() + k, 1);
+      out += renderMonth(m.getFullYear(), m.getMonth());
+    }
+    document.getElementById('months').innerHTML = out;
+
+    var last = new Date(start.getFullYear(), start.getMonth() + 2, 1);
+    document.getElementById('range').textContent =
+      MONTHS[start.getMonth()] + ' ' + start.getFullYear() +
+      ' – ' + MONTHS[last.getMonth()] + ' ' + last.getFullYear();
+  }
+
+  function shift(n) {
+    start = new Date(start.getFullYear(), start.getMonth() + n, 1);
+    render();
+  }
+
+  document.getElementById('prev').onclick = function () { shift(-3); };
+  document.getElementById('next').onclick = function () { shift(3); };
+  document.getElementById('today').onclick = function () {
+    var t = new Date();
+    start = new Date(t.getFullYear(), t.getMonth(), 1);
+    render();
+  };
+
+  render();
+</script>
+
+</body>
+</html>

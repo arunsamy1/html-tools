@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Stopwatch</title>
+<style>
+  :root, :root[data-theme="light"] {
+    color-scheme: light;
+    --bg: #ffffff;
+    --card: #ffffff;
+    --text: #1a1a18;
+    --muted: #767672;
+    --line: #d8d8d4;
+    --accent: #2f6fed;
+    --stop: #d93f3f;
+    --row: #f4f4f1;
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #17171a;
+    --card: #202024;
+    --text: #ececea;
+    --muted: #94949a;
+    --line: #34343c;
+    --accent: #6c9bff;
+    --stop: #ff7a7a;
+    --row: #26262b;
+  }
+  * { box-sizing: border-box; }
+  html {
+    background: var(--bg);
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+  body {
+    margin: 0;
+    padding: 40px 16px 56px;
+    background: var(--bg);
+    color: var(--text);
+    font: 17px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  header {
+    max-width: 640px;
+    margin: 0 auto 28px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 14px;
+  }
+  h1 { font-size: 30px; font-weight: 600; margin: 0 auto 0 0; }
+  main { max-width: 640px; margin: 0 auto; }
+  .panel {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 32px 24px;
+    text-align: center;
+  }
+  #display {
+    font-size: clamp(34px, 10.5vw, 72px);
+    font-weight: 600;
+    letter-spacing: -.02em;
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+    margin-bottom: 28px;
+  }
+  #display .cs { color: var(--muted); font-size: .55em; }
+  .controls {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  button {
+    font: inherit;
+    font-size: 17px;
+    padding: 12px 22px;
+    min-height: 48px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--card);
+    color: var(--text);
+    cursor: pointer;
+  }
+  button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+  button:disabled { opacity: .4; cursor: default; }
+  #startStop {
+    min-width: 130px;
+    font-weight: 600;
+    border-color: transparent;
+    background: var(--accent);
+    color: #ffffff;
+  }
+  #startStop:hover { color: #ffffff; opacity: .9; }
+  #startStop.running { background: var(--stop); }
+  #laps {
+    list-style: none;
+    margin: 24px 0 0;
+    padding: 0;
+    font-variant-numeric: tabular-nums;
+  }
+  #laps li {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    padding: 12px 16px;
+    border-radius: 10px;
+  }
+  #laps li:nth-child(odd) { background: var(--row); }
+  #laps .n { color: var(--muted); font-size: 15px; width: 60px; text-align: left; }
+  #laps .split { font-size: 20px; font-weight: 600; margin-left: auto; }
+  #laps .total { color: var(--muted); font-size: 15px; width: 114px; text-align: right; }
+  .hint {
+    max-width: 640px;
+    margin: 20px auto 0;
+    color: var(--muted);
+    font-size: 15px;
+    text-align: center;
+  }
+  kbd {
+    font: inherit;
+    font-size: 13px;
+    padding: 2px 6px;
+    border: 1px solid var(--line);
+    border-bottom-width: 2px;
+    border-radius: 5px;
+  }
+  @media (max-width: 700px) {
+    body { padding: 24px 12px calc(40px + env(safe-area-inset-bottom)); }
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      margin: -24px -12px 20px;
+      padding: 12px;
+      gap: 8px;
+      background: var(--bg);
+      border-bottom: 1px solid var(--line);
+    }
+    h1 { font-size: 24px; width: 100%; margin: 0; }
+    header button { font-size: 16px; padding: 10px 14px; flex: 1; min-height: 44px; }
+    .panel { padding: 24px 14px; }
+    .controls button { flex: 1; min-width: 96px; }
+    .hint { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Stopwatch</h1>
+  <button id="theme" type="button">&#9789; Dark mode</button>
+</header>
+
+<main>
+  <div class="panel">
+    <div id="display">00:00:00<span class="cs">.00</span></div>
+    <div class="controls">
+      <button id="startStop" type="button">Start</button>
+      <button id="lap" type="button" disabled>Lap</button>
+      <button id="reset" type="button" disabled>Reset</button>
+    </div>
+    <ul id="laps"></ul>
+  </div>
+  <p class="hint">
+    <kbd>Space</kbd> start / pause &nbsp;&middot;&nbsp; <kbd>L</kbd> lap &nbsp;&middot;&nbsp; <kbd>R</kbd> reset
+  </p>
+</main>
+
+<script>
+  /* ---- theme (shared with the calendar pages) ---- */
+
+  var themeBtn = document.getElementById('theme');
+
+  function applyTheme(mode) {
+    document.documentElement.setAttribute('data-theme', mode);
+    themeBtn.innerHTML = mode === 'dark' ? '☀ Light mode' : '☽ Dark mode';
+    try { localStorage.setItem('calendar-theme', mode); } catch (e) {}
+  }
+
+  function storedTheme() {
+    try { return localStorage.getItem('calendar-theme'); } catch (e) { return null; }
+  }
+
+  applyTheme(storedTheme() === 'dark' ? 'dark' : 'light');
+
+  themeBtn.onclick = function () {
+    var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    applyTheme(isDark ? 'light' : 'dark');
+  };
+
+  /* ---- stopwatch ---- */
+
+  var display = document.getElementById('display');
+  var startStopBtn = document.getElementById('startStop');
+  var lapBtn = document.getElementById('lap');
+  var resetBtn = document.getElementById('reset');
+  var lapList = document.getElementById('laps');
+
+  var running = false;
+  var accumulated = 0;   // ms banked from previous runs
+  var startedAt = 0;     // performance.now() of the current run
+  var frame = null;
+  var laps = [];         // cumulative ms at each lap
+
+  function elapsed() {
+    return running ? accumulated + (performance.now() - startedAt) : accumulated;
+  }
+
+  function pad(n) { return (n < 10 ? '0' : '') + n; }
+
+  function format(ms) {
+    var cs = Math.floor(ms / 10) % 100;
+    var s = Math.floor(ms / 1000) % 60;
+    var m = Math.floor(ms / 60000) % 60;
+    var h = Math.floor(ms / 3600000);
+    return pad(h) + ':' + pad(m) + ':' + pad(s) + '.' + pad(cs);
+  }
+
+  function markup(ms) {
+    var text = format(ms);
+    var dot = text.lastIndexOf('.');
+    return text.slice(0, dot) + '<span class="cs">' + text.slice(dot) + '</span>';
+  }
+
+  function paint() {
+    display.innerHTML = markup(elapsed());
+    if (running) frame = requestAnimationFrame(paint);
+  }
+
+  function start() {
+    running = true;
+    startedAt = performance.now();
+    startStopBtn.textContent = 'Pause';
+    startStopBtn.classList.add('running');
+    lapBtn.disabled = false;
+    resetBtn.disabled = false;
+    paint();
+  }
+
+  function pause() {
+    accumulated = elapsed();
+    running = false;
+    if (frame) cancelAnimationFrame(frame);
+    startStopBtn.textContent = 'Start';
+    startStopBtn.classList.remove('running');
+    lapBtn.disabled = true;
+    paint();
+  }
+
+  function reset() {
+    running = false;
+    if (frame) cancelAnimationFrame(frame);
+    accumulated = 0;
+    laps = [];
+    lapList.innerHTML = '';
+    startStopBtn.textContent = 'Start';
+    startStopBtn.classList.remove('running');
+    lapBtn.disabled = true;
+    resetBtn.disabled = true;
+    paint();
+  }
+
+  function addLap() {
+    var total = elapsed();
+    var prev = laps.length ? laps[laps.length - 1] : 0;
+    laps.push(total);
+
+    var li = document.createElement('li');
+    li.innerHTML = '<span class="n">Lap ' + laps.length + '</span>' +
+                   '<span class="split">' + format(total - prev) + '</span>' +
+                   '<span class="total">' + format(total) + '</span>';
+    lapList.insertBefore(li, lapList.firstChild);
+  }
+
+  startStopBtn.onclick = function () { running ? pause() : start(); };
+  lapBtn.onclick = addLap;
+  resetBtn.onclick = reset;
+
+  document.addEventListener('keydown', function (e) {
+    if (e.target.tagName === 'BUTTON' && e.key === ' ') e.target.blur();
+    if (e.key === ' ') {
+      e.preventDefault();
+      running ? pause() : start();
+    } else if (e.key === 'l' || e.key === 'L') {
+      if (!lapBtn.disabled) addLap();
+    } else if (e.key === 'r' || e.key === 'R') {
+      if (!resetBtn.disabled) reset();
+    }
+  });
+
+  // keep the clock honest if the tab was backgrounded (rAF is throttled there)
+  document.addEventListener('visibilitychange', function () {
+    if (!document.hidden && running) paint();
+  });
+</script>
+
+</body>
+</html>
