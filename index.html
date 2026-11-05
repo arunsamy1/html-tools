@@ -31,6 +31,8 @@
     a:hover { text-decoration: underline; }
     .download-btn { margin-left: 16px; padding: 2px 10px; font-size: 0.8em; background: #2e7d52; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
     .download-btn:hover { background: #1a5c39; }
+    .open-btn { margin-left: 10px; padding: 2px 10px; font-size: 0.8em; background: #2a5db0; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
+    .open-btn:hover { background: #1b4080; }
     /* Mobile */
     @media (max-width: 600px) {
       .layout { flex-direction: column; }
@@ -44,6 +46,9 @@
       document.querySelectorAll('.nav-item').forEach(function(i) { i.classList.remove('active'); });
       document.getElementById('folder-' + name).style.display = 'block';
       document.querySelector('.nav-item[data-folder="' + name + '"]').classList.add('active');
+    }
+    function openInNewTab(url) {
+      window.open(url, '_blank', 'noopener');
     }
     function downloadFile(url, filename) {
       fetch(url)
@@ -86,23 +91,23 @@
       <tbody>
         <tr>
           <td>1</td>
-          <td><a class="file-path" href="btc/bitcoin-balance-check.html" target="_blank" rel="noopener">btc/bitcoin-balance-check.html</a><button class="download-btn" onclick="downloadFile('btc/bitcoin-balance-check.html','bitcoin-balance-check.html')">Download</button></td>
+          <td><a class="file-path" href="btc/bitcoin-balance-check.html">btc/bitcoin-balance-check.html</a><button class="open-btn" onclick="openInNewTab('btc/bitcoin-balance-check.html')">New tab</button><button class="download-btn" onclick="downloadFile('btc/bitcoin-balance-check.html','bitcoin-balance-check.html')">Download</button></td>
         </tr>
         <tr>
           <td>2</td>
-          <td><a class="file-path" href="btc/bitcoinconvert.html" target="_blank" rel="noopener">btc/bitcoinconvert.html</a><button class="download-btn" onclick="downloadFile('btc/bitcoinconvert.html','bitcoinconvert.html')">Download</button></td>
+          <td><a class="file-path" href="btc/bitcoinconvert.html">btc/bitcoinconvert.html</a><button class="open-btn" onclick="openInNewTab('btc/bitcoinconvert.html')">New tab</button><button class="download-btn" onclick="downloadFile('btc/bitcoinconvert.html','bitcoinconvert.html')">Download</button></td>
         </tr>
         <tr>
           <td>3</td>
-          <td><a class="file-path" href="btc/bitcoin.html" target="_blank" rel="noopener">btc/bitcoin.html</a><button class="download-btn" onclick="downloadFile('btc/bitcoin.html','bitcoin.html')">Download</button></td>
+          <td><a class="file-path" href="btc/bitcoin.html">btc/bitcoin.html</a><button class="open-btn" onclick="openInNewTab('btc/bitcoin.html')">New tab</button><button class="download-btn" onclick="downloadFile('btc/bitcoin.html','bitcoin.html')">Download</button></td>
         </tr>
         <tr>
           <td>4</td>
-          <td><a class="file-path" href="btc/bitcoin-units-converter.html" target="_blank" rel="noopener">btc/bitcoin-units-converter.html</a><button class="download-btn" onclick="downloadFile('btc/bitcoin-units-converter.html','bitcoin-units-converter.html')">Download</button></td>
+          <td><a class="file-path" href="btc/bitcoin-units-converter.html">btc/bitcoin-units-converter.html</a><button class="open-btn" onclick="openInNewTab('btc/bitcoin-units-converter.html')">New tab</button><button class="download-btn" onclick="downloadFile('btc/bitcoin-units-converter.html','bitcoin-units-converter.html')">Download</button></td>
         </tr>
         <tr>
           <td>5</td>
-          <td><a class="file-path" href="btc/ethereum-balance-check.html" target="_blank" rel="noopener">btc/ethereum-balance-check.html</a><button class="download-btn" onclick="downloadFile('btc/ethereum-balance-check.html','ethereum-balance-check.html')">Download</button></td>
+          <td><a class="file-path" href="btc/ethereum-balance-check.html">btc/ethereum-balance-check.html</a><button class="open-btn" onclick="openInNewTab('btc/ethereum-balance-check.html')">New tab</button><button class="download-btn" onclick="downloadFile('btc/ethereum-balance-check.html','ethereum-balance-check.html')">Download</button></td>
         </tr>
       </tbody>
     </table>
@@ -114,7 +119,7 @@
       <tbody>
         <tr>
           <td>1</td>
-          <td><a class="file-path" href="converters/md2html.html" target="_blank" rel="noopener">converters/md2html.html</a><button class="download-btn" onclick="downloadFile('converters/md2html.html','md2html.html')">Download</button></td>
+          <td><a class="file-path" href="converters/md2html.html">converters/md2html.html</a><button class="open-btn" onclick="openInNewTab('converters/md2html.html')">New tab</button><button class="download-btn" onclick="downloadFile('converters/md2html.html','md2html.html')">Download</button></td>
         </tr>
       </tbody>
     </table>
@@ -126,23 +131,23 @@
       <tbody>
         <tr>
           <td>1</td>
-          <td><a class="file-path" href="finance/btc_etf_price_calc.html" target="_blank" rel="noopener">finance/btc_etf_price_calc.html</a><button class="download-btn" onclick="downloadFile('finance/btc_etf_price_calc.html','btc_etf_price_calc.html')">Download</button></td>
+          <td><a class="file-path" href="finance/btc_etf_price_calc.html">finance/btc_etf_price_calc.html</a><button class="open-btn" onclick="openInNewTab('finance/btc_etf_price_calc.html')">New tab</button><button class="download-btn" onclick="downloadFile('finance/btc_etf_price_calc.html','btc_etf_price_calc.html')">Download</button></td>
         </tr>
         <tr>
           <td>2</td>
-          <td><a class="file-path" href="finance/compound-interest.html" target="_blank" rel="noopener">finance/compound-interest.html</a><button class="download-btn" onclick="downloadFile('finance/compound-interest.html','compound-interest.html')">Download</button></td>
+          <td><a class="file-path" href="finance/compound-interest.html">finance/compound-interest.html</a><button class="open-btn" onclick="openInNewTab('finance/compound-interest.html')">New tab</button><button class="download-btn" onclick="downloadFile('finance/compound-interest.html','compound-interest.html')">Download</button></td>
         </tr>
         <tr>
           <td>3</td>
-          <td><a class="file-path" href="finance/cost-basis-calculator.html" target="_blank" rel="noopener">finance/cost-basis-calculator.html</a><button class="download-btn" onclick="downloadFile('finance/cost-basis-calculator.html','cost-basis-calculator.html')">Download</button></td>
+          <td><a class="file-path" href="finance/cost-basis-calculator.html">finance/cost-basis-calculator.html</a><button class="open-btn" onclick="openInNewTab('finance/cost-basis-calculator.html')">New tab</button><button class="download-btn" onclick="downloadFile('finance/cost-basis-calculator.html','cost-basis-calculator.html')">Download</button></td>
         </tr>
         <tr>
           <td>4</td>
-          <td><a class="file-path" href="finance/eth_etf_price_calc.html" target="_blank" rel="noopener">finance/eth_etf_price_calc.html</a><button class="download-btn" onclick="downloadFile('finance/eth_etf_price_calc.html','eth_etf_price_calc.html')">Download</button></td>
+          <td><a class="file-path" href="finance/eth_etf_price_calc.html">finance/eth_etf_price_calc.html</a><button class="open-btn" onclick="openInNewTab('finance/eth_etf_price_calc.html')">New tab</button><button class="download-btn" onclick="downloadFile('finance/eth_etf_price_calc.html','eth_etf_price_calc.html')">Download</button></td>
         </tr>
         <tr>
           <td>5</td>
-          <td><a class="file-path" href="finance/simple-interest.html" target="_blank" rel="noopener">finance/simple-interest.html</a><button class="download-btn" onclick="downloadFile('finance/simple-interest.html','simple-interest.html')">Download</button></td>
+          <td><a class="file-path" href="finance/simple-interest.html">finance/simple-interest.html</a><button class="open-btn" onclick="openInNewTab('finance/simple-interest.html')">New tab</button><button class="download-btn" onclick="downloadFile('finance/simple-interest.html','simple-interest.html')">Download</button></td>
         </tr>
       </tbody>
     </table>
@@ -154,11 +159,11 @@
       <tbody>
         <tr>
           <td>1</td>
-          <td><a class="file-path" href="fin_charts/fed_chart.html" target="_blank" rel="noopener">fin_charts/fed_chart.html</a><button class="download-btn" onclick="downloadFile('fin_charts/fed_chart.html','fed_chart.html')">Download</button></td>
+          <td><a class="file-path" href="fin_charts/fed_chart.html">fin_charts/fed_chart.html</a><button class="open-btn" onclick="openInNewTab('fin_charts/fed_chart.html')">New tab</button><button class="download-btn" onclick="downloadFile('fin_charts/fed_chart.html','fed_chart.html')">Download</button></td>
         </tr>
         <tr>
           <td>2</td>
-          <td><a class="file-path" href="fin_charts/fed_chart_more.html" target="_blank" rel="noopener">fin_charts/fed_chart_more.html</a><button class="download-btn" onclick="downloadFile('fin_charts/fed_chart_more.html','fed_chart_more.html')">Download</button></td>
+          <td><a class="file-path" href="fin_charts/fed_chart_more.html">fin_charts/fed_chart_more.html</a><button class="open-btn" onclick="openInNewTab('fin_charts/fed_chart_more.html')">New tab</button><button class="download-btn" onclick="downloadFile('fin_charts/fed_chart_more.html','fed_chart_more.html')">Download</button></td>
         </tr>
       </tbody>
     </table>
@@ -170,19 +175,19 @@
       <tbody>
         <tr>
           <td>1</td>
-          <td><a class="file-path" href="fm_radio/AirTamil_FM.html" target="_blank" rel="noopener">fm_radio/AirTamil_FM.html</a><button class="download-btn" onclick="downloadFile('fm_radio/AirTamil_FM.html','AirTamil_FM.html')">Download</button></td>
+          <td><a class="file-path" href="fm_radio/AirTamil_FM.html">fm_radio/AirTamil_FM.html</a><button class="open-btn" onclick="openInNewTab('fm_radio/AirTamil_FM.html')">New tab</button><button class="download-btn" onclick="downloadFile('fm_radio/AirTamil_FM.html','AirTamil_FM.html')">Download</button></td>
         </tr>
         <tr>
           <td>2</td>
-          <td><a class="file-path" href="fm_radio/fm_radio_bbc.html" target="_blank" rel="noopener">fm_radio/fm_radio_bbc.html</a><button class="download-btn" onclick="downloadFile('fm_radio/fm_radio_bbc.html','fm_radio_bbc.html')">Download</button></td>
+          <td><a class="file-path" href="fm_radio/fm_radio_bbc.html">fm_radio/fm_radio_bbc.html</a><button class="open-btn" onclick="openInNewTab('fm_radio/fm_radio_bbc.html')">New tab</button><button class="download-btn" onclick="downloadFile('fm_radio/fm_radio_bbc.html','fm_radio_bbc.html')">Download</button></td>
         </tr>
         <tr>
           <td>3</td>
-          <td><a class="file-path" href="fm_radio/fm_radio.html" target="_blank" rel="noopener">fm_radio/fm_radio.html</a><button class="download-btn" onclick="downloadFile('fm_radio/fm_radio.html','fm_radio.html')">Download</button></td>
+          <td><a class="file-path" href="fm_radio/fm_radio.html">fm_radio/fm_radio.html</a><button class="open-btn" onclick="openInNewTab('fm_radio/fm_radio.html')">New tab</button><button class="download-btn" onclick="downloadFile('fm_radio/fm_radio.html','fm_radio.html')">Download</button></td>
         </tr>
         <tr>
           <td>4</td>
-          <td><a class="file-path" href="fm_radio/Vaanam_Tamil_FM.html" target="_blank" rel="noopener">fm_radio/Vaanam_Tamil_FM.html</a><button class="download-btn" onclick="downloadFile('fm_radio/Vaanam_Tamil_FM.html','Vaanam_Tamil_FM.html')">Download</button></td>
+          <td><a class="file-path" href="fm_radio/Vaanam_Tamil_FM.html">fm_radio/Vaanam_Tamil_FM.html</a><button class="open-btn" onclick="openInNewTab('fm_radio/Vaanam_Tamil_FM.html')">New tab</button><button class="download-btn" onclick="downloadFile('fm_radio/Vaanam_Tamil_FM.html','Vaanam_Tamil_FM.html')">Download</button></td>
         </tr>
       </tbody>
     </table>
@@ -194,7 +199,7 @@
       <tbody>
         <tr>
           <td>1</td>
-          <td><a class="file-path" href="office_pwd/pwd.html" target="_blank" rel="noopener">office_pwd/pwd.html</a><button class="download-btn" onclick="downloadFile('office_pwd/pwd.html','pwd.html')">Download</button></td>
+          <td><a class="file-path" href="office_pwd/pwd.html">office_pwd/pwd.html</a><button class="open-btn" onclick="openInNewTab('office_pwd/pwd.html')">New tab</button><button class="download-btn" onclick="downloadFile('office_pwd/pwd.html','pwd.html')">Download</button></td>
         </tr>
       </tbody>
     </table>
@@ -206,11 +211,11 @@
       <tbody>
         <tr>
           <td>1</td>
-          <td><a class="file-path" href="others/rahu_backup.html" target="_blank" rel="noopener">others/rahu_backup.html</a><button class="download-btn" onclick="downloadFile('others/rahu_backup.html','rahu_backup.html')">Download</button></td>
+          <td><a class="file-path" href="others/rahu_backup.html">others/rahu_backup.html</a><button class="open-btn" onclick="openInNewTab('others/rahu_backup.html')">New tab</button><button class="download-btn" onclick="downloadFile('others/rahu_backup.html','rahu_backup.html')">Download</button></td>
         </tr>
         <tr>
           <td>2</td>
-          <td><a class="file-path" href="others/rahu_kaalam_calculator.html" target="_blank" rel="noopener">others/rahu_kaalam_calculator.html</a><button class="download-btn" onclick="downloadFile('others/rahu_kaalam_calculator.html','rahu_kaalam_calculator.html')">Download</button></td>
+          <td><a class="file-path" href="others/rahu_kaalam_calculator.html">others/rahu_kaalam_calculator.html</a><button class="open-btn" onclick="openInNewTab('others/rahu_kaalam_calculator.html')">New tab</button><button class="download-btn" onclick="downloadFile('others/rahu_kaalam_calculator.html','rahu_kaalam_calculator.html')">Download</button></td>
         </tr>
       </tbody>
     </table>
@@ -222,51 +227,51 @@
       <tbody>
         <tr>
           <td>1</td>
-          <td><a class="file-path" href="security/both.html" target="_blank" rel="noopener">security/both.html</a><button class="download-btn" onclick="downloadFile('security/both.html','both.html')">Download</button></td>
+          <td><a class="file-path" href="security/both.html">security/both.html</a><button class="open-btn" onclick="openInNewTab('security/both.html')">New tab</button><button class="download-btn" onclick="downloadFile('security/both.html','both.html')">Download</button></td>
         </tr>
         <tr>
           <td>2</td>
-          <td><a class="file-path" href="security/decrypt.html" target="_blank" rel="noopener">security/decrypt.html</a><button class="download-btn" onclick="downloadFile('security/decrypt.html','decrypt.html')">Download</button></td>
+          <td><a class="file-path" href="security/decrypt.html">security/decrypt.html</a><button class="open-btn" onclick="openInNewTab('security/decrypt.html')">New tab</button><button class="download-btn" onclick="downloadFile('security/decrypt.html','decrypt.html')">Download</button></td>
         </tr>
         <tr>
           <td>3</td>
-          <td><a class="file-path" href="security/encryptor_backkup_2026-05-14.html" target="_blank" rel="noopener">security/encryptor_backkup_2026-05-14.html</a><button class="download-btn" onclick="downloadFile('security/encryptor_backkup_2026-05-14.html','encryptor_backkup_2026-05-14.html')">Download</button></td>
+          <td><a class="file-path" href="security/encryptor_backkup_2026-05-14.html">security/encryptor_backkup_2026-05-14.html</a><button class="open-btn" onclick="openInNewTab('security/encryptor_backkup_2026-05-14.html')">New tab</button><button class="download-btn" onclick="downloadFile('security/encryptor_backkup_2026-05-14.html','encryptor_backkup_2026-05-14.html')">Download</button></td>
         </tr>
         <tr>
           <td>4</td>
-          <td><a class="file-path" href="security/encryptor_backup_2026-05-13.html" target="_blank" rel="noopener">security/encryptor_backup_2026-05-13.html</a><button class="download-btn" onclick="downloadFile('security/encryptor_backup_2026-05-13.html','encryptor_backup_2026-05-13.html')">Download</button></td>
+          <td><a class="file-path" href="security/encryptor_backup_2026-05-13.html">security/encryptor_backup_2026-05-13.html</a><button class="open-btn" onclick="openInNewTab('security/encryptor_backup_2026-05-13.html')">New tab</button><button class="download-btn" onclick="downloadFile('security/encryptor_backup_2026-05-13.html','encryptor_backup_2026-05-13.html')">Download</button></td>
         </tr>
         <tr>
           <td>5</td>
-          <td><a class="file-path" href="security/encryptor_backup_2026-09-13.html" target="_blank" rel="noopener">security/encryptor_backup_2026-09-13.html</a><button class="download-btn" onclick="downloadFile('security/encryptor_backup_2026-09-13.html','encryptor_backup_2026-09-13.html')">Download</button></td>
+          <td><a class="file-path" href="security/encryptor_backup_2026-09-13.html">security/encryptor_backup_2026-09-13.html</a><button class="open-btn" onclick="openInNewTab('security/encryptor_backup_2026-09-13.html')">New tab</button><button class="download-btn" onclick="downloadFile('security/encryptor_backup_2026-09-13.html','encryptor_backup_2026-09-13.html')">Download</button></td>
         </tr>
         <tr>
           <td>6</td>
-          <td><a class="file-path" href="security/encryptor_old.html" target="_blank" rel="noopener">security/encryptor_old.html</a><button class="download-btn" onclick="downloadFile('security/encryptor_old.html','encryptor_old.html')">Download</button></td>
+          <td><a class="file-path" href="security/encryptor_old.html">security/encryptor_old.html</a><button class="open-btn" onclick="openInNewTab('security/encryptor_old.html')">New tab</button><button class="download-btn" onclick="downloadFile('security/encryptor_old.html','encryptor_old.html')">Download</button></td>
         </tr>
         <tr>
           <td>7</td>
-          <td><a class="file-path" href="security/htmltest_02.html" target="_blank" rel="noopener">security/htmltest_02.html</a><button class="download-btn" onclick="downloadFile('security/htmltest_02.html','htmltest_02.html')">Download</button></td>
+          <td><a class="file-path" href="security/htmltest_02.html">security/htmltest_02.html</a><button class="open-btn" onclick="openInNewTab('security/htmltest_02.html')">New tab</button><button class="download-btn" onclick="downloadFile('security/htmltest_02.html','htmltest_02.html')">Download</button></td>
         </tr>
         <tr>
           <td>8</td>
-          <td><a class="file-path" href="security/htmltest.html" target="_blank" rel="noopener">security/htmltest.html</a><button class="download-btn" onclick="downloadFile('security/htmltest.html','htmltest.html')">Download</button></td>
+          <td><a class="file-path" href="security/htmltest.html">security/htmltest.html</a><button class="open-btn" onclick="openInNewTab('security/htmltest.html')">New tab</button><button class="download-btn" onclick="downloadFile('security/htmltest.html','htmltest.html')">Download</button></td>
         </tr>
         <tr>
           <td>9</td>
-          <td><a class="file-path" href="security/pkikeypair.html" target="_blank" rel="noopener">security/pkikeypair.html</a><button class="download-btn" onclick="downloadFile('security/pkikeypair.html','pkikeypair.html')">Download</button></td>
+          <td><a class="file-path" href="security/pkikeypair.html">security/pkikeypair.html</a><button class="open-btn" onclick="openInNewTab('security/pkikeypair.html')">New tab</button><button class="download-btn" onclick="downloadFile('security/pkikeypair.html','pkikeypair.html')">Download</button></td>
         </tr>
         <tr>
           <td>10</td>
-          <td><a class="file-path" href="security/sha3512384256224.html" target="_blank" rel="noopener">security/sha3512384256224.html</a><button class="download-btn" onclick="downloadFile('security/sha3512384256224.html','sha3512384256224.html')">Download</button></td>
+          <td><a class="file-path" href="security/sha3512384256224.html">security/sha3512384256224.html</a><button class="open-btn" onclick="openInNewTab('security/sha3512384256224.html')">New tab</button><button class="download-btn" onclick="downloadFile('security/sha3512384256224.html','sha3512384256224.html')">Download</button></td>
         </tr>
         <tr>
           <td>11</td>
-          <td><a class="file-path" href="security/test123.html" target="_blank" rel="noopener">security/test123.html</a><button class="download-btn" onclick="downloadFile('security/test123.html','test123.html')">Download</button></td>
+          <td><a class="file-path" href="security/test123.html">security/test123.html</a><button class="open-btn" onclick="openInNewTab('security/test123.html')">New tab</button><button class="download-btn" onclick="downloadFile('security/test123.html','test123.html')">Download</button></td>
         </tr>
         <tr>
           <td>12</td>
-          <td><a class="file-path" href="security/test4_base64.html" target="_blank" rel="noopener">security/test4_base64.html</a><button class="download-btn" onclick="downloadFile('security/test4_base64.html','test4_base64.html')">Download</button></td>
+          <td><a class="file-path" href="security/test4_base64.html">security/test4_base64.html</a><button class="open-btn" onclick="openInNewTab('security/test4_base64.html')">New tab</button><button class="download-btn" onclick="downloadFile('security/test4_base64.html','test4_base64.html')">Download</button></td>
         </tr>
       </tbody>
     </table>
@@ -278,11 +283,11 @@
       <tbody>
         <tr>
           <td>1</td>
-          <td><a class="file-path" href="study_tools/7_one_liner_qa.html" target="_blank" rel="noopener">study_tools/7_one_liner_qa.html</a><button class="download-btn" onclick="downloadFile('study_tools/7_one_liner_qa.html','7_one_liner_qa.html')">Download</button></td>
+          <td><a class="file-path" href="study_tools/7_one_liner_qa.html">study_tools/7_one_liner_qa.html</a><button class="open-btn" onclick="openInNewTab('study_tools/7_one_liner_qa.html')">New tab</button><button class="download-btn" onclick="downloadFile('study_tools/7_one_liner_qa.html','7_one_liner_qa.html')">Download</button></td>
         </tr>
         <tr>
           <td>2</td>
-          <td><a class="file-path" href="study_tools/8_one_liner_q.html" target="_blank" rel="noopener">study_tools/8_one_liner_q.html</a><button class="download-btn" onclick="downloadFile('study_tools/8_one_liner_q.html','8_one_liner_q.html')">Download</button></td>
+          <td><a class="file-path" href="study_tools/8_one_liner_q.html">study_tools/8_one_liner_q.html</a><button class="open-btn" onclick="openInNewTab('study_tools/8_one_liner_q.html')">New tab</button><button class="download-btn" onclick="downloadFile('study_tools/8_one_liner_q.html','8_one_liner_q.html')">Download</button></td>
         </tr>
       </tbody>
     </table>
@@ -294,23 +299,23 @@
       <tbody>
         <tr>
           <td>1</td>
-          <td><a class="file-path" href="time/current_time.html" target="_blank" rel="noopener">time/current_time.html</a><button class="download-btn" onclick="downloadFile('time/current_time.html','current_time.html')">Download</button></td>
+          <td><a class="file-path" href="time/current_time.html">time/current_time.html</a><button class="open-btn" onclick="openInNewTab('time/current_time.html')">New tab</button><button class="download-btn" onclick="downloadFile('time/current_time.html','current_time.html')">Download</button></td>
         </tr>
         <tr>
           <td>2</td>
-          <td><a class="file-path" href="time/monthly_calendar.html" target="_blank" rel="noopener">time/monthly_calendar.html</a><button class="download-btn" onclick="downloadFile('time/monthly_calendar.html','monthly_calendar.html')">Download</button></td>
+          <td><a class="file-path" href="time/monthly_calendar.html">time/monthly_calendar.html</a><button class="open-btn" onclick="openInNewTab('time/monthly_calendar.html')">New tab</button><button class="download-btn" onclick="downloadFile('time/monthly_calendar.html','monthly_calendar.html')">Download</button></td>
         </tr>
         <tr>
           <td>3</td>
-          <td><a class="file-path" href="time/stopwatch.html" target="_blank" rel="noopener">time/stopwatch.html</a><button class="download-btn" onclick="downloadFile('time/stopwatch.html','stopwatch.html')">Download</button></td>
+          <td><a class="file-path" href="time/stopwatch.html">time/stopwatch.html</a><button class="open-btn" onclick="openInNewTab('time/stopwatch.html')">New tab</button><button class="download-btn" onclick="downloadFile('time/stopwatch.html','stopwatch.html')">Download</button></td>
         </tr>
         <tr>
           <td>4</td>
-          <td><a class="file-path" href="time/timezone.html" target="_blank" rel="noopener">time/timezone.html</a><button class="download-btn" onclick="downloadFile('time/timezone.html','timezone.html')">Download</button></td>
+          <td><a class="file-path" href="time/timezone.html">time/timezone.html</a><button class="open-btn" onclick="openInNewTab('time/timezone.html')">New tab</button><button class="download-btn" onclick="downloadFile('time/timezone.html','timezone.html')">Download</button></td>
         </tr>
         <tr>
           <td>5</td>
-          <td><a class="file-path" href="time/yearly_calendar.html" target="_blank" rel="noopener">time/yearly_calendar.html</a><button class="download-btn" onclick="downloadFile('time/yearly_calendar.html','yearly_calendar.html')">Download</button></td>
+          <td><a class="file-path" href="time/yearly_calendar.html">time/yearly_calendar.html</a><button class="open-btn" onclick="openInNewTab('time/yearly_calendar.html')">New tab</button><button class="download-btn" onclick="downloadFile('time/yearly_calendar.html','yearly_calendar.html')">Download</button></td>
         </tr>
       </tbody>
     </table>
@@ -322,11 +327,11 @@
       <tbody>
         <tr>
           <td>1</td>
-          <td><a class="file-path" href="utilities/onepage_markdown.html" target="_blank" rel="noopener">utilities/onepage_markdown.html</a><button class="download-btn" onclick="downloadFile('utilities/onepage_markdown.html','onepage_markdown.html')">Download</button></td>
+          <td><a class="file-path" href="utilities/onepage_markdown.html">utilities/onepage_markdown.html</a><button class="open-btn" onclick="openInNewTab('utilities/onepage_markdown.html')">New tab</button><button class="download-btn" onclick="downloadFile('utilities/onepage_markdown.html','onepage_markdown.html')">Download</button></td>
         </tr>
         <tr>
           <td>2</td>
-          <td><a class="file-path" href="utilities/onepage_notepad.html" target="_blank" rel="noopener">utilities/onepage_notepad.html</a><button class="download-btn" onclick="downloadFile('utilities/onepage_notepad.html','onepage_notepad.html')">Download</button></td>
+          <td><a class="file-path" href="utilities/onepage_notepad.html">utilities/onepage_notepad.html</a><button class="open-btn" onclick="openInNewTab('utilities/onepage_notepad.html')">New tab</button><button class="download-btn" onclick="downloadFile('utilities/onepage_notepad.html','onepage_notepad.html')">Download</button></td>
         </tr>
       </tbody>
     </table>
@@ -338,11 +343,11 @@
       <tbody>
         <tr>
           <td>1</td>
-          <td><a class="file-path" href="ZIM_TEMPLATES/test2.html" target="_blank" rel="noopener">ZIM_TEMPLATES/test2.html</a><button class="download-btn" onclick="downloadFile('ZIM_TEMPLATES/test2.html','test2.html')">Download</button></td>
+          <td><a class="file-path" href="ZIM_TEMPLATES/test2.html">ZIM_TEMPLATES/test2.html</a><button class="open-btn" onclick="openInNewTab('ZIM_TEMPLATES/test2.html')">New tab</button><button class="download-btn" onclick="downloadFile('ZIM_TEMPLATES/test2.html','test2.html')">Download</button></td>
         </tr>
         <tr>
           <td>2</td>
-          <td><a class="file-path" href="ZIM_TEMPLATES/ZeroFiveEight_new_version.html" target="_blank" rel="noopener">ZIM_TEMPLATES/ZeroFiveEight_new_version.html</a><button class="download-btn" onclick="downloadFile('ZIM_TEMPLATES/ZeroFiveEight_new_version.html','ZeroFiveEight_new_version.html')">Download</button></td>
+          <td><a class="file-path" href="ZIM_TEMPLATES/ZeroFiveEight_new_version.html">ZIM_TEMPLATES/ZeroFiveEight_new_version.html</a><button class="open-btn" onclick="openInNewTab('ZIM_TEMPLATES/ZeroFiveEight_new_version.html')">New tab</button><button class="download-btn" onclick="downloadFile('ZIM_TEMPLATES/ZeroFiveEight_new_version.html','ZeroFiveEight_new_version.html')">Download</button></td>
         </tr>
       </tbody>
     </table>
