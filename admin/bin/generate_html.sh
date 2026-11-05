@@ -91,6 +91,8 @@ cat > "$OUTPUT" <<'HTMLHEAD'
     a:hover { text-decoration: underline; }
     .download-btn { margin-left: 16px; padding: 2px 10px; font-size: 0.8em; background: #2e7d52; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
     .download-btn:hover { background: #1a5c39; }
+    .open-btn { margin-left: 10px; padding: 2px 10px; font-size: 0.8em; background: #2a5db0; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
+    .open-btn:hover { background: #1b4080; }
     /* Mobile */
     @media (max-width: 600px) {
       .layout { flex-direction: column; }
@@ -104,6 +106,9 @@ cat > "$OUTPUT" <<'HTMLHEAD'
       document.querySelectorAll('.nav-item').forEach(function(i) { i.classList.remove('active'); });
       document.getElementById('folder-' + name).style.display = 'block';
       document.querySelector('.nav-item[data-folder="' + name + '"]').classList.add('active');
+    }
+    function openInNewTab(url) {
+      window.open(url, '_blank', 'noopener');
     }
     function downloadFile(url, filename) {
       fetch(url)
@@ -168,7 +173,7 @@ for folder in "${folders[@]}"; do
     total_count=$((total_count + 1))
     echo "        <tr>" >> "$OUTPUT"
     echo "          <td>$file_num</td>" >> "$OUTPUT"
-    echo "          <td><a class=\"file-path\" href=\"$relpath\" target=\"_blank\" rel=\"noopener\">$relpath</a><button class=\"download-btn\" onclick=\"downloadFile('$relpath','$filename')\">Download</button></td>" >> "$OUTPUT"
+    echo "          <td><a class=\"file-path\" href=\"$relpath\">$relpath</a><button class=\"open-btn\" onclick=\"openInNewTab('$relpath')\">New tab</button><button class=\"download-btn\" onclick=\"downloadFile('$relpath','$filename')\">Download</button></td>" >> "$OUTPUT"
     echo "        </tr>" >> "$OUTPUT"
   done < <(find "$HTML_DIR/$folder" -maxdepth 1 -name "*.html" | sort)
 

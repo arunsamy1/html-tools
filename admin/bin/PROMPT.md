@@ -81,17 +81,14 @@ The generated HTML page has a two-pane layout:
 ### Right Pane (Content)
 - Takes up the remaining width (`flex: 1`)
 - Shows only the **currently selected folder's files** as a table
-- Table columns: `#` (row number) and `File`
+- Table columns: `#` (row number) and `File Path`
 - Each file row has three actions:
-  1. **Filename link** — clicking loads the file in an inline iframe within the right pane
-  2. **"Open in new tab" button** (blue) — opens the file in a new browser tab
+  1. **Filename link** — a plain `<a href>` with no `target`, so clicking **navigates to
+     the file in the same tab** and it fills the whole page. The browser's Back button
+     returns to the index. There is deliberately **no iframe viewer**: showing the file
+     inside the right pane was tried and rejected as too cramped
+  2. **"New tab" button** (blue) — opens the file in a new browser tab via `window.open(url, '_blank', 'noopener')`
   3. **"Download" button** (green) — forces a file download using fetch → blob → object URL (required to avoid the browser rendering HTML/PDF instead of downloading)
-
-### File Viewer (Iframe)
-- When a filename link is clicked, an `<iframe>` fills the right pane showing the file
-- A **"← Back" button** (grey) appears above the iframe with the filename
-- Clicking "← Back" returns to the folder's file table
-- Clicking any folder in the left nav also dismisses the iframe and shows the table
 
 ---
 
@@ -100,7 +97,7 @@ The generated HTML page has a two-pane layout:
 - **First folder** is selected and visible by default on page load
 - **Only one folder panel** is visible at a time (JS toggles `display:none/block`)
 - **Download** uses `fetch(url).then(res => res.blob())` then creates a temporary `<a download>` pointing to an object URL — this forces a save dialog even for HTML/PDF files that browsers would otherwise render
-- **Files must be served over HTTP** (not `file://`) for `fetch()` and iframe to work correctly
+- **Files must be served over HTTP** (not `file://`) for `fetch()`-based Download to work correctly
 
 ---
 
@@ -124,9 +121,8 @@ The generated HTML page has a two-pane layout:
 6. For each folder:
      - Write a folder-panel div (hidden by default via CSS)
      - Find *.html files in that folder (maxdepth 1)
-     - Write a table row per file with filename link + Open in new tab + Download buttons
-7. Write iframe viewer bar and iframe element (hidden by default)
-8. Write inline script to show the first folder on page load
+     - Write a table row per file with filename link + New tab + Download buttons
+7. Write inline script to show the first folder on page load
 ```
 
 ## Script Logic (generate_pdf.sh / generate_jar.sh)
@@ -146,10 +142,13 @@ file-path link. The `.download-btn` CSS and the `downloadFile()` JS are omitted 
 that page as well, since nothing references them. A browser cannot render a JAR, so
 the plain link already downloads or prompts.
 
-Everything else — the sidebar nav, the folder grouping and the table markup — is the
-same across all three, so `index.html` and `index_pdf.html` are byte-identical apart
-from the `<title>` and the file rows, and `index_jar.html` differs only by the title
-and the dropped download markup.
+Neither has the **New tab** button or the `openInNewTab()` JS that `generate_html.sh`
+carries; their filename links are plain `target="_blank"` links, so they open in a new
+tab on a normal click. The sidebar nav, folder grouping and table markup are otherwise
+the same.
+
+> Only `index.html` navigates in the same tab. The `.open-btn` / `openInNewTab()` pair
+> ports over to the PDF script unchanged if that split is ever wanted there.
 
 ---
 
@@ -201,11 +200,8 @@ filename is read as a URL fragment and the request 404s.
 | `.nav-item.active`| Currently selected folder (darker blue)      |
 | `.content`        | Right pane wrapper                           |
 | `.folder-panel`   | Per-folder file table (hidden by default)    |
-| `.open-btn`       | "Open in new tab" button (blue)              |
+| `.open-btn`       | "New tab" button (blue)                      |
 | `.download-btn`   | "Download" button (green)                    |
-| `.back-btn`       | "← Back" button shown above iframe (grey)    |
-| `#viewer-bar`     | Container for back button + filename label   |
-| `#file-viewer`    | The iframe that displays the selected file   |
 
 ---
 
