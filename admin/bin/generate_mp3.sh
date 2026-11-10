@@ -80,9 +80,14 @@ OUTPUT="$MP3_DIR/$output_file"
 # filter is done below with a case glob instead.
 PRUNE=( '(' -name '.*' -o -name 'lost+found' -o -name 'admin' ')' -prune -o )
 
+# MP3s commonly sit loose in one folder with no subdirectories at all, so files
+# directly inside mp3.dir are grouped under the key "." rather than skipped.
 mapfile -t folders < <(find "$MP3_DIR" "${PRUNE[@]}" -name "*.mp3" -print | sort | while IFS= read -r f; do
   rel="${f#$MP3_DIR/}"
-  case "$rel" in */*) dirname "$rel" ;; esac
+  case "$rel" in
+    */*) dirname "$rel" ;;
+    *)   echo "." ;;
+  esac
 done | awk '!seen[$0]++')
 
 first_folder="${folders[0]}"
@@ -181,10 +186,12 @@ for folder in "${folders[@]}"; do
   done
   depth=$((${#segs[@]} - 1))
   leaf="${segs[depth]}"
+  nav_title="$folder"
+  [ "$folder" = "." ] && { depth=0; leaf="$(basename "$MP3_DIR")"; nav_title="$leaf"; }
   active_class=""
   [ "$folder" = "$first_folder" ] && active_class=" active"
   emitted[$folder]=1
-  echo "    <div class=\"nav-item$active_class depth-$depth\" data-folder=\"$folder\" title=\"$folder\" onclick=\"showFolder('$folder')\">$leaf</div>" >> "$OUTPUT"
+  echo "    <div class=\"nav-item$active_class depth-$depth\" data-folder=\"$folder\" title=\"$(html_escape "$nav_title")\" onclick=\"showFolder('$folder')\">$(html_escape "$leaf")</div>" >> "$OUTPUT"
 done
 echo '  </div>' >> "$OUTPUT"
 
@@ -193,11 +200,15 @@ echo '  <div class="content">' >> "$OUTPUT"
 
 total_count=0
 for folder in "${folders[@]}"; do
+  heading="$folder"
+  [ "$folder" = "." ] && heading="$(basename "$MP3_DIR")"
   echo "  <div class=\"folder-panel\" id=\"folder-$folder\">" >> "$OUTPUT"
-  echo "    <h2>$folder</h2>" >> "$OUTPUT"
+  echo "    <h2>$(html_escape "$heading")</h2>" >> "$OUTPUT"
   echo "    <table>" >> "$OUTPUT"
   echo "      <thead><tr><th>#</th><th>File Path</th><th>Play</th></tr></thead>" >> "$OUTPUT"
   echo "      <tbody>" >> "$OUTPUT"
+
+  if [ "$folder" = "." ]; then scan_dir="$MP3_DIR"; else scan_dir="$MP3_DIR/$folder"; fi
 
   file_num=0
   while IFS= read -r filepath; do
@@ -213,7 +224,7 @@ for folder in "${folders[@]}"; do
     echo "          <td><a class=\"file-path\" href=\"$href\" target=\"_blank\" rel=\"noopener\">$shown</a><button class=\"download-btn\" onclick=\"downloadFile('$href','$dl_name')\">Download</button></td>" >> "$OUTPUT"
     echo "          <td class=\"player-cell\"><audio controls preload=\"none\" src=\"$href\"></audio></td>" >> "$OUTPUT"
     echo "        </tr>" >> "$OUTPUT"
-  done < <(find "$MP3_DIR/$folder" -maxdepth 1 -name "*.mp3" | sort)
+  done < <(find "$scan_dir" -maxdepth 1 -name "*.mp3" | sort)
 
   echo "      </tbody>" >> "$OUTPUT"
   echo "    </table>" >> "$OUTPUT"
