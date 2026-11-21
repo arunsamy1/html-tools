@@ -104,6 +104,21 @@
             outline: 2px solid #1a1a2e;
             outline-offset: 2px;
         }
+        .actions button + button {
+            margin-left: 12px;
+        }
+        .actions button.secondary {
+            background: #fff;
+            color: #1a1a2e;
+            border: 1px solid #ccc;
+            min-width: 140px;
+        }
+        .actions button.secondary:hover {
+            background: #f0f0f0;
+        }
+        .actions button.secondary:active {
+            background: #e4e4e4;
+        }
 
         /* ---- Table to generate ---- */
         .table-section {
@@ -199,6 +214,10 @@
                 width: 100%;
                 min-width: 0;
             }
+            .actions button + button {
+                margin-left: 0;
+                margin-top: 12px;
+            }
         }
     </style>
 </head>
@@ -237,7 +256,8 @@
         </div>
 
         <div class="actions">
-            <button type="button" id="updateBtn" onclick="calculate()">Update Calculations</button>
+            <button type="button" id="updateBtn" data-confirm="Updated &#10003;" onclick="calculate()">Update Calculations</button>
+            <button type="button" id="clearBtn" class="secondary" data-confirm="Cleared &#10003;" onclick="clearData()">Clear data</button>
         </div>
 
         <div class="table-section">
@@ -342,11 +362,25 @@
             }
         }
 
-        // Button press: recalculate and give brief visual confirmation.
+        function clearData() {
+            ['currentQuantity', 'currentCostBasis', 'newPrice', 'quantityStep', 'rowCount']
+                .forEach(function (id) {
+                    document.getElementById(id).value = '';
+                });
+
+            // Drop the table back to its empty state, then blank the result box
+            // (calculate() would otherwise leave it reading $0.00).
+            calculate();
+            document.getElementById('currentSpentCost').value = '';
+            document.getElementById('currentQuantity').focus();
+        }
+
+        // Button press: give brief visual confirmation of what just happened.
         document.querySelectorAll('.actions button').forEach(function (btn) {
             const label = btn.textContent;
+            const confirmText = btn.dataset.confirm || label;
             btn.addEventListener('click', function () {
-                btn.textContent = 'Updated ✓';
+                btn.textContent = confirmText;
                 clearTimeout(btn._resetTimer);
                 btn._resetTimer = setTimeout(function () {
                     btn.textContent = label;
