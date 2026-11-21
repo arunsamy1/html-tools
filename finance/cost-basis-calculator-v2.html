@@ -228,11 +228,11 @@
         <div class="row">
             <div class="field">
                 <label for="currentQuantity">Current quantity</label>
-                <input type="number" id="currentQuantity" placeholder="0" value="50" oninput="calculate()">
+                <input type="number" id="currentQuantity" autocomplete="off" placeholder="0" oninput="calculate()">
             </div>
             <div class="field">
                 <label for="currentCostBasis">Current cost Basis ($)</label>
-                <input type="number" id="currentCostBasis" placeholder="0.00" step="0.01" value="87" oninput="calculate()">
+                <input type="number" id="currentCostBasis" autocomplete="off" placeholder="0.00" step="0.01" oninput="calculate()">
             </div>
             <div class="field result">
                 <label>Current Spent cost ($)</label>
@@ -243,15 +243,15 @@
         <div class="row">
             <div class="field">
                 <label for="newPrice">New price ($)</label>
-                <input type="number" id="newPrice" placeholder="0.00" step="0.01" value="47" oninput="calculate()">
+                <input type="number" id="newPrice" autocomplete="off" placeholder="0.00" step="0.01" oninput="calculate()">
             </div>
             <div class="field">
                 <label for="quantityStep">Quantity step</label>
-                <input type="number" id="quantityStep" placeholder="50" step="any" min="0" value="50" oninput="calculate()">
+                <input type="number" id="quantityStep" autocomplete="off" placeholder="50" step="any" min="0" oninput="calculate()">
             </div>
             <div class="field">
                 <label for="rowCount">Number of rows</label>
-                <input type="number" id="rowCount" placeholder="3" step="1" min="1" max="20" value="3" oninput="calculate()">
+                <input type="number" id="rowCount" autocomplete="off" placeholder="3" step="1" min="1" max="20" oninput="calculate()">
             </div>
         </div>
 
@@ -310,9 +310,13 @@
             }
             rowCount = Math.min(rowCount, MAX_ROWS);
 
-            // Current spent cost = quantity x cost basis
+            // Current spent cost = quantity x cost basis. With both fields still
+            // empty there is nothing to show, so leave the box blank rather than $0.00.
             const currentSpentCost = currentQuantity * currentCostBasis;
-            document.getElementById('currentSpentCost').value = formatCurrency(currentSpentCost);
+            const untouched = document.getElementById('currentQuantity').value === ''
+                && document.getElementById('currentCostBasis').value === '';
+            document.getElementById('currentSpentCost').value =
+                untouched ? '' : formatCurrency(currentSpentCost);
 
             buildTable(currentQuantity, currentSpentCost, newPrice, quantityStep, rowCount);
         }
@@ -368,10 +372,8 @@
                     document.getElementById(id).value = '';
                 });
 
-            // Drop the table back to its empty state, then blank the result box
-            // (calculate() would otherwise leave it reading $0.00).
+            // Blanks the result box and drops the table back to its empty state.
             calculate();
-            document.getElementById('currentSpentCost').value = '';
             document.getElementById('currentQuantity').focus();
         }
 
