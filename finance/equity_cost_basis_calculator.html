@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Equity Cost Basis Calculator</title>
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Print styles for clean PDF / Print export */
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            body {
+                background-color: white !important;
+                color: black !important;
+            }
+            .print-shadow-none {
+                box-shadow: none !important;
+                border: 1px solid #e2e8f0 !important;
+            }
+        }
+        /* Smooth custom scrollbar for table on mobile */
+        ::-webkit-scrollbar {
+            height: 6px;
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col">
+
+    <!-- Toast / Notification Banner (Replaces native alert/confirm) -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- Confirmation Modal (Replaces native confirm) -->
+    <div id="confirm-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 border border-slate-200 transform transition-all">
+            <h3 id="modal-title" class="text-lg font-semibold text-slate-900">Confirm Action</h3>
+            <p id="modal-message" class="text-sm text-slate-600 mt-2">Are you sure you want to proceed?</p>
+            <div class="mt-6 flex justify-end gap-3">
+                <button id="modal-cancel" class="px-4 py-2 text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors">
+                    Cancel
+                </button>
+                <button id="modal-confirm" class="px-4 py-2 text-sm font-medium text-white bg-rose-600 hover:bg-rose-700 rounded-xl transition-colors shadow-xs">
+                    Confirm
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Header Section -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-sm shrink-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">Equity Cost Basis Calculator</h1>
+                    <p class="text-xs sm:text-sm text-slate-500">Track multi-lot purchases, sales, fees &amp; tax basis across FIFO, LIFO, and Average Cost</p>
+                </div>
+            </div>
+
+            <!-- Utility Actions -->
+            <div class="flex flex-wrap items-center gap-2 no-print">
+                <button type="button" onclick="exportCSV()" class="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs sm:text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all shadow-2xs">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    Export CSV
+                </button>
+                <button type="button" onclick="window.print()" class="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs sm:text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all shadow-2xs">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                    </svg>
+                    Print / Save PDF
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
+
+        <!-- Summary Dashboard Cards -->
+        <section aria-label="Cost Basis Summary" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- Card 1: Total Shares Held -->
+            <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-2xs print-shadow-none flex flex-col justify-between">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Shares Held</span>
+                    <span class="p-2 rounded-lg bg-blue-50 text-blue-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                        </svg>
+                    </span>
+                </div>
+                <div class="mt-3">
+                    <div id="stat-shares" class="text-2xl sm:text-3xl font-bold text-slate-900 tabular-nums">0</div>
+                    <p id="stat-lots-sub" class="text-xs text-slate-500 mt-1">0 active tax lots</p>
+                </div>
+            </div>
+
+            <!-- Card 2: Total Cost Basis -->
+            <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-2xs print-shadow-none flex flex-col justify-between">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Cost Basis</span>
+                    <span class="p-2 rounded-lg bg-indigo-50 text-indigo-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </span>
+                </div>
+                <div class="mt-3">
+                    <div id="stat-total-basis" class="text-2xl sm:text-3xl font-bold text-slate-900 tabular-nums">$0.00</div>
+                    <p id="stat-fees-sub" class="text-xs text-slate-500 mt-1">Includes $0.00 in fees</p>
+                </div>
+            </div>
+
+            <!-- Card 3: Average Cost Basis / Share -->
+            <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-2xs print-shadow-none flex flex-col justify-between">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Avg Cost / Share</span>
+                    <span class="p-2 rounded-lg bg-emerald-50 text-emerald-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                        </svg>
+                    </span>
+                </div>
+                <div class="mt-3">
+                    <div id="stat-avg-basis" class="text-2xl sm:text-3xl font-bold text-slate-900 tabular-nums">$0.00</div>
+                    <p id="stat-method-sub" class="text-xs text-slate-500 mt-1">Method: Average Cost</p>
+                </div>
+            </div>
+
+            <!-- Card 4: Realized Gain / Loss -->
+            <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-2xs print-shadow-none flex flex-col justify-between">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Realized Gain / Loss</span>
+                    <span id="stat-gain-icon-bg" class="p-2 rounded-lg bg-slate-100 text-slate-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                        </svg>
+                    </span>
+                </div>
+                <div class="mt-3">
+                    <div id="stat-realized-gain" class="text-2xl sm:text-3xl font-bold text-slate-900 tabular-nums">$0.00</div>
+                    <p id="stat-sales-sub" class="text-xs text-slate-500 mt-1">No sales recorded</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Error / Warning Alert Box (if overselling occurs) -->
+        <div id="calculation-warning" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-start gap-3 text-amber-800">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-amber-500 shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+            </svg>
+            <div class="text-sm">
+                <p class="font-semibold">Chronological Share Deficit Detected</p>
+                <p id="calculation-warning-text" class="mt-0.5 text-amber-700">One or more sell transactions exceed the shares held prior to that date.</p>
+            </div>
+        </div>
+
+        <!-- Main Grid: Input Form + Accounting Method & Ledger Table -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+            <!-- Left Column: Add Transaction Form -->
+            <div class="lg:col-span-4 bg-white rounded-2xl border border-slate-200 shadow-2xs p-5 sm:p-6 no-print">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-base font-semibold text-slate-900">Record Transaction</h2>
+                    <span class="text-xs font-medium text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-full">New Lot</span>
+                </div>
+
+                <form id="transaction-form" class="space-y-4">
+                    <!-- Transaction Type Toggle -->
+                    <div>
+                        <label class="block text-xs font-medium text-slate-700 mb-1.5">Transaction Type</label>
+                        <div class="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl">
+                            <label class="cursor-pointer">
+                                <input type="radio" name="tx-type" value="BUY" checked class="peer sr-only" onchange="updateFormStyling()">
+                                <div class="text-center py-2 px-3 rounded-lg text-sm font-semibold text-slate-600 peer-checked:bg-white peer-checked:text-emerald-700 peer-checked:shadow-2xs transition-all">
+                                    + Buy
+                                </div>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input type="radio" name="tx-type" value="SELL" class="peer sr-only" onchange="updateFormStyling()">
+                                <div class="text-center py-2 px-3 rounded-lg text-sm font-semibold text-slate-600 peer-checked:bg-white peer-checked:text-rose-700 peer-checked:shadow-2xs transition-all">
+                                    − Sell
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Date Picker -->
+                    <div>
+                        <label for="tx-date" class="block text-xs font-medium text-slate-700 mb-1">Transaction Date</label>
+                        <input type="date" id="tx-date" required
+                            class="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all">
+                    </div>
+
+                    <!-- Number of Shares -->
+                    <div>
+                        <label for="tx-shares" class="block text-xs font-medium text-slate-700 mb-1">Number of Shares</label>
+                        <div class="relative">
+                            <input type="number" id="tx-shares" step="any" min="0.000001" placeholder="e.g., 25.5" required
+                                class="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all tabular-nums">
+                        </div>
+                        <p class="text-[11px] text-slate-400 mt-1">Supports fractional shares (up to 6 decimal places)</p>
+                    </div>
+
+                    <!-- Price per Share & Commission Grid -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-3">
+                        <div>
+                            <label for="tx-price" class="block text-xs font-medium text-slate-700 mb-1">Price per Share ($)</label>
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 text-sm">$</span>
+                                <input type="number" id="tx-price" step="any" min="0" placeholder="150.00" required
+                                    class="w-full pl-7 pr-3 py-2.5 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all tabular-nums">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label for="tx-fees" class="block text-xs font-medium text-slate-700 mb-1">Fees / Comm. ($)</label>
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 text-sm">$</span>
+                                <input type="number" id="tx-fees" step="any" min="0" placeholder="0.00" value="0"
+                                    class="w-full pl-7 pr-3 py-2.5 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all tabular-nums">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Live Estimated Preview -->
+                    <div class="bg-slate-50 rounded-xl p-3 border border-slate-200/80 flex items-center justify-between text-xs">
+                        <span id="preview-label" class="text-slate-500 font-medium">Estimated Total Cost:</span>
+                        <span id="preview-total" class="font-bold text-slate-800 text-sm tabular-nums">$0.00</span>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit" id="submit-btn"
+                        class="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-semibold text-sm rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                        </svg>
+                        <span>Add Buy Transaction</span>
+                    </button>
+                </form>
+
+                <!-- Quick Actions Divider -->
+                <div class="mt-6 pt-5 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
+                    <button type="button" onclick="loadSampleData()"
+                        class="text-xs font-medium text-indigo-600 hover:text-indigo-800 bg-indigo-50/70 hover:bg-indigo-100/80 px-3 py-2 rounded-xl transition-colors cursor-pointer">
+                        Load Sample Data
+                    </button>
+                    <button type="button" onclick="confirmClearAll()"
+                        class="text-xs font-medium text-rose-600 hover:text-rose-800 bg-rose-50/70 hover:bg-rose-100/80 px-3 py-2 rounded-xl transition-colors cursor-pointer">
+                        Clear All
+                    </button>
+                </div>
+            </div>
+
+            <!-- Right Column: Accounting Method Selector & Transaction Ledger -->
+            <div class="lg:col-span-8 space-y-4">
+
+                <!-- Accounting Method Control Bar -->
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-2xs p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div>
+                        <h3 class="text-sm font-semibold text-slate-900">Cost Basis Accounting Method</h3>
+                        <p id="method-description" class="text-xs text-slate-500 mt-0.5">Pools the total cost of all shares divided by total shares held.</p>
+                    </div>
+
+                    <!-- Segmented Method Selector -->
+                    <div class="inline-flex p-1 bg-slate-100 rounded-xl border border-slate-200/60 self-start sm:self-auto shrink-0 no-print" role="group" aria-label="Accounting Method">
+                        <button type="button" data-method="AVERAGE" onclick="setAccountingMethod('AVERAGE')"
+                            class="method-btn px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer">
+                            Average Cost
+                        </button>
+                        <button type="button" data-method="FIFO" onclick="setAccountingMethod('FIFO')"
+                            class="method-btn px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer">
+                            FIFO
+                        </button>
+                        <button type="button" data-method="LIFO" onclick="setAccountingMethod('LIFO')"
+                            class="method-btn px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer">
+                            LIFO
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Transaction History & Tax Lot Table Card -->
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden print-shadow-none">
+                    <div class="px-5 py-4 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2">
+                        <div class="flex items-center gap-2">
+                            <h2 class="text-base font-semibold text-slate-900">Transaction &amp; Tax Lot Ledger</h2>
+                            <span id="tx-count-badge" class="text-xs font-semibold bg-slate-100 text-slate-600 px-2.5 py-0.5 rounded-full">0</span>
+                        </div>
+                        <span class="text-xs text-slate-400">Sorted chronologically</span>
+                    </div>
+
+                    <!-- Responsive Table Wrapper -->
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50/80 border-b border-slate-200 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                                    <th class="py-3.5 px-4">Date</th>
+                                    <th class="py-3.5 px-3">Type</th>
+                                    <th class="py-3.5 px-3 text-right">Shares</th>
+                                    <th class="py-3.5 px-3 text-right">Price / Sh</th>
+                                    <th class="py-3.5 px-3 text-right">Fees</th>
+                                    <th class="py-3.5 px-3 text-right">Total / Proceeds</th>
+                                    <th class="py-3.5 px-3 text-right" id="col-lot-header">Remaining / Gain</th>
+                                    <th class="py-3.5 px-4 text-center no-print">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ledger-tbody" class="divide-y divide-slate-100 text-sm">
+                                <!-- Rows injected dynamically by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Empty State -->
+                    <div id="empty-state" class="py-14 px-6 text-center">
+                        <div class="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                        </div>
+                        <h3 class="text-sm font-semibold text-slate-900">No transactions recorded yet</h3>
+                        <p class="text-xs text-slate-500 max-w-sm mx-auto mt-1">Add your first buy lot using the form on the left, or load sample transactions to explore how FIFO, LIFO, and Average Cost affect your basis.</p>
+                        <button type="button" onclick="loadSampleData()" class="mt-4 inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-xl transition-colors cursor-pointer no-print">
+                            Load Sample Transactions
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Helpful Accounting Note -->
+                <div class="bg-slate-100/70 rounded-2xl p-4 border border-slate-200/70 text-xs text-slate-600 flex items-start gap-2.5">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <p>
+                        <strong>How Fees Are Treated:</strong> Purchase commissions/fees are added directly to the cost basis of the acquired lot. Sale commissions/fees are deducted from gross sale proceeds when calculating net proceeds and realized capital gain/loss.
+                    </p>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-200 bg-white mt-auto py-4">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-400 gap-2">
+            <span>Equity Cost Basis Calculator &bull; Instant Client-Side Tax Lot Engine</span>
+            <span>For informational and planning purposes only; consult a tax professional for official filings.</span>
+        </div>
+    </footer>
+
+    <script>
+        /**
+         * Application State
+         * Stores all user transactions and the active accounting method.
+         */
+        let transactions = [];
+        let accountingMethod = 'AVERAGE'; // 'AVERAGE' | 'FIFO' | 'LIFO'
+        const STORAGE_KEY = 'equity_cost_basis_tx_v1';
+        const METHOD_KEY = 'equity_cost_basis_method_v1';
+
+        const METHOD_DESCRIPTIONS = {
+            AVERAGE: 'Pools the total cost of all shares divided by total shares held (common for mutual funds & ETFs).',
+            FIFO: 'First-In, First-Out: Oldest shares purchased are sold first (IRS default for individual stocks).',
+            LIFO: 'Last-In, First-Out: Most recently purchased shares are sold first.'
+        };
+
+        /**
+         * Formatting Helpers
+         */
+        const currencyFormatter = new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD',
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+
+        function formatCurrency(val) {
+            if (Math.abs(val) < 0.000001) val = 0;
+            return currencyFormatter.format(val);
+        }
+
+        function formatSignedCurrency(val) {
+            if (Math.abs(val) < 0.000001) return '$0.00';
+            const formatted = currencyFormatter.format(Math.abs(val));
+            return val > 0 ? `+${formatted}` : `-${formatted}`;
+        }
+
+        function formatShares(val) {
+            if (Math.abs(val) < 1e-8) return '0';
+            // Show up to 6 decimals without trailing zeros
+            return Number(val.toFixed(6)).toLocaleString('en-US', {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 6
+            });
+        }
+
+        function formatDateDisplay(isoDate) {
+            if (!isoDate) return '';
+            const [y, m, d] = isoDate.split('-');
+            const dateObj = new Date(Number(y), Number(m) - 1, Number(d));
+            return dateObj.toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric'
+            });
+        }
+
+        /**
+         * Toast Notification Utility (Non-blocking UI replacement for alert)
+         */
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            const colors = {
+                success: 'bg-emerald-900 text-white border-emerald-700',
+                error: 'bg-rose-900 text-white border-rose-700',
+                info: 'bg-slate-900 text-white border-slate-700'
+            };
+
+            toast.className = `pointer-events-auto px-4 py-3 rounded-xl shadow-lg border text-xs sm:text-sm font-medium flex items-center gap-2 transition-all duration-300 transform translate-y-2 opacity-0 ${colors[type] || colors.info}`;
+            toast.textContent = message;
+            
+            container.appendChild(toast);
+            
+            // Animate in
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            });
+
+            // Remove after 3 seconds
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        /**
+         * Custom Confirmation Modal (Replacement for window.confirm)
+         */
+        function showConfirmModal(title, message, onConfirm) {
+            const modal = document.getElementById('confirm-modal');
+            document.getElementById('modal-title').textContent = title;
+            document.getElementById('modal-message').textContent = message;
+
+            const cancelBtn = document.getElementById('modal-cancel');
+            const confirmBtn = document.getElementById('modal-confirm');
+
+            const cleanup = () => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                cancelBtn.onclick = null;
+                confirmBtn.onclick = null;
+            };
+
+            cancelBtn.onclick = cleanup;
+            confirmBtn.onclick = () => {
+                cleanup();
+                onConfirm();
+            };
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        /**
+         * Form Live Preview & Styling Updates
+         */
+        function updateFormStyling() {
+            const type = document.querySelector('input[name="tx-type"]:checked').value;
+            const submitBtn = document.getElementById('submit-btn');
+            const previewLabel = document.getElementById('preview-label');
+
+            if (type === 'BUY') {
+                submitBtn.className = 'w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-semibold text-sm rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer';
+                submitBtn.querySelector('span').textContent = 'Add Buy Transaction';
+                previewLabel.textContent = 'Estimated Total Cost:';
+            } else {
+                submitBtn.className = 'w-full py-3 px-4 bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white font-semibold text-sm rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer';
+                submitBtn.querySelector('span').textContent = 'Add Sell Transaction';
+                previewLabel.textContent = 'Estimated Net Proceeds:';
+            }
+            updateEstimatedPreview();
+        }
+
+        function updateEstimatedPreview() {
+            const type = document.querySelector('input[name="tx-type"]:checked').value;
+            const shares = parseFloat(document.getElementById('tx-shares').value) || 0;
+            const price = parseFloat(document.getElementById('tx-price').value) || 0;
+            const fees = parseFloat(document.getElementById('tx-fees').value) || 0;
+
+            const gross = shares * price;
+            const net = type === 'BUY' ? (gross + fees) : Math.max(0, gross - fees);
+            document.getElementById('preview-total').textContent = formatCurrency(net);
+        }
+
+        /**
+         * Core Cost Basis Calculation Engine
+         * Supports AVERAGE, FIFO, and LIFO chronologically.
+         */
+        function calculateCostBasis(txList, method) {
+            // Sort chronologically by date, then by creation order (id/seq)
+            const sorted = [...txList].sort((a, b) => {
+                if (a.date !== b.date) return a.date.localeCompare(b.date);
+                // Process BUYs before SELLs on the exact same date if entered together
+                if (a.type !== b.type) return a.type === 'BUY' ? -1 : 1;
+                return a.seq - b.seq;
+            });
+
+            let totalSharesHeld = 0;
+            let totalCostBasis = 0;
+            let totalFeesPaid = 0;
+            let totalRealizedGain = 0;
+            let sellCount = 0;
+            let oversoldWarning = null;
+
+            // Track tax lots for FIFO/LIFO
+            // Each lot: { id, sharesRemaining, totalCostRemaining, costPerShare }
+            const openLots = [];
+            const enrichedRows = [];
+
+            for (const tx of sorted) {
+                const grossAmount = tx.shares * tx.price;
+                totalFeesPaid += tx.fees;
+
+                if (tx.type === 'BUY') {
+                    const totalLotCost = grossAmount + tx.fees;
+                    const costPerShare = tx.shares > 0 ? totalLotCost / tx.shares : 0;
+
+                    const lotRecord = {
+                        id: tx.id,
+                        date: tx.date,
+                        originalShares: tx.shares,
+                        sharesRemaining: tx.shares,
+                        totalCostRemaining: totalLotCost,
+                        costPerShare: costPerShare
+                    };
+                    openLots.push(lotRecord);
+
+                    totalSharesHeld += tx.shares;
+                    totalCostBasis += totalLotCost;
+
+                    enrichedRows.push({
+                        ...tx,
+                        totalAmount: totalLotCost,
+                        lotRef: lotRecord,
+                        realizedGain: null,
+                        costBasisSold: null
+                    });
+
+                } else if (tx.type === 'SELL') {
+                    sellCount++;
+                    const netProceeds = grossAmount - tx.fees;
+                    let sharesToSell = tx.shares;
+                    let costBasisOfSoldShares = 0;
+
+                    if (sharesToSell > totalSharesHeld + 1e-7) {
+                        oversoldWarning = `On ${formatDateDisplay(tx.date)}, you sold ${formatShares(sharesToSell)} shares, but only ${formatShares(totalSharesHeld)} shares were held at that time.`;
+                    }
+
+                    if (method === 'AVERAGE') {
+                        const avgCostBeforeSale = totalSharesHeld > 0 ? (totalCostBasis / totalSharesHeld) : 0;
+                        const effectiveSoldShares = Math.min(sharesToSell, totalSharesHeld);
+                        costBasisOfSoldShares = effectiveSoldShares * avgCostBeforeSale;
+
+                        // Proportionally reduce remaining shares across open lots for display consistency
+                        if (totalSharesHeld > 0) {
+                            const ratioRemaining = Math.max(0, (totalSharesHeld - effectiveSoldShares) / totalSharesHeld);
+                            for (const lot of openLots) {
+                                lot.sharesRemaining *= ratioRemaining;
+                                lot.totalCostRemaining *= ratioRemaining;
+                            }
+                        }
+
+                        totalSharesHeld = Math.max(0, totalSharesHeld - sharesToSell);
+                        totalCostBasis = Math.max(0, totalCostBasis - costBasisOfSoldShares);
+
+                    } else {
+                        // FIFO or LIFO lot depletion
+                        let remainingToDeplete = sharesToSell;
+
+                        while (remainingToDeplete > 1e-8 && openLots.length > 0) {
+                            // Find index of next available lot with sharesRemaining > 0
+                            let targetIdx = -1;
+                            if (method === 'FIFO') {
+                                targetIdx = openLots.findIndex(l => l.sharesRemaining > 1e-8);
+                            } else {
+                                // LIFO: search from end
+                                for (let i = openLots.length - 1; i >= 0; i--) {
+                                    if (openLots[i].sharesRemaining > 1e-8) {
+                                        targetIdx = i;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            if (targetIdx === -1) break;
+
+                            const lot = openLots[targetIdx];
+                            const takeShares = Math.min(remainingToDeplete, lot.sharesRemaining);
+                            const takeCost = takeShares * lot.costPerShare;
+
+                            lot.sharesRemaining -= takeShares;
+                            lot.totalCostRemaining = Math.max(0, lot.totalCostRemaining - takeCost);
+                            costBasisOfSoldShares += takeCost;
+                            remainingToDeplete -= takeShares;
+                        }
+
+                        totalSharesHeld = Math.max(0, totalSharesHeld - sharesToSell);
+                        totalCostBasis = Math.max(0, totalCostBasis - costBasisOfSoldShares);
+                    }
+
+                    const realizedGain = netProceeds - costBasisOfSoldShares;
+                    totalRealizedGain += realizedGain;
+
+                    enrichedRows.push({
+                        ...tx,
+                        totalAmount: netProceeds,
+                        lotRef: null,
+                        realizedGain: realizedGain,
+                        costBasisSold: costBasisOfSoldShares
+                    });
+                }
+            }
+
+            // Clean floating point dust
+            if (totalSharesHeld < 1e-7) {
+                totalSharesHeld = 0;
+                totalCostBasis = 0;
+            }
+
+            const avgCostPerShare = totalSharesHeld > 0 ? (totalCostBasis / totalSharesHeld) : 0;
+            const activeLotsCount = openLots.filter(l => l.sharesRemaining > 1e-7).length;
+
+            return {
+                totalSharesHeld,
+                totalCostBasis,
+                avgCostPerShare,
+                totalRealizedGain,
+                totalFeesPaid,
+                sellCount,
+                activeLotsCount,
+                oversoldWarning,
+                rows: enrichedRows
+            };
+        }
+
+        /**
+         * Render Everything to the DOM
+         */
+        function renderApp() {
+            // Update active method button styling
+            document.querySelectorAll('.method-btn').forEach(btn => {
+                if (btn.dataset.method === accountingMethod) {
+                    btn.className = 'method-btn px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer bg-white text-indigo-600 shadow-2xs';
+                } else {
+                    btn.className = 'method-btn px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer text-slate-600 hover:text-slate-900';
+                }
+            });
+            document.getElementById('method-description').textContent = METHOD_DESCRIPTIONS[accountingMethod];
+
+            // Run calculation engine
+            const result = calculateCostBasis(transactions, accountingMethod);
+
+            // Update Summary Cards
+            document.getElementById('stat-shares').textContent = formatShares(result.totalSharesHeld);
+            document.getElementById('stat-lots-sub').textContent = `${result.activeLotsCount} active buy lot${result.activeLotsCount === 1 ? '' : 's'}`;
+
+            document.getElementById('stat-total-basis').textContent = formatCurrency(result.totalCostBasis);
+            document.getElementById('stat-fees-sub').textContent = `Includes ${formatCurrency(result.totalFeesPaid)} total fees`;
+
+            document.getElementById('stat-avg-basis').textContent = formatCurrency(result.avgCostPerShare);
+            const methodLabelMap = { AVERAGE: 'Average Cost', FIFO: 'FIFO', LIFO: 'LIFO' };
+            document.getElementById('stat-method-sub').textContent = `Method: ${methodLabelMap[accountingMethod]}`;
+
+            // Realized Gain/Loss card styling
+            const gainEl = document.getElementById('stat-realized-gain');
+            const gainIconBg = document.getElementById('stat-gain-icon-bg');
+            const salesSubEl = document.getElementById('stat-sales-sub');
+
+            if (result.sellCount === 0) {
+                gainEl.textContent = '$0.00';
+                gainEl.className = 'text-2xl sm:text-3xl font-bold text-slate-400 tabular-nums';
+                gainIconBg.className = 'p-2 rounded-lg bg-slate-100 text-slate-500';
+                salesSubEl.textContent = 'No sales recorded';
+            } else {
+                gainEl.textContent = formatSignedCurrency(result.totalRealizedGain);
+                if (result.totalRealizedGain > 0.004) {
+                    gainEl.className = 'text-2xl sm:text-3xl font-bold text-emerald-600 tabular-nums';
+                    gainIconBg.className = 'p-2 rounded-lg bg-emerald-50 text-emerald-600';
+                } else if (result.totalRealizedGain < -0.004) {
+                    gainEl.className = 'text-2xl sm:text-3xl font-bold text-rose-600 tabular-nums';
+                    gainIconBg.className = 'p-2 rounded-lg bg-rose-50 text-rose-600';
+                } else {
+                    gainEl.className = 'text-2xl sm:text-3xl font-bold text-slate-900 tabular-nums';
+                    gainIconBg.className = 'p-2 rounded-lg bg-slate-100 text-slate-600';
+                }
+                salesSubEl.textContent = `Across ${result.sellCount} sale transaction${result.sellCount === 1 ? '' : 's'}`;
+            }
+
+            // Oversold Warning Banner
+            const warningBox = document.getElementById('calculation-warning');
+            if (result.oversoldWarning) {
+                document.getElementById('calculation-warning-text').textContent = result.oversoldWarning;
+                warningBox.classList.remove('hidden');
+            } else {
+                warningBox.classList.add('hidden');
+            }
+
+            // Update Table Header & Rows
+            document.getElementById('tx-count-badge').textContent = transactions.length;
+            const tbody = document.getElementById('ledger-tbody');
+            const emptyState = document.getElementById('empty-state');
+
+            if (result.rows.length === 0) {
+                tbody.innerHTML = '';
+                emptyState.classList.remove('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+                tbody.innerHTML = result.rows.map(row => {
+                    const isBuy = row.type === 'BUY';
+                    const badgeHtml = isBuy
+                        ? `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/70">BUY</span>`
+                        : `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200/70">SELL</span>`;
+
+                    let lotOrGainCell = '';
+                    if (isBuy && row.lotRef) {
+                        const rem = row.lotRef.sharesRemaining;
+                        const orig = row.lotRef.originalShares;
+                        const isDepleted = rem <= 1e-7;
+                        if (accountingMethod === 'AVERAGE') {
+                            lotOrGainCell = `<span class="text-xs text-slate-500">Pooled (${formatShares(rem)} rem.)</span>`;
+                        } else if (isDepleted) {
+                            lotOrGainCell = `<span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-slate-100 text-slate-500">0 (Sold)</span>`;
+                        } else if (rem < orig - 1e-7) {
+                            lotOrGainCell = `<span class="font-medium text-indigo-700">${formatShares(rem)}</span> <span class="text-xs text-slate-400">/ ${formatShares(orig)}</span>`;
+                        } else {
+                            lotOrGainCell = `<span class="font-medium text-slate-700">${formatShares(rem)}</span>`;
+                        }
+                    } else {
+                        const gain = row.realizedGain || 0;
+                        const gainColor = gain > 0.004 ? 'text-emerald-600' : (gain < -0.004 ? 'text-rose-600' : 'text-slate-600');
+                        lotOrGainCell = `
+                            <div class="font-semibold ${gainColor}">${formatSignedCurrency(gain)}</div>
+                            <div class="text-[11px] text-slate-400">Basis: ${formatCurrency(row.costBasisSold || 0)}</div>
+                        `;
+                    }
+
+                    return `
+                        <tr class="hover:bg-slate-50/90 transition-colors">
+                            <td class="py-3.5 px-4 whitespace-nowrap text-slate-700 font-medium">${formatDateDisplay(row.date)}</td>
+                            <td class="py-3.5 px-3 whitespace-nowrap">${badgeHtml}</td>
+                            <td class="py-3.5 px-3 whitespace-nowrap text-right font-medium text-slate-800 tabular-nums">${formatShares(row.shares)}</td>
+                            <td class="py-3.5 px-3 whitespace-nowrap text-right text-slate-600 tabular-nums">${formatCurrency(row.price)}</td>
+                            <td class="py-3.5 px-3 whitespace-nowrap text-right text-slate-500 tabular-nums">${formatCurrency(row.fees)}</td>
+                            <td class="py-3.5 px-3 whitespace-nowrap text-right font-semibold text-slate-900 tabular-nums">${formatCurrency(row.totalAmount)}</td>
+                            <td class="py-3.5 px-3 whitespace-nowrap text-right tabular-nums">${lotOrGainCell}</td>
+                            <td class="py-3.5 px-4 whitespace-nowrap text-center no-print">
+                                <button type="button" onclick="deleteTransaction('${row.id}')" title="Delete transaction"
+                                    class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+        }
+
+        /**
+         * Persistence Helpers (localStorage)
+         */
+        function saveState() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(transactions));
+                localStorage.setItem(METHOD_KEY, accountingMethod);
+            } catch (e) {
+                console.warn('Unable to save state to localStorage:', e);
+            }
+        }
+
+        function loadState() {
+            try {
+                const savedTx = localStorage.getItem(STORAGE_KEY);
+                const savedMethod = localStorage.getItem(METHOD_KEY);
+                if (savedTx) {
+                    const parsed = JSON.parse(savedTx);
+                    if (Array.isArray(parsed)) transactions = parsed;
+                }
+                if (savedMethod && ['AVERAGE', 'FIFO', 'LIFO'].includes(savedMethod)) {
+                    accountingMethod = savedMethod;
+                }
+            } catch (e) {
+                console.warn('Unable to load state from localStorage:', e);
+            }
+        }
+
+        /**
+         * User Actions
+         */
+        function setAccountingMethod(method) {
+            accountingMethod = method;
+            saveState();
+            renderApp();
+        }
+
+        function handleFormSubmit(e) {
+            e.preventDefault();
+
+            const type = document.querySelector('input[name="tx-type"]:checked').value;
+            const date = document.getElementById('tx-date').value;
+            const shares = parseFloat(document.getElementById('tx-shares').value);
+            const price = parseFloat(document.getElementById('tx-price').value);
+            const feesInput = document.getElementById('tx-fees').value;
+            const fees = feesInput === '' ? 0 : parseFloat(feesInput);
+
+            if (!date || isNaN(shares) || shares <= 0 || isNaN(price) || price < 0 || isNaN(fees) || fees < 0) {
+                showToast('Please enter valid positive numbers for shares, price, and fees.', 'error');
+                return;
+            }
+
+            const newTx = {
+                id: 'tx_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+                seq: transactions.length + 1,
+                type,
+                date,
+                shares,
+                price,
+                fees
+            };
+
+            transactions.push(newTx);
+            saveState();
+            renderApp();
+
+            // Reset numeric fields while keeping date convenient
+            document.getElementById('tx-shares').value = '';
+            document.getElementById('tx-price').value = '';
+            document.getElementById('tx-fees').value = '0';
+            updateEstimatedPreview();
+
+            showToast(`${type === 'BUY' ? 'Buy' : 'Sell'} transaction added (${formatShares(shares)} shares).`, 'success');
+        }
+
+        function deleteTransaction(id) {
+            transactions = transactions.filter(t => t.id !== id);
+            saveState();
+            renderApp();
+            showToast('Transaction removed.', 'info');
+        }
+
+        function confirmClearAll() {
+            if (transactions.length === 0) {
+                showToast('Ledger is already empty.', 'info');
+                return;
+            }
+            showConfirmModal(
+                'Clear All Transactions?',
+                'This will permanently remove all recorded buy and sell lots from your ledger.',
+                () => {
+                    transactions = [];
+                    saveState();
+                    renderApp();
+                    showToast('All transactions cleared.', 'info');
+                }
+            );
+        }
+
+        function loadSampleData() {
+            const applySample = () => {
+                transactions = [
+                    { id: 'sample_1', seq: 1, type: 'BUY',  date: '2025-01-15', shares: 50,   price: 142.50, fees: 4.95 },
+                    { id: 'sample_2', seq: 2, type: 'BUY',  date: '2025-04-10', shares: 30,   price: 158.00, fees: 4.95 },
+                    { id: 'sample_3', seq: 3, type: 'BUY',  date: '2025-08-22', shares: 25.5, price: 171.20, fees: 0.00 },
+                    { id: 'sample_4', seq: 4, type: 'SELL', date: '2025-11-05', shares: 40,   price: 185.00, fees: 4.95 },
+                    { id: 'sample_5', seq: 5, type: 'BUY',  date: '2026-02-18', shares: 15,   price: 176.40, fees: 0.00 }
+                ];
+                saveState();
+                renderApp();
+                showToast('Sample multi-lot equity data loaded!', 'success');
+            };
+
+            if (transactions.length > 0) {
+                showConfirmModal(
+                    'Replace Current Transactions?',
+                    'Loading sample data will overwrite your existing ledger entries.',
+                    applySample
+                );
+            } else {
+                applySample();
+            }
+        }
+
+        function exportCSV() {
+            if (transactions.length === 0) {
+                showToast('Add at least one transaction before exporting CSV.', 'error');
+                return;
+            }
+
+            const result = calculateCostBasis(transactions, accountingMethod);
+            const headers = [
+                'Date',
+                'Type',
+                'Shares',
+                'Price Per Share ($)',
+                'Fees ($)',
+                'Total Cost or Net Proceeds ($)',
+                'Remaining Lot Shares',
+                'Cost Basis Sold ($)',
+                'Realized Gain/Loss ($)',
+                'Accounting Method'
+            ];
+
+            const csvRows = [headers.join(',')];
+
+            for (const row of result.rows) {
+                const remShares = row.type === 'BUY' && row.lotRef ? row.lotRef.sharesRemaining.toFixed(6) : '';
+                const basisSold = row.type === 'SELL' ? (row.costBasisSold || 0).toFixed(2) : '';
+                const gainLoss = row.type === 'SELL' ? (row.realizedGain || 0).toFixed(2) : '';
+
+                csvRows.push([
+                    row.date,
+                    row.type,
+                    row.shares,
+                    row.price.toFixed(4),
+                    row.fees.toFixed(2),
+                    row.totalAmount.toFixed(2),
+                    remShares,
+                    basisSold,
+                    gainLoss,
+                    accountingMethod
+                ].join(','));
+            }
+
+            // Append summary footer rows
+            csvRows.push('');
+            csvRows.push(`Summary Total Shares Held,,${result.totalSharesHeld}`);
+            csvRows.push(`Summary Total Cost Basis ($),,,,,${result.totalCostBasis.toFixed(2)}`);
+            csvRows.push(`Summary Average Cost Per Share ($),,,,,${result.avgCostPerShare.toFixed(4)}`);
+            csvRows.push(`Summary Total Realized Gain/Loss ($),,,,,${result.totalRealizedGain.toFixed(2)}`);
+
+            const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            const todayStr = new Date().toISOString().split('T')[0];
+
+            link.href = url;
+            link.setAttribute('download', `equity-cost-basis-${accountingMethod.toLowerCase()}-${todayStr}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+
+            showToast('CSV report downloaded.', 'success');
+        }
+
+        /**
+         * Initialization
+         */
+        window.addEventListener('DOMContentLoaded', () => {
+            // Set default date input to today
+            const dateInput = document.getElementById('tx-date');
+            if (!dateInput.value) {
+                dateInput.value = new Date().toISOString().split('T')[0];
+            }
+
+            // Attach form listeners
+            document.getElementById('transaction-form').addEventListener('submit', handleFormSubmit);
+            ['tx-shares', 'tx-price', 'tx-fees'].forEach(id => {
+                document.getElementById(id).addEventListener('input', updateEstimatedPreview);
+            });
+
+            loadState();
+            updateFormStyling();
+            renderApp();
+        });
+    </script>
+</body>
+</html>

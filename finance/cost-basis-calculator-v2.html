@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cost Basis for Double Down</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        h1 {
+            text-align: center;
+            color: #1a1a2e;
+            font-size: 24px;
+            margin-bottom: 30px;
+        }
+        .calculator {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .row {
+            display: table;
+            width: 100%;
+            table-layout: fixed;
+            margin-bottom: 15px;
+        }
+        .field {
+            display: table-cell;
+            padding: 0 7px;
+        }
+        .field:first-child {
+            padding-left: 0;
+        }
+        .field:last-child {
+            padding-right: 0;
+        }
+        .field label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #1a1a2e;
+            font-size: 14px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .field input {
+            width: 100%;
+            height: 48px;
+            padding: 0 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+            text-align: center;
+        }
+        .field input:focus {
+            outline: none;
+            border-color: #e94560;
+        }
+        .field.result input {
+            background: #e8f5e9;
+            border: 1px solid #a5d6a7;
+            font-weight: 600;
+        }
+        .field.spacer {
+            visibility: hidden;
+        }
+        .actions {
+            margin-top: 25px;
+            text-align: center;
+        }
+        .actions button {
+            height: 48px;
+            min-width: 220px;
+            padding: 0 24px;
+            border: none;
+            border-radius: 6px;
+            background: #e94560;
+            color: #fff;
+            font-family: inherit;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .actions button:hover {
+            background: #d13350;
+        }
+        .actions button:active {
+            background: #b82b44;
+        }
+        .actions button:focus-visible {
+            outline: 2px solid #1a1a2e;
+            outline-offset: 2px;
+        }
+
+        /* ---- Table to generate ---- */
+        .table-section {
+            margin-top: 35px;
+            border-top: 1px solid #eee;
+            padding-top: 25px;
+        }
+        .table-section h2 {
+            font-size: 16px;
+            color: #1a1a2e;
+            margin-bottom: 15px;
+        }
+        .table-wrap {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        table {
+            width: 100%;
+            min-width: 680px;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        thead th {
+            background: #1a1a2e;
+            color: #fff;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 10px 12px;
+            text-align: center;
+            white-space: nowrap;
+        }
+        thead th:first-child {
+            border-top-left-radius: 6px;
+        }
+        thead th:last-child {
+            border-top-right-radius: 6px;
+        }
+        tbody td {
+            padding: 11px 12px;
+            text-align: center;
+            border-bottom: 1px solid #eee;
+            white-space: nowrap;
+            color: #1a1a2e;
+        }
+        tbody tr:nth-child(even) {
+            background: #fafafa;
+        }
+        tbody tr td.calc {
+            background: #e8f5e9;
+            font-weight: 600;
+        }
+        tbody td.empty {
+            color: #888;
+            font-style: italic;
+            padding: 22px 12px;
+            background: #fff;
+        }
+        .note {
+            margin-top: 12px;
+            font-size: 12px;
+            color: #777;
+            line-height: 1.5;
+        }
+
+        @media (max-width: 700px) {
+            body {
+                margin: 20px auto;
+                padding: 15px;
+            }
+            h1 {
+                font-size: 20px;
+                margin-bottom: 20px;
+            }
+            .calculator {
+                padding: 20px;
+            }
+            .row {
+                display: block;
+                margin-bottom: 0;
+            }
+            .field {
+                display: block;
+                padding: 0 0 15px 0;
+                width: 100%;
+            }
+            .field:last-child {
+                padding-bottom: 0;
+            }
+            .field.spacer {
+                display: none;
+            }
+            .actions button {
+                width: 100%;
+                min-width: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Cost Basis for Double Down</h1>
+
+    <div class="calculator">
+        <div class="row">
+            <div class="field">
+                <label for="currentQuantity">Current quantity</label>
+                <input type="number" id="currentQuantity" placeholder="0" value="50" oninput="calculate()">
+            </div>
+            <div class="field">
+                <label for="currentCostBasis">Current cost Basis ($)</label>
+                <input type="number" id="currentCostBasis" placeholder="0.00" step="0.01" value="87" oninput="calculate()">
+            </div>
+            <div class="field result">
+                <label>Current Spent cost ($)</label>
+                <input type="text" id="currentSpentCost" readonly>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="field">
+                <label for="newPrice">New price ($)</label>
+                <input type="number" id="newPrice" placeholder="0.00" step="0.01" value="47" oninput="calculate()">
+            </div>
+            <div class="field">
+                <label for="quantityStep">Quantity step</label>
+                <input type="number" id="quantityStep" placeholder="50" step="any" min="0" value="50" oninput="calculate()">
+            </div>
+            <div class="field">
+                <label for="rowCount">Number of rows</label>
+                <input type="number" id="rowCount" placeholder="3" step="1" min="1" max="20" value="3" oninput="calculate()">
+            </div>
+        </div>
+
+        <div class="actions">
+            <button type="button" id="updateBtn" onclick="calculate()">Update Calculations</button>
+        </div>
+
+        <div class="table-section">
+            <h2>Table to generate</h2>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Quantity to buy</th>
+                            <th>New price ($)</th>
+                            <th>Spent cost ($)</th>
+                            <th>Simulated total quantity</th>
+                            <th>Simulated total spent ($)</th>
+                            <th>New cost basis ($)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="simTableBody"></tbody>
+                </table>
+            </div>
+            <p class="note">
+                Rows run as a series of the quantity step &mdash; e.g. a step of 50 gives 50, 100, 150;
+                a step of 10 gives 10, 20, 30.
+                New cost basis = simulated total spent &divide; simulated total quantity.
+            </p>
+        </div>
+    </div>
+
+    <script>
+        const MAX_ROWS = 20;
+
+        function formatCurrency(value) {
+            return '$' + value.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        }
+
+        function formatQuantity(value) {
+            const rounded = Math.round(value * 1e6) / 1e6;
+            return rounded.toLocaleString('en-US', { maximumFractionDigits: 6 });
+        }
+
+        function calculate() {
+            const currentQuantity = parseFloat(document.getElementById('currentQuantity').value) || 0;
+            const currentCostBasis = parseFloat(document.getElementById('currentCostBasis').value) || 0;
+            const newPrice = parseFloat(document.getElementById('newPrice').value) || 0;
+            const quantityStep = parseFloat(document.getElementById('quantityStep').value) || 0;
+
+            // Row count: at least 1, capped so a stray digit cannot build a huge table.
+            let rowCount = parseInt(document.getElementById('rowCount').value, 10);
+            if (!isFinite(rowCount) || rowCount < 1) {
+                rowCount = 1;
+            }
+            rowCount = Math.min(rowCount, MAX_ROWS);
+
+            // Current spent cost = quantity x cost basis
+            const currentSpentCost = currentQuantity * currentCostBasis;
+            document.getElementById('currentSpentCost').value = formatCurrency(currentSpentCost);
+
+            buildTable(currentQuantity, currentSpentCost, newPrice, quantityStep, rowCount);
+        }
+
+        function buildTable(currentQuantity, currentSpentCost, newPrice, quantityStep, rowCount) {
+            const tbody = document.getElementById('simTableBody');
+            tbody.innerHTML = '';
+
+            if (currentQuantity <= 0 || newPrice <= 0 || quantityStep <= 0) {
+                const tr = document.createElement('tr');
+                const td = document.createElement('td');
+                td.className = 'empty';
+                td.colSpan = 6;
+                td.textContent = 'Enter a current quantity, a new price and a quantity step to generate the table.';
+                tr.appendChild(td);
+                tbody.appendChild(tr);
+                return;
+            }
+
+            for (let i = 1; i <= rowCount; i++) {
+                // Series of the step: step, 2 x step, 3 x step, ...
+                const buyQuantity = quantityStep * i;
+                const rowSpentCost = buyQuantity * newPrice;
+                const totalQuantity = currentQuantity + buyQuantity;
+                const totalSpent = currentSpentCost + rowSpentCost;
+                const newCostBasis = totalSpent / totalQuantity;
+
+                const cells = [
+                    { text: formatQuantity(buyQuantity) },
+                    { text: formatCurrency(newPrice) },
+                    { text: formatCurrency(rowSpentCost) },
+                    { text: formatQuantity(totalQuantity) },
+                    { text: formatCurrency(totalSpent) },
+                    { text: formatCurrency(newCostBasis), className: 'calc' }
+                ];
+
+                const tr = document.createElement('tr');
+                cells.forEach(function (cell) {
+                    const td = document.createElement('td');
+                    td.textContent = cell.text;
+                    if (cell.className) {
+                        td.className = cell.className;
+                    }
+                    tr.appendChild(td);
+                });
+                tbody.appendChild(tr);
+            }
+        }
+
+        // Button press: recalculate and give brief visual confirmation.
+        document.querySelectorAll('.actions button').forEach(function (btn) {
+            const label = btn.textContent;
+            btn.addEventListener('click', function () {
+                btn.textContent = 'Updated ✓';
+                clearTimeout(btn._resetTimer);
+                btn._resetTimer = setTimeout(function () {
+                    btn.textContent = label;
+                }, 1200);
+            });
+        });
+
+        // Pressing Enter in any input also refreshes the results.
+        document.querySelectorAll('.calculator input').forEach(function (input) {
+            input.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    document.getElementById('updateBtn').click();
+                }
+            });
+        });
+
+        calculate();
+    </script>
+</body>
+</html>

@@ -73,6 +73,34 @@
             border: 1px solid #a5d6a7;
             font-weight: 600;
         }
+        .actions {
+            margin-top: 25px;
+            text-align: center;
+        }
+        .actions button {
+            height: 48px;
+            min-width: 220px;
+            padding: 0 24px;
+            border: none;
+            border-radius: 6px;
+            background: #e94560;
+            color: #fff;
+            font-family: inherit;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .actions button:hover {
+            background: #d13350;
+        }
+        .actions button:active {
+            background: #b82b44;
+        }
+        .actions button:focus-visible {
+            outline: 2px solid #1a1a2e;
+            outline-offset: 2px;
+        }
 
         @media (max-width: 700px) {
             body {
@@ -97,6 +125,10 @@
             }
             .field:last-child {
                 padding-bottom: 0;
+            }
+            .actions button {
+                width: 100%;
+                min-width: 0;
             }
         }
     </style>
@@ -149,6 +181,10 @@
                 <input type="text" id="simTotalCost" readonly>
             </div>
         </div>
+
+        <div class="actions">
+            <button type="button" id="updateBtn" onclick="calculate()">Update Calculations</button>
+        </div>
     </div>
 
     <script>
@@ -174,6 +210,29 @@
             document.getElementById('simTotalCostBasis').value = formatCurrency(simTotalCostBasis);
             document.getElementById('simTotalCost').value = formatCurrency(simTotalCost);
         }
+
+        // Button press: recalculate and give brief visual confirmation.
+        document.getElementById('updateBtn').addEventListener('click', function () {
+            const btn = this;
+            const label = 'Update Calculations';
+            btn.textContent = 'Updated \u2713';
+            clearTimeout(btn._resetTimer);
+            btn._resetTimer = setTimeout(function () {
+                btn.textContent = label;
+            }, 1200);
+        });
+
+        // Pressing Enter in any input also refreshes the results.
+        document.querySelectorAll('.calculator input').forEach(function (input) {
+            input.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    document.getElementById('updateBtn').click();
+                }
+            });
+        });
+
+        calculate();
     </script>
 </body>
 </html>
