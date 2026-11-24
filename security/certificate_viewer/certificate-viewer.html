@@ -1,0 +1,2378 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Certificate Viewer</title>
+<style>
+:root{
+  --bg:#f4f6f9; --panel:#fff; --panel-2:#f1f3f7; --text:#15181d; --muted:#5d6775;
+  --border:#d9dee6; --accent:#2a63c4; --accent-soft:#e8eefb;
+  --ok:#17723f; --ok-bg:#e2f5ea; --ok-bd:#b6e2c7;
+  --warn:#8a5500; --warn-bg:#fcf0d8; --warn-bd:#edd3a1;
+  --bad:#ad2015; --bad-bg:#fdeae8; --bad-bd:#f3c3bd;
+  --root:#6b3aa6; --root-bg:#f2eafc; --root-bd:#dcc8f2;
+  --inter:#15589f; --inter-bg:#e3eefb; --inter-bd:#bad4f1;
+  --leaf:#0d6b68; --leaf-bg:#def3f1; --leaf-bd:#a5dbd6;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  --radius:10px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0e1116; --panel:#161b22; --panel-2:#1d232c; --text:#e5e9ef; --muted:#9aa5b4;
+  --border:#2b323c; --accent:#6ba0f5; --accent-soft:#1b2537;
+  --ok:#5fd394; --ok-bg:#12271b; --ok-bd:#245139;
+  --warn:#e8b864; --warn-bg:#2a2112; --warn-bd:#54421d;
+  --bad:#f08b80; --bad-bg:#2d1715; --bad-bd:#5c2a25;
+  --root:#cba6f7; --root-bg:#251a36; --root-bd:#48325f;
+  --inter:#82b4f2; --inter-bg:#13243a; --inter-bd:#294363;
+  --leaf:#5fd1c8; --leaf-bg:#0f2b29; --leaf-bd:#20514c;
+}}
+:root[data-theme="dark"]{
+  --bg:#0e1116; --panel:#161b22; --panel-2:#1d232c; --text:#e5e9ef; --muted:#9aa5b4;
+  --border:#2b323c; --accent:#6ba0f5; --accent-soft:#1b2537;
+  --ok:#5fd394; --ok-bg:#12271b; --ok-bd:#245139;
+  --warn:#e8b864; --warn-bg:#2a2112; --warn-bd:#54421d;
+  --bad:#f08b80; --bad-bg:#2d1715; --bad-bd:#5c2a25;
+  --root:#cba6f7; --root-bg:#251a36; --root-bd:#48325f;
+  --inter:#82b4f2; --inter-bg:#13243a; --inter-bd:#294363;
+  --leaf:#5fd1c8; --leaf-bg:#0f2b29; --leaf-bd:#20514c;
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--text);
+  font:17px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  -webkit-font-smoothing:antialiased}
+.topbar{position:sticky;top:0;z-index:30;display:flex;flex-wrap:wrap;gap:10px;align-items:center;
+  justify-content:space-between;padding:10px 16px;background:var(--panel);border-bottom:1px solid var(--border)}
+.brand{display:flex;gap:10px;align-items:center;min-width:0}
+.brand svg{flex:none;color:var(--accent)}
+.brand h1{margin:0;font-size:18.5px;letter-spacing:-.01em}
+.brand p{margin:0;font-size:13px;color:var(--muted)}
+.actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.btn{font:inherit;font-size:15px;padding:7px 12px;border-radius:8px;border:1px solid var(--border);
+  background:var(--panel-2);color:var(--text);cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.primary:hover{filter:brightness(1.08);color:#fff}
+.btn.sm{font-size:14px;padding:4px 9px}
+main{max-width:1080px;margin:0 auto;padding:16px}
+.dropzone{border:1.5px dashed var(--border);border-radius:var(--radius);background:var(--panel);
+  padding:30px 16px;text-align:center;color:var(--muted);transition:border-color .12s}
+.dropzone.compact{padding:10px 12px;font-size:15px}
+.dropzone.compact small,.dropzone.compact em{display:none}
+.dropzone.compact strong{display:inline;font-size:15.5px;margin:0}
+#dzCurrent strong{word-break:break-all}
+#dzMeta{color:var(--muted)}
+.dropzone.drag{border-color:var(--accent);background:var(--accent-soft);color:var(--text)}
+.dropzone strong{display:block;color:var(--text);font-size:17px;margin-bottom:4px}
+.dropzone small{display:block;margin-top:6px;font-size:14px}
+.paste{margin-top:12px;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:12px}
+.paste textarea{width:100%;min-height:150px;resize:vertical;font-family:var(--mono);font-size:14px;
+  padding:8px;border:1px solid var(--border);border-radius:8px;background:var(--panel-2);color:var(--text)}
+.paste .row{display:flex;gap:8px;margin-top:8px}
+.notices{margin-top:12px;display:flex;flex-direction:column;gap:6px}
+.notice{font-size:15px;padding:8px 10px;border-radius:8px;border:1px solid var(--warn-bd);
+  background:var(--warn-bg);color:var(--warn)}
+.notice.err{border-color:var(--bad-bd);background:var(--bad-bg);color:var(--bad)}
+.stats{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.stat{flex:1 1 110px;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:9px 12px}
+.stat b{display:block;font-size:23px;line-height:1.2}
+.stat span{font-size:13px;color:var(--muted)}
+.stat.ok b{color:var(--ok)} .stat.warn b{color:var(--warn)} .stat.bad b{color:var(--bad)}
+.stat.role-root b{color:var(--root)} .stat.role-intermediate b{color:var(--inter)}
+.stat.role-leaf b{color:var(--leaf)}
+.stat.role-root{border-color:var(--root-bd)} .stat.role-intermediate{border-color:var(--inter-bd)}
+.stat.role-leaf{border-color:var(--leaf-bd)}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:14px}
+.toolbar input[type=search]{flex:1 1 220px;min-width:0;font:inherit;font-size:15px;padding:7px 10px;
+  border:1px solid var(--border);border-radius:8px;background:var(--panel);color:var(--text)}
+.toolbar select{font:inherit;font-size:15px;padding:7px 8px;border:1px solid var(--border);
+  border-radius:8px;background:var(--panel);color:var(--text)}
+.chainbox{margin-top:14px;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:12px}
+.chainbox h2{margin:0 0 8px;font-size:14px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.tabs{display:flex;flex-wrap:wrap;gap:7px;align-items:stretch}
+.tabs.scroll{max-height:46vh;overflow-y:auto;padding-right:4px}
+.tabbreak{flex:0 0 100%;height:0;margin:1px 0}
+.tabarrow{display:flex;align-items:center;color:var(--muted);font-family:var(--mono);font-size:15px;padding:0 1px}
+.tab.role-root{--rc:var(--root);--rbg:var(--root-bg);--rbd:var(--root-bd)}
+.tab.role-intermediate{--rc:var(--inter);--rbg:var(--inter-bg);--rbd:var(--inter-bd)}
+.tab.role-leaf{--rc:var(--leaf);--rbg:var(--leaf-bg);--rbd:var(--leaf-bd)}
+.tab{display:flex;flex-direction:column;gap:3px;align-items:flex-start;min-width:0;max-width:300px;
+  padding:8px 12px;border:1px solid var(--rbd,var(--border));border-left:4px solid var(--rc,var(--muted));
+  border-radius:10px;background:var(--rbg,var(--panel-2));
+  color:inherit;font:inherit;text-align:left;cursor:pointer;transition:transform .08s}
+.tab:hover{border-color:var(--rc,var(--accent));border-left-color:var(--rc,var(--accent))}
+.tab:focus-visible{outline:2px solid var(--rc,var(--accent));outline-offset:2px}
+.tab[aria-selected="true"]{background:var(--panel);border-color:var(--rc,var(--accent));
+  box-shadow:inset 0 0 0 2px var(--rc,var(--accent)),0 1px 4px rgba(0,0,0,.09)}
+.tab[aria-selected="true"] .tname{color:var(--rc,var(--text))}
+.trow{display:flex;align-items:center;gap:7px;max-width:100%}
+.tpill{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:1px 7px;
+  border-radius:999px;border:1px solid var(--border);background:var(--panel);color:var(--muted);white-space:nowrap}
+.tpill.role-root,.tpill.role-intermediate,.tpill.role-leaf{color:var(--panel);border-color:transparent}
+.tpill.role-root{background:var(--root)}
+.tpill.role-intermediate{background:var(--inter)}
+.tpill.role-leaf{background:var(--leaf)}
+.tname{font-size:15px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.texp{font-size:12.5px;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+.texp.ok{color:var(--ok)} .texp.warn{color:var(--warn)} .texp.bad{color:var(--bad);font-weight:600}
+.tnote{font-size:12px;color:var(--muted)}
+.detailcard{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);
+  margin-top:12px;overflow:hidden;border-top:3px solid var(--muted)}
+.detailcard.role-root{border-top-color:var(--root)}
+.detailcard.role-intermediate{border-top-color:var(--inter)}
+.detailcard.role-leaf{border-top-color:var(--leaf)}
+.detailcard.role-root .dhead{background:var(--root-bg);border-bottom-color:var(--root-bd)}
+.detailcard.role-intermediate .dhead{background:var(--inter-bg);border-bottom-color:var(--inter-bd)}
+.detailcard.role-leaf .dhead{background:var(--leaf-bg);border-bottom-color:var(--leaf-bd)}
+.dhead{padding:12px 14px;background:var(--panel-2);border-bottom:1px solid var(--border)}
+.dhead h2{margin:0;font-size:18.5px;word-break:break-word}
+.dhead .sub{font-size:13.5px;color:var(--muted);word-break:break-word;margin-top:2px}
+.dhead .tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.detailcard .body{border-top:0}
+@media (max-width:620px){
+  .tabs{max-height:none}
+  .tab{max-width:100%;width:100%}
+  .tabarrow{display:none}
+  .pill{min-width:92px;font-size:11.5px}
+}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);margin-top:12px;overflow:hidden}
+.card.flash{outline:2px solid var(--accent);outline-offset:1px}
+.card>.head{display:flex;gap:10px;align-items:flex-start;width:100%;padding:11px 13px;background:none;
+  border:0;font:inherit;color:inherit;text-align:left;cursor:pointer}
+.card>.head:hover{background:var(--panel-2)}
+.head .idx{flex:none;font-family:var(--mono);font-size:12.5px;color:var(--muted);padding-top:3px;min-width:22px}
+.head .who{min-width:0;flex:1 1 auto}
+.head h2{margin:0;font-size:16.5px;word-break:break-word}
+.head .sub{font-size:14px;color:var(--muted);word-break:break-word;margin-top:1px}
+.head .tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:5px}
+.head .chev{flex:none;color:var(--muted);transition:transform .15s;padding-top:2px}
+.card[open] .head .chev{transform:rotate(90deg)}
+.badge{display:inline-block;font-size:12.5px;line-height:1.5;padding:1px 7px;border-radius:999px;
+  border:1px solid var(--border);background:var(--panel-2);color:var(--muted);white-space:nowrap}
+.badge.ok{color:var(--ok);background:var(--ok-bg);border-color:var(--ok-bd)}
+.badge.warn{color:var(--warn);background:var(--warn-bg);border-color:var(--warn-bd)}
+.badge.bad{color:var(--bad);background:var(--bad-bg);border-color:var(--bad-bd)}
+.badge.info{color:var(--accent);background:var(--accent-soft);border-color:var(--accent-soft)}
+.body{padding:2px 13px 14px;border-top:1px solid var(--border)}
+.block{margin-top:14px}
+.block>h3{margin:0 0 6px;font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.kv{display:grid;grid-template-columns:minmax(130px,195px) 1fr;gap:3px 16px;margin:0;font-size:15.5px}
+.kv dt{color:var(--muted)}
+.kv dd{margin:0;word-break:break-word}
+.mono{font-family:var(--mono);font-size:14px;word-break:break-all}
+.chips{display:flex;flex-wrap:wrap;gap:5px}
+.chip{font-family:var(--mono);font-size:13px;background:var(--panel-2);border:1px solid var(--border);
+  border-radius:6px;padding:2px 6px;word-break:break-all}
+.ext{border:1px solid var(--border);border-radius:8px;background:var(--panel-2);padding:8px 10px;margin-bottom:7px}
+.ext .exthead{display:flex;flex-wrap:wrap;gap:7px;align-items:baseline;margin-bottom:4px}
+.ext .exthead b{font-size:15px}
+.oid{font-family:var(--mono);font-size:12.5px;color:var(--muted)}
+pre.block-pre{font-family:var(--mono);font-size:13px;white-space:pre-wrap;word-break:break-all;margin:0;
+  background:var(--panel-2);border:1px solid var(--border);border-radius:8px;padding:9px;max-height:260px;overflow:auto}
+.rowbtns{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}
+details.tree-wrap>summary,details.raw>summary{cursor:pointer;font-size:14.5px;color:var(--accent);
+  list-style:none;padding:3px 0}
+details.tree-wrap>summary::-webkit-details-marker,details.raw>summary::-webkit-details-marker{display:none}
+details.tree-wrap>summary::before,details.raw>summary::before{content:"▸ ";font-family:var(--mono)}
+details.tree-wrap[open]>summary::before,details.raw[open]>summary::before{content:"▾ "}
+.tree{font-family:var(--mono);font-size:13px;line-height:1.65;overflow-x:auto;
+  background:var(--panel-2);border:1px solid var(--border);border-radius:8px;padding:8px}
+.tree .node{white-space:pre-wrap;word-break:break-word}
+.tree .kids{margin-left:12px;padding-left:9px;border-left:1px dotted var(--border)}
+.tree .t{color:var(--accent)}
+.tree .v{color:var(--text)}
+.tree .m{color:var(--muted)}
+.tree details>summary{cursor:pointer;list-style:none}
+.tree details>summary::-webkit-details-marker{display:none}
+.tree details>summary::before{content:"+ ";color:var(--muted)}
+.tree details[open]>summary::before{content:"− ";color:var(--muted)}
+.empty{color:var(--muted);font-size:15px;padding:10px 0}
+footer{max-width:1080px;margin:0 auto;padding:10px 16px 28px;color:var(--muted);font-size:14px}
+@media (max-width:620px){
+  main{padding:12px}
+  .kv{grid-template-columns:1fr;gap:0}
+  .kv dt{margin-top:7px;font-size:14px}
+  .brand p{display:none}
+}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <svg width="27" height="27" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M12 2.8 4.5 5.6v6c0 4.2 3 8 7.5 9.6 4.5-1.6 7.5-5.4 7.5-9.6v-6z"/>
+      <path d="m8.8 11.8 2.3 2.3 4.1-4.6"/>
+    </svg>
+    <div>
+      <h1>Certificate Viewer</h1>
+      <p>X.509 inspector &middot; everything is parsed locally in your browser</p>
+    </div>
+  </div>
+  <div class="actions">
+    <button class="btn primary" id="pickBtn">Open file&hellip;</button>
+    <button class="btn" id="pasteBtn" aria-expanded="false">Paste PEM</button>
+    <button class="btn" id="themeBtn" title="Switch colour theme">Theme</button>
+    <input type="file" id="fileInput" hidden
+           accept=".pem,.crt,.cer,.cert,.der,.p7b,.p7c,.p7s,.spc,.csr,.req,.txt,.key,application/x-x509-ca-cert,application/pkix-cert,application/pkcs7-mime">
+  </div>
+</header>
+
+<main>
+  <section id="dropzone" class="dropzone" aria-label="Drop a certificate file here">
+    <div id="dzDefault">
+      <strong>Drop a certificate file here</strong>
+      Or use <em>Open file&hellip;</em> &middot; or paste PEM text anywhere on this page
+      <small>PEM / DER / CRT / CER / P7B (PKCS#7 bundles) / CSR &mdash; single certificates, chains and CA bundles</small>
+    </div>
+    <div id="dzCurrent" hidden>
+      <strong id="dzName"></strong>
+      <span id="dzMeta"></span>
+    </div>
+  </section>
+
+  <section id="pastePanel" class="paste" hidden>
+    <label for="pasteArea" style="font-size:15px">Paste PEM, base64 or a certificate chain</label>
+    <textarea id="pasteArea" spellcheck="false" placeholder="-----BEGIN CERTIFICATE-----&#10;MIIDdzCCAl+gAwIBAgIE...&#10;-----END CERTIFICATE-----"></textarea>
+    <div class="row">
+      <button class="btn primary" id="parsePaste">Parse</button>
+      <button class="btn" id="cancelPaste">Close</button>
+    </div>
+  </section>
+
+  <div id="notices" class="notices"></div>
+  <section id="stats" class="stats" hidden></section>
+
+  <div id="toolbar" class="toolbar" hidden>
+    <input type="search" id="search" placeholder="Filter certificates by subject, issuer, SAN, serial, fingerprint&hellip;">
+    <select id="sortBy" aria-label="Sort certificates">
+      <option value="file">Chain order</option>
+      <option value="expiry">Sort by expiry</option>
+      <option value="subject">Sort by name</option>
+    </select>
+    <button class="btn sm" id="expandAll">Expand sections</button>
+    <button class="btn sm" id="collapseAll">Collapse sections</button>
+    <button class="btn sm" id="clearAll">Clear</button>
+  </div>
+
+  <section id="chainbox" class="chainbox" hidden>
+    <h2>Certificate hierarchy</h2>
+    <div id="tabs" class="tabs" role="tablist" aria-label="Certificates in this file"></div>
+  </section>
+
+  <div id="detail"></div>
+</main>
+<footer id="footer"></footer>
+
+<script>
+/* =======================================================================
+   Core: dependency-free ASN.1 / DER reader and X.509 decoder.
+   No network, no libraries: certificate bytes never leave the page.
+   ======================================================================= */
+(function (global) {
+'use strict';
+
+/* ---------------- base64 / hex ---------------- */
+var B64C = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+var B64L = (function () {
+  var t = new Int8Array(256); t.fill(-1);
+  for (var i = 0; i < 64; i++) t[B64C.charCodeAt(i)] = i;
+  return t;
+})();
+
+function b64decode(s) {
+  var out = new Uint8Array(Math.ceil(s.length * 3 / 4) + 3);
+  var o = 0, buf = 0, bits = 0;
+  for (var i = 0; i < s.length; i++) {
+    var v = B64L[s.charCodeAt(i) & 0xff];
+    if (v < 0) continue;
+    buf = (buf << 6) | v; bits += 6;
+    if (bits >= 8) { bits -= 8; out[o++] = (buf >> bits) & 0xff; }
+  }
+  return out.slice(0, o);
+}
+
+function b64encode(b) {
+  var out = '';
+  for (var i = 0; i < b.length; i += 3) {
+    var b0 = b[i], b1 = b[i + 1], b2 = b[i + 2];
+    out += B64C[b0 >> 2];
+    out += B64C[((b0 & 3) << 4) | ((b1 === undefined ? 0 : b1) >> 4)];
+    out += b1 === undefined ? '=' : B64C[((b1 & 15) << 2) | ((b2 === undefined ? 0 : b2) >> 6)];
+    out += b2 === undefined ? '=' : B64C[b2 & 63];
+  }
+  return out;
+}
+
+function hex(b, sep, upper) {
+  var out = '', s = sep || '';
+  for (var i = 0; i < b.length; i++) {
+    if (i && s) out += s;
+    var h = b[i].toString(16);
+    out += h.length < 2 ? '0' + h : h;
+  }
+  return upper ? out.toUpperCase() : out;
+}
+function hexColon(b) { return hex(b, ':', true); }
+
+function bytesToDecimal(bytes) {
+  var digits = [0], i, j;
+  for (i = 0; i < bytes.length; i++) {
+    var carry = bytes[i];
+    for (j = 0; j < digits.length; j++) {
+      var v = digits[j] * 256 + carry;
+      digits[j] = v % 10;
+      carry = (v - digits[j]) / 10;
+    }
+    while (carry > 0) { digits.push(carry % 10); carry = Math.floor(carry / 10); }
+  }
+  return digits.reverse().join('') || '0';
+}
+
+/* ---------------- hashes (pure JS so file:// works without WebCrypto) ---------------- */
+function padMessage(msg) {
+  var l = msg.length, blocks = Math.ceil((l + 9) / 64);
+  var p = new Uint8Array(blocks * 64);
+  p.set(msg); p[l] = 0x80;
+  var bits = l * 8;
+  var dv = new DataView(p.buffer);
+  dv.setUint32(p.length - 8, Math.floor(bits / 4294967296));
+  dv.setUint32(p.length - 4, bits >>> 0);
+  return p;
+}
+
+var K256 = [
+  0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,
+  0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,
+  0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,
+  0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,
+  0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,
+  0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,
+  0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,
+  0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];
+
+function sha256(msg) {
+  var h = [0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19];
+  var p = padMessage(msg), dv = new DataView(p.buffer), w = new Uint32Array(64), i, t;
+  for (var off = 0; off < p.length; off += 64) {
+    for (i = 0; i < 16; i++) w[i] = dv.getUint32(off + i * 4);
+    for (i = 16; i < 64; i++) {
+      var g0 = w[i-15], g1 = w[i-2];
+      var s0 = ((g0 >>> 7) | (g0 << 25)) ^ ((g0 >>> 18) | (g0 << 14)) ^ (g0 >>> 3);
+      var s1 = ((g1 >>> 17) | (g1 << 15)) ^ ((g1 >>> 19) | (g1 << 13)) ^ (g1 >>> 10);
+      w[i] = (w[i-16] + s0 + w[i-7] + s1) >>> 0;
+    }
+    var a=h[0],b=h[1],c=h[2],d=h[3],e=h[4],f=h[5],g=h[6],hh=h[7];
+    for (i = 0; i < 64; i++) {
+      var S1 = ((e >>> 6)|(e << 26)) ^ ((e >>> 11)|(e << 21)) ^ ((e >>> 25)|(e << 7));
+      var ch = (e & f) ^ (~e & g);
+      var t1 = (hh + S1 + ch + K256[i] + w[i]) >>> 0;
+      var S0 = ((a >>> 2)|(a << 30)) ^ ((a >>> 13)|(a << 19)) ^ ((a >>> 22)|(a << 10));
+      var mj = (a & b) ^ (a & c) ^ (b & c);
+      var t2 = (S0 + mj) >>> 0;
+      hh=g; g=f; f=e; e=(d + t1) >>> 0; d=c; c=b; b=a; a=(t1 + t2) >>> 0;
+    }
+    h[0]=(h[0]+a)>>>0; h[1]=(h[1]+b)>>>0; h[2]=(h[2]+c)>>>0; h[3]=(h[3]+d)>>>0;
+    h[4]=(h[4]+e)>>>0; h[5]=(h[5]+f)>>>0; h[6]=(h[6]+g)>>>0; h[7]=(h[7]+hh)>>>0;
+  }
+  var out = new Uint8Array(32), odv = new DataView(out.buffer);
+  for (t = 0; t < 8; t++) odv.setUint32(t * 4, h[t]);
+  return out;
+}
+
+function sha1(msg) {
+  var h = [0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476, 0xc3d2e1f0];
+  var p = padMessage(msg), dv = new DataView(p.buffer), w = new Uint32Array(80), i;
+  for (var off = 0; off < p.length; off += 64) {
+    for (i = 0; i < 16; i++) w[i] = dv.getUint32(off + i * 4);
+    for (i = 16; i < 80; i++) {
+      var v = w[i-3] ^ w[i-8] ^ w[i-14] ^ w[i-16];
+      w[i] = (v << 1) | (v >>> 31);
+    }
+    var a=h[0],b=h[1],c=h[2],d=h[3],e=h[4];
+    for (i = 0; i < 80; i++) {
+      var f, k;
+      if (i < 20) { f = (b & c) | (~b & d); k = 0x5a827999; }
+      else if (i < 40) { f = b ^ c ^ d; k = 0x6ed9eba1; }
+      else if (i < 60) { f = (b & c) | (b & d) | (c & d); k = 0x8f1bbcdc; }
+      else { f = b ^ c ^ d; k = 0xca62c1d6; }
+      var tmp = (((a << 5) | (a >>> 27)) + f + e + k + w[i]) >>> 0;
+      e = d; d = c; c = (b << 30) | (b >>> 2); b = a; a = tmp;
+    }
+    h[0]=(h[0]+a)>>>0; h[1]=(h[1]+b)>>>0; h[2]=(h[2]+c)>>>0; h[3]=(h[3]+d)>>>0; h[4]=(h[4]+e)>>>0;
+  }
+  var out = new Uint8Array(20), odv = new DataView(out.buffer);
+  for (i = 0; i < 5; i++) odv.setUint32(i * 4, h[i]);
+  return out;
+}
+
+/* ---------------- ASN.1 / DER ---------------- */
+var TAG_NAMES = {
+  1:'BOOLEAN', 2:'INTEGER', 3:'BIT STRING', 4:'OCTET STRING', 5:'NULL', 6:'OBJECT IDENTIFIER',
+  7:'ObjectDescriptor', 9:'REAL', 10:'ENUMERATED', 11:'EMBEDDED PDV', 12:'UTF8String',
+  13:'RELATIVE-OID', 16:'SEQUENCE', 17:'SET', 18:'NumericString', 19:'PrintableString',
+  20:'T61String', 21:'VideotexString', 22:'IA5String', 23:'UTCTime', 24:'GeneralizedTime',
+  25:'GraphicString', 26:'VisibleString', 27:'GeneralString', 28:'UniversalString',
+  29:'CHARACTER STRING', 30:'BMPString'
+};
+var STRING_TAGS = {12:1, 18:1, 19:1, 20:1, 21:1, 22:1, 25:1, 26:1, 27:1, 28:1, 30:1};
+
+function parseOne(buf, pos, end) {
+  if (pos >= end) throw new Error('truncated ASN.1 data');
+  var start = pos;
+  var tagByte = buf[pos++];
+  var tagClass = tagByte >> 6;
+  var constructed = (tagByte & 0x20) !== 0;
+  var tagNumber = tagByte & 0x1f;
+  if (tagNumber === 0x1f) {
+    tagNumber = 0;
+    var tb;
+    do {
+      if (pos >= end) throw new Error('truncated tag');
+      tb = buf[pos++];
+      tagNumber = (tagNumber * 128) + (tb & 0x7f);
+    } while (tb & 0x80);
+  }
+  if (pos >= end) throw new Error('truncated length');
+  var lenByte = buf[pos++], length, indefinite = false;
+  if (lenByte === 0x80) { indefinite = true; length = -1; }
+  else if (lenByte & 0x80) {
+    var n = lenByte & 0x7f;
+    if (n > 6) throw new Error('length too large');
+    length = 0;
+    for (var i = 0; i < n; i++) {
+      if (pos >= end) throw new Error('truncated length');
+      length = length * 256 + buf[pos++];
+    }
+  } else length = lenByte;
+
+  var headerEnd = pos;
+  var node = {
+    buf: buf, start: start, headerEnd: headerEnd, tagByte: tagByte, tagClass: tagClass,
+    tagNumber: tagNumber, constructed: constructed, indefinite: indefinite,
+    length: length, contentEnd: 0, end: 0, children: null, parseError: null
+  };
+
+  if (indefinite) {
+    if (!constructed) throw new Error('indefinite length on primitive value');
+    var kids = [], p = headerEnd;
+    for (;;) {
+      if (p + 1 >= end) throw new Error('unterminated indefinite length');
+      if (buf[p] === 0 && buf[p + 1] === 0) { p += 2; break; }
+      var kid = parseOne(buf, p, end);
+      kids.push(kid); p = kid.end;
+    }
+    node.children = kids;
+    node.contentEnd = p - 2;
+    node.end = p;
+    node.length = node.contentEnd - headerEnd;
+    return node;
+  }
+
+  node.contentEnd = headerEnd + length;
+  node.end = node.contentEnd;
+  if (node.contentEnd > end) throw new Error('declared length runs past end of data');
+  if (constructed) {
+    try { node.children = parseList(buf, headerEnd, node.contentEnd); }
+    catch (e) { node.children = null; node.parseError = e.message; }
+  }
+  return node;
+}
+
+function parseList(buf, pos, end) {
+  var out = [];
+  while (pos < end) {
+    var n = parseOne(buf, pos, end);
+    out.push(n);
+    if (n.end <= pos) throw new Error('zero-length element');
+    pos = n.end;
+  }
+  return out;
+}
+
+function parse(buf) { return parseOne(buf, 0, buf.length); }
+function content(node) { return node.buf.subarray(node.headerEnd, node.contentEnd); }
+function full(node) { return node.buf.subarray(node.start, node.end); }
+function kids(node) { return node.children || []; }
+function at(node, i) { return kids(node)[i]; }
+function isSeq(node) { return node && node.tagClass === 0 && node.tagNumber === 16; }
+function isCtx(node, n) { return node && node.tagClass === 2 && node.tagNumber === n; }
+
+/* value readers */
+function decodeOidBytes(b) {
+  if (!b.length) return '';
+  var subs = [], val = 0, i;
+  for (i = 0; i < b.length; i++) {
+    val = val * 128 + (b[i] & 0x7f);
+    if (!(b[i] & 0x80)) { subs.push(val); val = 0; }
+  }
+  var first = subs.shift(), a, c;
+  if (first < 40) { a = 0; c = first; }
+  else if (first < 80) { a = 1; c = first - 40; }
+  else { a = 2; c = first - 80; }
+  return [a, c].concat(subs).join('.');
+}
+function oidOf(node) { return node ? decodeOidBytes(content(node)) : ''; }
+
+var utf8Decoder = (typeof TextDecoder !== 'undefined') ? new TextDecoder('utf-8') : null;
+function utf8(bytes) {
+  if (utf8Decoder) { try { return utf8Decoder.decode(bytes); } catch (e) {} }
+  var s = '';
+  for (var i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
+  return s;
+}
+function latin1(bytes) {
+  var s = '';
+  for (var i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
+  return s;
+}
+function bmp(bytes) {
+  var s = '';
+  for (var i = 0; i + 1 < bytes.length; i += 2) s += String.fromCharCode((bytes[i] << 8) | bytes[i + 1]);
+  return s;
+}
+function strOf(node) {
+  if (!node) return '';
+  var c = content(node);
+  if (node.tagNumber === 30) return bmp(c);
+  if (node.tagNumber === 28) {
+    var s = '';
+    for (var i = 0; i + 3 < c.length; i += 4)
+      s += String.fromCodePoint((c[i] << 24 | c[i+1] << 16 | c[i+2] << 8 | c[i+3]) >>> 0);
+    return s;
+  }
+  if (node.tagNumber === 12 || node.tagClass === 2) return utf8(c);
+  if (node.tagNumber === 19 || node.tagNumber === 22 || node.tagNumber === 18 ||
+      node.tagNumber === 26) return latin1(c);
+  return utf8(c);
+}
+function boolOf(node) { var c = content(node); return c.length > 0 && c[0] !== 0; }
+function intSmall(node) {
+  var c = content(node), v = 0;
+  if (!c.length) return 0;
+  var neg = (c[0] & 0x80) !== 0;
+  for (var i = 0; i < c.length; i++) v = v * 256 + c[i];
+  if (neg) v -= Math.pow(2, c.length * 8);
+  return v;
+}
+function intHex(node) {
+  var c = content(node), i = 0;
+  while (i < c.length - 1 && c[i] === 0) i++;
+  return hexColon(c.subarray(i));
+}
+function intDecimal(node) {
+  var c = content(node), i = 0;
+  if (c.length && (c[0] & 0x80)) return '-' + bytesToDecimal(c);
+  while (i < c.length - 1 && c[i] === 0) i++;
+  return bytesToDecimal(c.subarray(i));
+}
+function bitStringBytes(node) {
+  var c = content(node);
+  return c.length ? c.subarray(1) : c;
+}
+function bitStringBits(node) {
+  var c = content(node);
+  if (!c.length) return 0;
+  return (c.length - 1) * 8 - c[0];
+}
+function bitFlags(node) {
+  var c = content(node);
+  if (!c.length) return [];
+  var unused = c[0], flags = [];
+  for (var i = 1; i < c.length; i++) {
+    var lim = (i === c.length - 1) ? 8 - unused : 8;
+    for (var b = 0; b < lim; b++) flags.push((c[i] >> (7 - b)) & 1 ? true : false);
+  }
+  return flags;
+}
+function timeOf(node) {
+  var s = latin1(content(node)).trim();
+  var m, year, rest, tz = 'Z', out;
+  if (node.tagNumber === 23) { /* UTCTime: YYMMDDhhmm[ss](Z|+hhmm) */
+    m = /^(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})?(Z|[+-]\d{4})?$/.exec(s);
+    if (!m) return { date: null, text: s };
+    var yy = parseInt(m[1], 10);
+    year = yy < 50 ? 2000 + yy : 1900 + yy;
+    rest = m; tz = m[7] || 'Z';
+  } else { /* GeneralizedTime: YYYYMMDDhhmm[ss][.f](Z|+hhmm) */
+    m = /^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})?(?:[.,](\d+))?(Z|[+-]\d{4})?$/.exec(s);
+    if (!m) return { date: null, text: s };
+    year = parseInt(m[1], 10);
+    rest = m; tz = m[8] || 'Z';
+  }
+  var ms = Date.UTC(year, parseInt(rest[2], 10) - 1, parseInt(rest[3], 10),
+                    parseInt(rest[4], 10), parseInt(rest[5], 10),
+                    rest[6] ? parseInt(rest[6], 10) : 0);
+  if (tz && tz !== 'Z') {
+    var sign = tz[0] === '-' ? 1 : -1;
+    ms += sign * ((parseInt(tz.substr(1, 2), 10) * 60 + parseInt(tz.substr(3, 2), 10)) * 60000);
+  }
+  out = new Date(ms);
+  return { date: isNaN(out.getTime()) ? null : out, text: s };
+}
+
+function tagLabel(node) {
+  if (node.tagClass === 0) return TAG_NAMES[node.tagNumber] || ('[UNIVERSAL ' + node.tagNumber + ']');
+  if (node.tagClass === 2) return '[' + node.tagNumber + ']';
+  if (node.tagClass === 1) return '[APPLICATION ' + node.tagNumber + ']';
+  return '[PRIVATE ' + node.tagNumber + ']';
+}
+
+/* Try to read a nested DER structure inside an OCTET STRING / BIT STRING */
+function innerNodes(node) {
+  if (node.tagClass !== 0) return null;
+  if (node.tagNumber !== 4 && node.tagNumber !== 3) return null;
+  var c = node.tagNumber === 3 ? bitStringBytes(node) : content(node);
+  if (c.length < 2) return null;
+  if (node.tagNumber === 3 && content(node)[0] !== 0) return null;
+  var t = c[0] & 0x1f, cls = c[0] >> 6;
+  if (!(cls === 0 && (t === 16 || t === 17 || t === 6 || t === 2 || t === 4 || t === 3 || t === 1 || t === 12 || t === 19 || t === 22))) return null;
+  try {
+    var list = parseList(c, 0, c.length);
+    if (!list.length) return null;
+    for (var i = 0; i < list.length; i++) if (list[i].parseError) return null;
+    return list;
+  } catch (e) { return null; }
+}
+
+/* short preview of a node value, for the ASN.1 tree */
+function nodePreview(node, oidNameFn) {
+  if (node.constructed) {
+    var n = node.children ? node.children.length : 0;
+    return n + (n === 1 ? ' element' : ' elements');
+  }
+  var c = content(node);
+  switch (node.tagClass === 0 ? node.tagNumber : -1) {
+    case 1: return boolOf(node) ? 'TRUE' : 'FALSE';
+    case 2: return c.length <= 6 ? String(intSmall(node)) + ' (0x' + hex(c) + ')' : intDecimal(node);
+    case 5: return '';
+    case 6: var o = oidOf(node); var nm = oidNameFn ? oidNameFn(o) : null;
+            return nm && nm !== o ? nm + '  (' + o + ')' : o;
+    case 3: return bitStringBits(node) + ' bits  ' + hexPreview(bitStringBytes(node));
+    case 4: return c.length + ' bytes  ' + hexPreview(c);
+    case 23: case 24: return timeOf(node).text;
+    default:
+      if (STRING_TAGS[node.tagNumber] && node.tagClass === 0) return JSON.stringify(strOf(node));
+      if (node.tagClass === 2) return c.length + ' bytes  ' + hexPreview(c);
+      return hexPreview(c);
+  }
+}
+function hexPreview(b) {
+  var lim = 28;
+  return hex(b.subarray(0, lim), ' ') + (b.length > lim ? ' …' : '');
+}
+
+var asn1 = {
+  parse: parse, parseList: parseList, parseOne: parseOne, content: content, full: full,
+  kids: kids, at: at, isSeq: isSeq, isCtx: isCtx, oidOf: oidOf, strOf: strOf, boolOf: boolOf,
+  intSmall: intSmall, intHex: intHex, intDecimal: intDecimal, bitStringBytes: bitStringBytes,
+  bitStringBits: bitStringBits, bitFlags: bitFlags, timeOf: timeOf, tagLabel: tagLabel,
+  innerNodes: innerNodes, nodePreview: nodePreview, decodeOidBytes: decodeOidBytes,
+  TAG_NAMES: TAG_NAMES
+};
+
+global.CertCore = { asn1: asn1, b64decode: b64decode, b64encode: b64encode, hex: hex,
+  hexColon: hexColon, sha1: sha1, sha256: sha256, bytesToDecimal: bytesToDecimal, utf8: utf8 };
+})(typeof window !== 'undefined' ? window : globalThis);
+</script>
+
+<script>
+/* =======================================================================
+   X.509 decoding: names, keys, extensions, PKCS#7 bundles, CSRs.
+   ======================================================================= */
+(function (global) {
+'use strict';
+var C = global.CertCore, A = C.asn1;
+var content = A.content, kids = A.kids, at = A.at, oidOf = A.oidOf, strOf = A.strOf;
+
+/* ---------------- OID dictionary ---------------- */
+var DN_SHORT = {
+  '2.5.4.3':'CN', '2.5.4.4':'SN', '2.5.4.5':'serialNumber', '2.5.4.6':'C', '2.5.4.7':'L',
+  '2.5.4.8':'ST', '2.5.4.9':'street', '2.5.4.10':'O', '2.5.4.11':'OU', '2.5.4.12':'title',
+  '2.5.4.13':'description', '2.5.4.15':'businessCategory', '2.5.4.16':'postalAddress',
+  '2.5.4.17':'postalCode', '2.5.4.20':'telephoneNumber', '2.5.4.41':'name', '2.5.4.42':'GN',
+  '2.5.4.43':'initials', '2.5.4.44':'generationQualifier', '2.5.4.45':'x500UniqueIdentifier',
+  '2.5.4.46':'dnQualifier', '2.5.4.65':'pseudonym', '2.5.4.97':'organizationIdentifier',
+  '1.2.840.113549.1.9.1':'emailAddress', '0.9.2342.19200300.100.1.25':'DC',
+  '0.9.2342.19200300.100.1.1':'UID', '1.3.6.1.4.1.311.60.2.1.1':'jurisdictionL',
+  '1.3.6.1.4.1.311.60.2.1.2':'jurisdictionST', '1.3.6.1.4.1.311.60.2.1.3':'jurisdictionC'
+};
+
+var OID_NAMES = {
+  /* DN attributes (long form) */
+  '2.5.4.3':'Common Name', '2.5.4.4':'Surname', '2.5.4.5':'Serial Number', '2.5.4.6':'Country',
+  '2.5.4.7':'Locality', '2.5.4.8':'State or Province', '2.5.4.9':'Street Address',
+  '2.5.4.10':'Organization', '2.5.4.11':'Organizational Unit', '2.5.4.12':'Title',
+  '2.5.4.13':'Description', '2.5.4.15':'Business Category', '2.5.4.16':'Postal Address',
+  '2.5.4.17':'Postal Code', '2.5.4.20':'Telephone Number', '2.5.4.41':'Name',
+  '2.5.4.42':'Given Name', '2.5.4.43':'Initials', '2.5.4.44':'Generation Qualifier',
+  '2.5.4.45':'X.500 Unique Identifier', '2.5.4.46':'DN Qualifier', '2.5.4.65':'Pseudonym',
+  '2.5.4.97':'Organization Identifier', '1.2.840.113549.1.9.1':'Email Address',
+  '0.9.2342.19200300.100.1.25':'Domain Component', '0.9.2342.19200300.100.1.1':'User ID',
+  '1.3.6.1.4.1.311.60.2.1.1':'Jurisdiction Locality',
+  '1.3.6.1.4.1.311.60.2.1.2':'Jurisdiction State or Province',
+  '1.3.6.1.4.1.311.60.2.1.3':'Jurisdiction Country',
+  /* public key algorithms */
+  '1.2.840.113549.1.1.1':'RSA', '1.2.840.113549.1.1.10':'RSASSA-PSS',
+  '1.2.840.113549.1.1.7':'RSAES-OAEP', '1.2.840.10045.2.1':'Elliptic Curve',
+  '1.2.840.10040.4.1':'DSA', '1.2.840.113549.1.3.1':'Diffie-Hellman',
+  '1.3.101.110':'X25519', '1.3.101.111':'X448', '1.3.101.112':'Ed25519', '1.3.101.113':'Ed448',
+  /* signature algorithms */
+  '1.2.840.113549.1.1.2':'MD2 with RSA', '1.2.840.113549.1.1.4':'MD5 with RSA',
+  '1.2.840.113549.1.1.5':'SHA-1 with RSA', '1.2.840.113549.1.1.14':'SHA-224 with RSA',
+  '1.2.840.113549.1.1.11':'SHA-256 with RSA', '1.2.840.113549.1.1.12':'SHA-384 with RSA',
+  '1.2.840.113549.1.1.13':'SHA-512 with RSA', '1.2.840.113549.1.1.8':'MGF1',
+  '1.2.840.10040.4.3':'DSA with SHA-1', '2.16.840.1.101.3.4.3.1':'DSA with SHA-224',
+  '2.16.840.1.101.3.4.3.2':'DSA with SHA-256',
+  '1.2.840.10045.4.1':'ECDSA with SHA-1', '1.2.840.10045.4.3.1':'ECDSA with SHA-224',
+  '1.2.840.10045.4.3.2':'ECDSA with SHA-256', '1.2.840.10045.4.3.3':'ECDSA with SHA-384',
+  '1.2.840.10045.4.3.4':'ECDSA with SHA-512',
+  '2.16.840.1.101.3.4.3.14':'RSA with SHA3-224', '2.16.840.1.101.3.4.3.15':'RSA with SHA3-256',
+  '2.16.840.1.101.3.4.3.16':'RSA with SHA3-384', '2.16.840.1.101.3.4.3.17':'RSA with SHA3-512',
+  /* digests */
+  '1.3.14.3.2.26':'SHA-1', '1.2.840.113549.2.5':'MD5',
+  '2.16.840.1.101.3.4.2.1':'SHA-256', '2.16.840.1.101.3.4.2.2':'SHA-384',
+  '2.16.840.1.101.3.4.2.3':'SHA-512', '2.16.840.1.101.3.4.2.4':'SHA-224',
+  /* curves */
+  '1.2.840.10045.3.1.1':'prime192v1 (P-192)', '1.2.840.10045.3.1.7':'prime256v1 (P-256)',
+  '1.3.132.0.33':'secp224r1 (P-224)', '1.3.132.0.34':'secp384r1 (P-384)',
+  '1.3.132.0.35':'secp521r1 (P-521)', '1.3.132.0.10':'secp256k1',
+  /* extensions */
+  '2.5.29.9':'Subject Directory Attributes', '2.5.29.14':'Subject Key Identifier',
+  '2.5.29.15':'Key Usage', '2.5.29.16':'Private Key Usage Period',
+  '2.5.29.17':'Subject Alternative Name', '2.5.29.18':'Issuer Alternative Name',
+  '2.5.29.19':'Basic Constraints', '2.5.29.20':'CRL Number', '2.5.29.21':'CRL Reason',
+  '2.5.29.24':'Invalidity Date', '2.5.29.27':'Delta CRL Indicator',
+  '2.5.29.28':'Issuing Distribution Point', '2.5.29.29':'Certificate Issuer',
+  '2.5.29.30':'Name Constraints', '2.5.29.31':'CRL Distribution Points',
+  '2.5.29.32':'Certificate Policies', '2.5.29.32.0':'anyPolicy',
+  '2.5.29.33':'Policy Mappings', '2.5.29.35':'Authority Key Identifier',
+  '2.5.29.36':'Policy Constraints', '2.5.29.37':'Extended Key Usage',
+  '2.5.29.37.0':'Any Extended Key Usage', '2.5.29.46':'Freshest CRL',
+  '2.5.29.54':'Inhibit anyPolicy',
+  '1.3.6.1.5.5.7.1.1':'Authority Information Access',
+  '1.3.6.1.5.5.7.1.11':'Subject Information Access',
+  '1.3.6.1.5.5.7.1.24':'TLS Feature',
+  '1.3.6.1.5.5.7.1.3':'QC Statements',
+  '1.3.6.1.5.5.7.48.1.5':'OCSP No Check',
+  '1.3.6.1.4.1.11129.2.4.2':'Signed Certificate Timestamp List',
+  '1.3.6.1.4.1.11129.2.4.3':'CT Precertificate Poison',
+  '2.16.840.1.113730.1.1':'Netscape Certificate Type',
+  '2.16.840.1.113730.1.13':'Netscape Comment',
+  '1.3.6.1.4.1.311.20.2':'Microsoft Certificate Template Name',
+  '1.3.6.1.4.1.311.21.1':'Microsoft CA Version',
+  '1.3.6.1.4.1.311.21.2':'Microsoft Previous CA Certificate Hash',
+  '1.3.6.1.4.1.311.21.7':'Microsoft Certificate Template Information',
+  '1.3.6.1.4.1.311.21.10':'Microsoft Application Policies',
+  '1.2.840.113549.1.9.14':'Extension Request',
+  '1.2.840.113549.1.9.7':'Challenge Password',
+  '1.2.840.113549.1.9.15':'S/MIME Capabilities',
+  /* extended key usages */
+  '1.3.6.1.5.5.7.3.1':'TLS Server Authentication', '1.3.6.1.5.5.7.3.2':'TLS Client Authentication',
+  '1.3.6.1.5.5.7.3.3':'Code Signing', '1.3.6.1.5.5.7.3.4':'Email Protection',
+  '1.3.6.1.5.5.7.3.5':'IPSec End System', '1.3.6.1.5.5.7.3.6':'IPSec Tunnel',
+  '1.3.6.1.5.5.7.3.7':'IPSec User', '1.3.6.1.5.5.7.3.8':'Time Stamping',
+  '1.3.6.1.5.5.7.3.9':'OCSP Signing', '1.3.6.1.5.5.7.3.21':'SSH Client',
+  '1.3.6.1.5.5.7.3.22':'SSH Server', '1.3.6.1.5.5.8.2.2':'IKE Intermediate',
+  '1.3.6.1.4.1.311.10.3.3':'Microsoft Server Gated Crypto',
+  '1.3.6.1.4.1.311.10.3.4':'Microsoft Encrypting File System',
+  '1.3.6.1.4.1.311.10.3.12':'Microsoft Document Signing',
+  '1.3.6.1.4.1.311.20.2.2':'Microsoft Smart Card Logon',
+  '1.3.6.1.5.2.3.4':'Kerberos PKINIT Client', '1.3.6.1.5.2.3.5':'Kerberos PKINIT KDC',
+  '2.16.840.1.113730.4.1':'Netscape Server Gated Crypto',
+  /* access methods and qualifiers */
+  '1.3.6.1.5.5.7.48.1':'OCSP', '1.3.6.1.5.5.7.48.2':'CA Issuers',
+  '1.3.6.1.5.5.7.48.3':'Time Stamping', '1.3.6.1.5.5.7.48.5':'CA Repository',
+  '1.3.6.1.5.5.7.2.1':'CPS', '1.3.6.1.5.5.7.2.2':'User Notice',
+  /* CA/Browser Forum policies */
+  '2.23.140.1.1':'CABF Extended Validation', '2.23.140.1.2.1':'CABF Domain Validated',
+  '2.23.140.1.2.2':'CABF Organization Validated', '2.23.140.1.2.3':'CABF Individual Validated',
+  '2.23.140.1.3':'CABF EV Code Signing', '2.23.140.1.4.1':'CABF Code Signing',
+  '2.23.140.1.31':'CABF Onion',
+  /* other names */
+  '1.3.6.1.4.1.311.20.2.3':'Microsoft UPN',
+  '1.3.6.1.5.2.2':'Kerberos Principal Name',
+  '1.2.840.113549.1.7.1':'PKCS#7 Data', '1.2.840.113549.1.7.2':'PKCS#7 Signed Data'
+};
+
+var CURVE_BITS = {
+  '1.2.840.10045.3.1.1':192, '1.2.840.10045.3.1.7':256, '1.3.132.0.33':224,
+  '1.3.132.0.34':384, '1.3.132.0.35':521, '1.3.132.0.10':256
+};
+
+var KEY_USAGE = ['Digital Signature','Non Repudiation','Key Encipherment','Data Encipherment',
+  'Key Agreement','Certificate Signing','CRL Signing','Encipher Only','Decipher Only'];
+var NS_CERT_TYPE = ['SSL Client','SSL Server','S/MIME','Object Signing','Reserved',
+  'SSL CA','S/MIME CA','Object Signing CA'];
+
+function oidName(oid) { return OID_NAMES[oid] || oid; }
+function oidLabel(oid) { var n = OID_NAMES[oid]; return n ? n : oid; }
+
+/* ---------------- names ---------------- */
+function dnEscape(v) { return String(v).replace(/([,+="<>;\\])/g, '\\$1').replace(/^[ #]/, '\\$&').replace(/ $/, '\\ '); }
+
+function parseName(nameNode) {
+  var rdns = [], parts = [];
+  kids(nameNode).forEach(function (rdnSet) {
+    var group = [];
+    kids(rdnSet).forEach(function (atv) {
+      var oid = oidOf(at(atv, 0));
+      var valNode = at(atv, 1);
+      var value = valNode ? strOf(valNode) : '';
+      var entry = {
+        oid: oid,
+        short: DN_SHORT[oid] || oid,
+        label: OID_NAMES[oid] || oid,
+        value: value
+      };
+      rdns.push(entry); group.push(entry);
+    });
+    parts.push(group.map(function (e) { return e.short + '=' + dnEscape(e.value); }).join('+'));
+  });
+  return {
+    rdns: rdns,
+    dn: parts.slice().reverse().join(', '),
+    get: function (short) {
+      for (var i = 0; i < rdns.length; i++) if (rdns[i].short === short) return rdns[i].value;
+      return null;
+    }
+  };
+}
+
+/* ---------------- IP / general names ---------------- */
+function ipText(b) {
+  if (b.length === 4) return b[0] + '.' + b[1] + '.' + b[2] + '.' + b[3];
+  if (b.length === 8) return b[0]+'.'+b[1]+'.'+b[2]+'.'+b[3] + '/' + b[4]+'.'+b[5]+'.'+b[6]+'.'+b[7];
+  if (b.length === 16 || b.length === 32) {
+    var parts = [], n = Math.min(16, b.length);
+    for (var i = 0; i < n; i += 2) parts.push(((b[i] << 8) | b[i + 1]).toString(16));
+    var s = parts.join(':').replace(/\b(?:0:){2,}/, ':').replace(/^0::/, '::');
+    if (b.length === 32) {
+      var mp = [], ones = 0;
+      for (var j = 16; j < 32; j++) { var v = b[j]; while (v) { ones += v & 1; v >>= 1; } }
+      s += '/' + ones;
+    }
+    return s;
+  }
+  return C.hexColon(b);
+}
+
+function generalName(n) {
+  if (!n) return '';
+  if (n.tagClass !== 2) return C.hexColon(content(n));
+  var c = content(n);
+  switch (n.tagNumber) {
+    case 0: {
+      var k = kids(n), t = k[0] ? oidOf(k[0]) : '?', v = '';
+      try {
+        var inner = k[1] && kids(k[1])[0];
+        if (inner) v = strOf(inner);
+      } catch (e) {}
+      return 'otherName ' + oidLabel(t) + (v ? ': ' + v : '');
+    }
+    case 1: return 'email: ' + C.utf8(c);
+    case 2: return 'DNS: ' + C.utf8(c);
+    case 3: return 'x400Address';
+    case 4: return 'dirName: ' + parseName(kids(n)[0] || n).dn;
+    case 5: return 'ediPartyName';
+    case 6: return 'URI: ' + C.utf8(c);
+    case 7: return 'IP: ' + ipText(c);
+    case 8: return 'OID: ' + oidLabel(A.decodeOidBytes(c));
+  }
+  return 'unknown name type [' + n.tagNumber + ']';
+}
+
+function generalNames(node) { return kids(node).map(generalName); }
+
+/* ---------------- public key ---------------- */
+function bitLength(bytes) {
+  var i = 0;
+  while (i < bytes.length && bytes[i] === 0) i++;
+  if (i === bytes.length) return 0;
+  var top = bytes[i], bits = 0;
+  while (top) { bits++; top >>= 1; }
+  return (bytes.length - i - 1) * 8 + bits;
+}
+
+function parseSPKI(spki) {
+  var algId = at(spki, 0), bitstr = at(spki, 1);
+  var algOid = oidOf(at(algId, 0));
+  var keyBytes = bitstr ? A.bitStringBytes(bitstr) : new Uint8Array(0);
+  var out = { oid: algOid, algorithm: oidName(algOid), bits: null, rows: [], der: A.full(spki) };
+  try {
+    if (algOid === '1.2.840.113549.1.1.1' || algOid === '1.2.840.113549.1.1.10') {
+      out.algorithm = 'RSA';
+      var k = A.parse(keyBytes);
+      var mod = content(at(k, 0)), i = 0;
+      while (i < mod.length - 1 && mod[i] === 0) i++;
+      mod = mod.subarray(i);
+      out.bits = bitLength(mod);
+      out.rows.push({ label: 'Modulus', value: C.hexColon(mod), mono: true });
+      out.rows.push({ label: 'Exponent', value: A.intDecimal(at(k, 1)) + ' (0x' + C.hex(content(at(k, 1))) + ')' });
+    } else if (algOid === '1.2.840.10045.2.1') {
+      out.algorithm = 'EC';
+      var paramNode = at(algId, 1);
+      if (paramNode && paramNode.tagNumber === 6 && paramNode.tagClass === 0) {
+        var curve = oidOf(paramNode);
+        out.bits = CURVE_BITS[curve] || null;
+        out.curve = oidName(curve);
+        out.rows.push({ label: 'Curve', value: out.curve + '  (' + curve + ')' });
+      } else if (paramNode) {
+        out.rows.push({ label: 'Parameters', value: 'explicit curve parameters' });
+      }
+      out.rows.push({ label: 'Public point', value: C.hexColon(keyBytes), mono: true });
+    } else if (algOid === '1.2.840.10040.4.1') {
+      out.algorithm = 'DSA';
+      var p = at(algId, 1) ? at(at(algId, 1), 0) : null;
+      if (p) out.bits = bitLength(content(p));
+      out.rows.push({ label: 'Public value', value: C.hexColon(keyBytes), mono: true });
+    } else if (algOid === '1.3.101.112' || algOid === '1.3.101.113') {
+      out.algorithm = algOid === '1.3.101.112' ? 'Ed25519' : 'Ed448';
+      out.bits = algOid === '1.3.101.112' ? 256 : 456;
+      out.rows.push({ label: 'Public key', value: C.hexColon(keyBytes), mono: true });
+    } else {
+      out.rows.push({ label: 'Key data', value: C.hexColon(keyBytes), mono: true });
+    }
+  } catch (e) {
+    out.rows.push({ label: 'Key data', value: C.hexColon(keyBytes), mono: true });
+    out.error = e.message;
+  }
+  out.summary = out.algorithm + (out.bits ? ' ' + out.bits + ' bit' : '') + (out.curve ? ' (' + out.curve + ')' : '');
+  return out;
+}
+
+function algorithmInfo(algId) {
+  var oid = oidOf(at(algId, 0));
+  var info = { oid: oid, name: oidName(oid), note: null };
+  if (oid === '1.2.840.113549.1.1.10') { /* RSASSA-PSS parameters */
+    try {
+      var params = at(algId, 1), bits = [];
+      kids(params).forEach(function (p) {
+        if (A.isCtx(p, 0)) bits.push('hash ' + oidName(oidOf(at(at(p, 0), 0))));
+        else if (A.isCtx(p, 1)) bits.push('MGF1 ' + oidName(oidOf(at(at(at(p, 0), 1), 0))));
+        else if (A.isCtx(p, 2)) bits.push('salt ' + A.intSmall(at(p, 0)) + ' bytes');
+      });
+      if (bits.length) info.note = bits.join(', ');
+    } catch (e) {}
+  }
+  return info;
+}
+
+/* ---------------- extensions ---------------- */
+function describeExtension(ext) {
+  var node = ext.node, rows = [], oid = ext.oid;
+  function push(label, value, mono) { rows.push({ label: label, value: value, mono: !!mono }); }
+  try {
+    switch (oid) {
+      case '2.5.29.14':
+        push('Key identifier', C.hexColon(content(node)), true);
+        ext.keyId = C.hexColon(content(node));
+        return rows;
+      case '2.5.29.35':
+        kids(node).forEach(function (c) {
+          if (A.isCtx(c, 0)) { ext.keyId = C.hexColon(content(c)); push('Key identifier', ext.keyId, true); }
+          else if (A.isCtx(c, 1)) push('Issuer', generalNames(c).join('\n'));
+          else if (A.isCtx(c, 2)) push('Serial number', C.hexColon(content(c)), true);
+        });
+        return rows;
+      case '2.5.29.15': {
+        var flags = A.bitFlags(node), names = [];
+        flags.forEach(function (on, i) { if (on && KEY_USAGE[i]) names.push(KEY_USAGE[i]); });
+        ext.chips = names;
+        return rows;
+      }
+      case '2.16.840.1.113730.1.1': {
+        var f2 = A.bitFlags(node), n2 = [];
+        f2.forEach(function (on, i) { if (on && NS_CERT_TYPE[i]) n2.push(NS_CERT_TYPE[i]); });
+        ext.chips = n2;
+        return rows;
+      }
+      case '2.5.29.37':
+        ext.chips = kids(node).map(function (c) {
+          var o = oidOf(c);
+          return OID_NAMES[o] ? OID_NAMES[o] : o;
+        });
+        ext.ekuOids = kids(node).map(oidOf);
+        return rows;
+      case '2.5.29.19': {
+        var ca = false, len = null;
+        kids(node).forEach(function (c) {
+          if (c.tagClass === 0 && c.tagNumber === 1) ca = A.boolOf(c);
+          if (c.tagClass === 0 && c.tagNumber === 2) len = A.intSmall(c);
+        });
+        ext.isCA = ca; ext.pathLen = len;
+        push('Certificate authority', ca ? 'Yes' : 'No');
+        if (len !== null) push('Path length limit', String(len));
+        return rows;
+      }
+      case '2.5.29.17': case '2.5.29.18':
+        ext.chips = generalNames(node);
+        ext.names = ext.chips;
+        return rows;
+      case '1.3.6.1.5.5.7.1.1': case '1.3.6.1.5.5.7.1.11':
+        kids(node).forEach(function (ad) {
+          push(oidLabel(oidOf(at(ad, 0))), generalName(at(ad, 1)), true);
+        });
+        return rows;
+      case '2.5.29.31': case '2.5.29.46': {
+        var urls = [];
+        kids(node).forEach(function (dp) {
+          kids(dp).forEach(function (f) {
+            if (A.isCtx(f, 0)) kids(f).forEach(function (g) {
+              if (A.isCtx(g, 0)) urls = urls.concat(generalNames(g));
+              else if (A.isCtx(g, 1)) urls.push('relative: ' + parseName(g).dn);
+            });
+            else if (A.isCtx(f, 1)) {
+              var fl = A.bitFlags(f), rs = [];
+              ['unused','keyCompromise','caCompromise','affiliationChanged','superseded',
+               'cessationOfOperation','certificateHold','privilegeWithdrawn','aaCompromise']
+                .forEach(function (nm, i) { if (fl[i]) rs.push(nm); });
+              if (rs.length) push('Reasons', rs.join(', '));
+            } else if (A.isCtx(f, 2)) push('CRL issuer', generalNames(f).join('\n'));
+          });
+        });
+        ext.chips = urls;
+        return rows;
+      }
+      case '2.5.29.32':
+        kids(node).forEach(function (pi) {
+          var pOid = oidOf(at(pi, 0)), quals = [];
+          var qSeq = at(pi, 1);
+          if (qSeq) kids(qSeq).forEach(function (q) {
+            var qOid = oidOf(at(q, 0)), qv = at(q, 1);
+            if (qOid === '1.3.6.1.5.5.7.2.1') quals.push('CPS: ' + strOf(qv));
+            else if (qOid === '1.3.6.1.5.5.7.2.2') {
+              var txt = [];
+              kids(qv).forEach(function (part) {
+                if (A.STRING_TAGS && false) return;
+                if (part.tagNumber === 16 && part.tagClass === 0) {
+                  txt.push('notice ref ' + strOf(at(part, 0)));
+                } else txt.push(strOf(part));
+              });
+              quals.push('User notice: ' + txt.join(' '));
+            } else quals.push(oidLabel(qOid));
+          });
+          push(oidLabel(pOid), quals.length ? quals.join('\n') : (OID_NAMES[pOid] ? pOid : 'no qualifiers'));
+        });
+        return rows;
+      case '2.5.29.30': {
+        kids(node).forEach(function (part) {
+          var which = A.isCtx(part, 0) ? 'Permitted' : A.isCtx(part, 1) ? 'Excluded' : 'Subtree';
+          var items = kids(part).map(function (sub) {
+            var base = generalName(at(sub, 0));
+            var extra = [];
+            kids(sub).forEach(function (x) {
+              if (A.isCtx(x, 0)) extra.push('min ' + A.intSmall(x));
+              if (A.isCtx(x, 1)) extra.push('max ' + A.intSmall(x));
+            });
+            return base + (extra.length ? ' (' + extra.join(', ') + ')' : '');
+          });
+          push(which, items.join('\n'));
+        });
+        return rows;
+      }
+      case '2.5.29.36':
+        kids(node).forEach(function (c) {
+          if (A.isCtx(c, 0)) push('Require explicit policy after', A.intSmall(c) + ' certificates');
+          if (A.isCtx(c, 1)) push('Inhibit policy mapping after', A.intSmall(c) + ' certificates');
+        });
+        return rows;
+      case '2.5.29.54':
+        push('Skip certificates', String(A.intSmall(node)));
+        return rows;
+      case '2.5.29.16':
+        kids(node).forEach(function (c) {
+          push(A.isCtx(c, 0) ? 'Not before' : 'Not after', A.timeOf(c).text);
+        });
+        return rows;
+      case '2.16.840.1.113730.1.13':
+        push('Comment', strOf(node));
+        return rows;
+      case '1.3.6.1.4.1.311.20.2':
+        push('Template name', strOf(node));
+        return rows;
+      case '1.3.6.1.4.1.311.21.7':
+        push('Template', oidLabel(oidOf(at(node, 0))));
+        if (at(node, 1)) push('Version', A.intSmall(at(node, 1)) +
+          (at(node, 2) ? '.' + A.intSmall(at(node, 2)) : ''));
+        return rows;
+      case '1.3.6.1.5.5.7.1.24': {
+        var feats = kids(node).map(function (c) {
+          var v = A.intSmall(c);
+          return v === 5 ? 'status_request (OCSP must-staple)' : 'feature ' + v;
+        });
+        ext.chips = feats;
+        return rows;
+      }
+      case '1.3.6.1.5.5.7.48.1.5':
+        push('OCSP no-check', 'Present (short-lived OCSP responder certificate)');
+        return rows;
+      case '1.3.6.1.4.1.11129.2.4.3':
+        push('CT poison', 'Present — this is a precertificate, not a usable certificate');
+        return rows;
+      case '1.3.6.1.4.1.11129.2.4.2': {
+        var blob = content(node), scts = parseSCTList(blob);
+        if (!scts.length) { push('SCTs', 'could not decode'); return rows; }
+        scts.forEach(function (s, i) {
+          push('SCT ' + (i + 1) + ' (v' + (s.version + 1) + ')', 'log ' + s.logId + '\ntimestamp ' + s.time, true);
+        });
+        return rows;
+      }
+      case '2.5.29.9':
+        kids(node).forEach(function (attr) {
+          var aOid = oidOf(at(attr, 0)), vals = kids(at(attr, 1)).map(strOf);
+          push(oidLabel(aOid), vals.join(', '));
+        });
+        return rows;
+    }
+  } catch (e) {
+    ext.decodeError = e.message;
+  }
+  return null; /* no specific renderer: UI falls back to the ASN.1 tree / hex */
+}
+
+function parseSCTList(blob) {
+  var out = [];
+  try {
+    var dv = new DataView(blob.buffer, blob.byteOffset, blob.byteLength);
+    var total = dv.getUint16(0), p = 2, end = Math.min(blob.length, 2 + total);
+    while (p + 2 <= end) {
+      var len = dv.getUint16(p); p += 2;
+      if (len < 41 || p + len > blob.length) break;
+      var version = blob[p];
+      var logId = C.hexColon(blob.subarray(p + 1, p + 33));
+      var hi = dv.getUint32(p + 33), lo = dv.getUint32(p + 37);
+      var ms = hi * 4294967296 + lo;
+      var d = new Date(ms);
+      out.push({
+        version: version, logId: logId,
+        time: isNaN(d.getTime()) ? String(ms) : d.toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, ' UTC')
+      });
+      p += len;
+    }
+  } catch (e) {}
+  return out;
+}
+
+function parseExtensions(extsNode) {
+  var out = [];
+  kids(extsNode).forEach(function (e) {
+    var k = kids(e);
+    var oid = oidOf(k[0]);
+    var critical = false, vi = 1;
+    if (k[1] && k[1].tagClass === 0 && k[1].tagNumber === 1) { critical = A.boolOf(k[1]); vi = 2; }
+    var valOct = k[vi];
+    var bytes = valOct ? content(valOct) : new Uint8Array(0);
+    var node = null, err = null;
+    try { node = A.parse(bytes); } catch (ex) { err = ex.message; }
+    var ext = {
+      oid: oid, name: OID_NAMES[oid] || null, critical: critical,
+      bytes: bytes, node: node, parseError: err, rows: null,
+      chips: null, names: null, isCA: null, pathLen: null, keyId: null, ekuOids: null
+    };
+    if (node) ext.rows = describeExtension(ext);
+    out.push(ext);
+  });
+  return out;
+}
+
+/* ---------------- certificate ---------------- */
+function parseCertificate(der) {
+  var root = A.parse(der);
+  if (!A.isSeq(root)) throw new Error('not a certificate: outer element is ' + A.tagLabel(root));
+  var tbs = at(root, 0);
+  if (!A.isSeq(tbs)) throw new Error('not a certificate: missing TBSCertificate');
+  var k = kids(tbs), i = 0, version = 1;
+  if (A.isCtx(k[0], 0)) { version = A.intSmall(at(k[0], 0)) + 1; i = 1; }
+  var serialNode = k[i++], sigAlgNode = k[i++], issuerNode = k[i++],
+      validityNode = k[i++], subjectNode = k[i++], spkiNode = k[i++];
+  if (!serialNode || !issuerNode || !validityNode || !subjectNode || !spkiNode)
+    throw new Error('not a certificate: TBSCertificate is incomplete');
+  var extsNode = null, subjectUid = null, issuerUid = null;
+  for (; i < k.length; i++) {
+    if (A.isCtx(k[i], 1)) issuerUid = k[i];
+    else if (A.isCtx(k[i], 2)) subjectUid = k[i];
+    else if (A.isCtx(k[i], 3)) extsNode = at(k[i], 0);
+  }
+
+  var nb = A.timeOf(at(validityNode, 0)), na = A.timeOf(at(validityNode, 1));
+  var subject = parseName(subjectNode), issuer = parseName(issuerNode);
+  var exts = extsNode ? parseExtensions(extsNode) : [];
+  var sigAlgOuter = at(root, 1), sigValue = at(root, 2);
+  var pk = parseSPKI(spkiNode);
+
+  var cert = {
+    kind: 'certificate',
+    der: der,
+    asn1: root,
+    version: version,
+    serialHex: A.intHex(serialNode),
+    serialDecimal: content(serialNode).length <= 20 ? A.intDecimal(serialNode) : null,
+    signatureAlgorithm: algorithmInfo(sigAlgOuter || sigAlgNode),
+    tbsSignatureAlgorithm: algorithmInfo(sigAlgNode),
+    issuer: issuer,
+    subject: subject,
+    notBefore: nb.date, notBeforeText: nb.text,
+    notAfter: na.date, notAfterText: na.text,
+    publicKey: pk,
+    extensions: exts,
+    signature: sigValue ? { bytes: A.bitStringBytes(sigValue), bits: A.bitStringBits(sigValue) } : null,
+    issuerUniqueId: issuerUid ? C.hexColon(content(issuerUid)) : null,
+    subjectUniqueId: subjectUid ? C.hexColon(content(subjectUid)) : null,
+    fingerprints: {
+      sha256: C.hexColon(C.sha256(der)),
+      sha1: C.hexColon(C.sha1(der)),
+      spkiSha256B64: C.b64encode(C.sha256(pk.der))
+    }
+  };
+
+  /* convenient roll-ups */
+  cert.isCA = false; cert.pathLen = null; cert.keyUsage = []; cert.eku = [];
+  cert.san = []; cert.ski = null; cert.aki = null; cert.hasBasicConstraints = false;
+  cert.isPrecertificate = false;
+  exts.forEach(function (e) {
+    if (e.oid === '2.5.29.19') { cert.isCA = !!e.isCA; cert.pathLen = e.pathLen; cert.hasBasicConstraints = true; }
+    if (e.oid === '2.5.29.15') cert.keyUsage = e.chips || [];
+    if (e.oid === '2.5.29.37') cert.eku = e.chips || [];
+    if (e.oid === '2.5.29.17') cert.san = e.names || [];
+    if (e.oid === '2.5.29.14') cert.ski = e.keyId;
+    if (e.oid === '2.5.29.35') cert.aki = e.keyId;
+    if (e.oid === '1.3.6.1.4.1.11129.2.4.3') cert.isPrecertificate = true;
+  });
+  cert.selfIssued = cert.subject.dn === cert.issuer.dn;
+  cert.commonName = cert.subject.get('CN') ||
+    (cert.san.length ? cert.san[0].replace(/^[A-Za-z]+: /, '') : null) ||
+    cert.subject.get('O') || cert.subject.get('OU') || cert.subject.get('emailAddress') ||
+    (cert.subject.dn || '(no subject)');
+  return cert;
+}
+
+/* ---------------- certificate request (CSR) ---------------- */
+function parseCSR(der) {
+  var root = A.parse(der);
+  var cri = at(root, 0);
+  var k = kids(cri);
+  var version = A.intSmall(k[0]) + 1;
+  var subject = parseName(k[1]);
+  var pk = parseSPKI(k[2]);
+  var exts = [], attrs = [];
+  for (var i = 3; i < k.length; i++) {
+    if (A.isCtx(k[i], 0)) kids(k[i]).forEach(function (attr) {
+      var aOid = oidOf(at(attr, 0)), vSet = at(attr, 1);
+      if (aOid === '1.2.840.113549.1.9.14') {
+        kids(vSet).forEach(function (seq) { exts = exts.concat(parseExtensions(seq)); });
+      } else {
+        attrs.push({ oid: aOid, name: oidLabel(aOid),
+          value: kids(vSet).map(function (v) {
+            try { return strOf(v); } catch (e) { return C.hexColon(content(v)); }
+          }).join(', ') });
+      }
+    });
+  }
+  var sigAlg = algorithmInfo(at(root, 1));
+  var csr = {
+    kind: 'request', der: der, asn1: root, version: version, subject: subject,
+    publicKey: pk, extensions: exts, attributes: attrs, signatureAlgorithm: sigAlg,
+    signature: at(root, 2) ? { bytes: A.bitStringBytes(at(root, 2)), bits: A.bitStringBits(at(root, 2)) } : null,
+    fingerprints: { sha256: C.hexColon(C.sha256(der)), sha1: C.hexColon(C.sha1(der)),
+                    spkiSha256B64: C.b64encode(C.sha256(pk.der)) },
+    san: [], keyUsage: [], eku: [], isCA: false
+  };
+  exts.forEach(function (e) {
+    if (e.oid === '2.5.29.17') csr.san = e.names || [];
+    if (e.oid === '2.5.29.15') csr.keyUsage = e.chips || [];
+    if (e.oid === '2.5.29.37') csr.eku = e.chips || [];
+    if (e.oid === '2.5.29.19') csr.isCA = !!e.isCA;
+  });
+  csr.commonName = csr.subject.get('CN') || csr.subject.dn || '(no subject)';
+  return csr;
+}
+
+/* ---------------- CRL (summary only) ---------------- */
+function parseCRL(der) {
+  var root = A.parse(der), tbs = at(root, 0), k = kids(tbs), i = 0;
+  var version = 1;
+  if (k[0] && k[0].tagClass === 0 && k[0].tagNumber === 2) { version = A.intSmall(k[0]) + 1; i = 1; }
+  var sigAlg = algorithmInfo(k[i++]);
+  var issuer = parseName(k[i++]);
+  var thisUpdate = k[i] ? A.timeOf(k[i++]) : { text: '' };
+  var nextUpdate = (k[i] && (k[i].tagNumber === 23 || k[i].tagNumber === 24)) ? A.timeOf(k[i++]) : null;
+  var revoked = (k[i] && A.isSeq(k[i])) ? kids(k[i++]) : [];
+  var exts = [];
+  for (; i < k.length; i++) if (A.isCtx(k[i], 0)) exts = parseExtensions(at(k[i], 0));
+  return {
+    kind: 'crl', der: der, asn1: root, version: version, signatureAlgorithm: sigAlg,
+    issuer: issuer, thisUpdate: thisUpdate, nextUpdate: nextUpdate,
+    revokedCount: revoked.length,
+    revoked: revoked.slice(0, 200).map(function (r) {
+      return { serial: A.intHex(at(r, 0)), date: A.timeOf(at(r, 1)).text };
+    }),
+    extensions: exts,
+    fingerprints: { sha256: C.hexColon(C.sha256(der)), sha1: C.hexColon(C.sha1(der)) },
+    commonName: issuer.get('CN') || issuer.dn || '(CRL)'
+  };
+}
+
+/* ---------------- containers: PEM, PKCS#7, PKCS#12 detection ---------------- */
+function pemEncode(der, label) {
+  var b64 = C.b64encode(der), lines = [];
+  for (var i = 0; i < b64.length; i += 64) lines.push(b64.substr(i, 64));
+  return '-----BEGIN ' + label + '-----\n' + lines.join('\n') + '\n-----END ' + label + '-----\n';
+}
+
+var PEM_RE = /-----BEGIN ([A-Za-z0-9 .#\-]+)-----([A-Za-z0-9+/=\s]*?)-----END \1-----/g;
+
+function certsFromPKCS7(der) {
+  var out = [], root = A.parse(der);
+  var ctOid = oidOf(at(root, 0));
+  if (ctOid !== '1.2.840.113549.1.7.2') throw new Error('not PKCS#7 signed data (content type ' + ctOid + ')');
+  var sd = at(at(root, 1), 0);
+  if (!sd) throw new Error('PKCS#7 signed data is empty');
+  kids(sd).forEach(function (c) {
+    if (A.isCtx(c, 0)) kids(c).forEach(function (cert) {
+      if (A.isSeq(cert)) out.push(A.full(cert));
+    });
+  });
+  return out;
+}
+
+function looksLikePKCS12(root) {
+  try {
+    var v = at(root, 0);
+    if (!v || v.tagNumber !== 2 || A.intSmall(v) !== 3) return false;
+    return oidOf(at(at(root, 1), 0)) === '1.2.840.113549.1.7.1';
+  } catch (e) { return false; }
+}
+
+/* Load any supported blob. Returns { items: [...], notices: [...] } */
+function loadBytes(bytes, sourceName) {
+  var items = [], notices = [];
+
+  function addDer(der, label, origin) {
+    try {
+      if (label === 'request') items.push(wrap(parseCSR(der), 'request', origin));
+      else if (label === 'crl') items.push(wrap(parseCRL(der), 'crl', origin));
+      else items.push(wrap(parseCertificate(der), 'certificate', origin));
+    } catch (e) {
+      notices.push({ level: 'err', text: (origin || sourceName) + ': could not decode — ' + e.message });
+    }
+  }
+  function wrap(obj, kind, origin) {
+    obj.source = sourceName;
+    obj.origin = origin || sourceName;
+    obj.pem = pemEncode(obj.der, kind === 'request' ? 'CERTIFICATE REQUEST' :
+                                  kind === 'crl' ? 'X509 CRL' : 'CERTIFICATE');
+    return obj;
+  }
+
+  var text = C.utf8(bytes.subarray(0, Math.min(bytes.length, 8 * 1024 * 1024)));
+  if (text.indexOf('-----BEGIN ') >= 0) {
+    PEM_RE.lastIndex = 0;
+    var m, found = 0, skippedKeys = 0, otherLabels = {};
+    while ((m = PEM_RE.exec(text)) !== null) {
+      var label = m[1].trim().toUpperCase(), body = m[2];
+      var der;
+      try { der = C.b64decode(body); }
+      catch (e) { notices.push({ level: 'err', text: sourceName + ': bad base64 in ' + label + ' block' }); continue; }
+      found++;
+      if (label === 'CERTIFICATE' || label === 'X509 CERTIFICATE' || label === 'TRUSTED CERTIFICATE') {
+        addDer(der, 'certificate', sourceName);
+      } else if (label === 'PKCS7' || label === 'PKCS #7 SIGNED DATA' || label === 'CMS') {
+        try { certsFromPKCS7(der).forEach(function (d) { addDer(d, 'certificate', sourceName + ' (PKCS#7)'); }); }
+        catch (e) { notices.push({ level: 'err', text: sourceName + ': ' + e.message }); }
+      } else if (label === 'CERTIFICATE REQUEST' || label === 'NEW CERTIFICATE REQUEST') {
+        addDer(der, 'request', sourceName);
+      } else if (label === 'X509 CRL') {
+        addDer(der, 'crl', sourceName);
+      } else if (/PRIVATE KEY|RSA PRIVATE|EC PRIVATE|DSA PRIVATE|OPENSSH PRIVATE/.test(label)) {
+        skippedKeys++;
+      } else {
+        otherLabels[label] = (otherLabels[label] || 0) + 1;
+      }
+    }
+    if (skippedKeys) notices.push({ level: 'warn',
+      text: sourceName + ': skipped ' + skippedKeys + ' private key block' + (skippedKeys > 1 ? 's' : '') +
+            ' — private keys are never parsed or displayed.' });
+    Object.keys(otherLabels).forEach(function (l) {
+      notices.push({ level: 'warn', text: sourceName + ': skipped ' + otherLabels[l] + ' "' + l + '" block (not a certificate)' });
+    });
+    if (!found) notices.push({ level: 'err', text: sourceName + ': found PEM markers but no complete block' });
+    return { items: items, notices: notices };
+  }
+
+  /* raw base64 without PEM armour? */
+  var compact = text.replace(/\s+/g, '');
+  if (compact.length > 80 && /^[A-Za-z0-9+/=]+$/.test(compact) && bytes[0] !== 0x30) {
+    try {
+      var guess = C.b64decode(compact);
+      if (guess[0] === 0x30) return loadDer(guess, sourceName, items, notices, addDer);
+    } catch (e) {}
+  }
+
+  return loadDer(bytes, sourceName, items, notices, addDer);
+}
+
+function loadDer(bytes, sourceName, items, notices, addDer) {
+  var root;
+  try { root = A.parse(bytes); }
+  catch (e) {
+    notices.push({ level: 'err', text: sourceName + ': not PEM and not valid DER — ' + e.message });
+    return { items: items, notices: notices };
+  }
+  if (!A.isSeq(root)) {
+    notices.push({ level: 'err', text: sourceName + ': unrecognised DER (top-level ' + A.tagLabel(root) + ')' });
+    return { items: items, notices: notices };
+  }
+  if (looksLikePKCS12(root)) {
+    notices.push({ level: 'warn', text: sourceName +
+      ': this is a PKCS#12 / PFX keystore. Its contents are password-encrypted, so it cannot be shown here. ' +
+      'Extract the certificates first: openssl pkcs12 -in file.p12 -clcerts -nokeys -out certs.pem' });
+    return { items: items, notices: notices };
+  }
+  var first = at(root, 0);
+  /* PKCS#7 ContentInfo starts with an OID */
+  if (first && first.tagClass === 0 && first.tagNumber === 6) {
+    var ct = oidOf(first);
+    if (ct === '1.2.840.113549.1.7.2') {
+      try {
+        var list = certsFromPKCS7(bytes);
+        if (!list.length) notices.push({ level: 'warn', text: sourceName + ': PKCS#7 container holds no certificates' });
+        list.forEach(function (d) { addDer(d, 'certificate', sourceName + ' (PKCS#7)'); });
+      } catch (e) { notices.push({ level: 'err', text: sourceName + ': ' + e.message }); }
+    } else {
+      notices.push({ level: 'warn', text: sourceName + ': unsupported container (' + oidName(ct) + ')' });
+    }
+    return { items: items, notices: notices };
+  }
+  /* Certificate / CSR / CRL all start with a SEQUENCE; tell them apart */
+  var tbs = first, tk = kids(tbs) || [];
+  var isCert = false, isCsr = false, isCrl = false;
+  if (A.isSeq(tbs)) {
+    if (A.isCtx(tk[0], 0) || (tk.length >= 6 && tk[0] && tk[0].tagNumber === 2)) isCert = true;
+    if (tk.length === 3 || tk.length === 4) {
+      /* CSR: INTEGER version, Name, SPKI, [0] attributes */
+      if (tk[0] && tk[0].tagNumber === 2 && A.isSeq(tk[1]) && A.isSeq(tk[2])) {
+        var maybeSpkiAlg = at(tk[2], 0);
+        if (maybeSpkiAlg && A.isSeq(maybeSpkiAlg) && at(tk[2], 1) && at(tk[2], 1).tagNumber === 3) {
+          isCsr = true; isCert = false;
+        }
+      }
+    }
+    /* CRL has no SPKI and carries thisUpdate right after the issuer name */
+    if (!isCsr && !isCert && tk.length >= 3) isCrl = true;
+  }
+  if (isCsr) addDer(bytes, 'request', sourceName);
+  else if (isCert) addDer(bytes, 'certificate', sourceName);
+  else if (isCrl) {
+    try { addDer(bytes, 'crl', sourceName); }
+    catch (e) { addDer(bytes, 'certificate', sourceName); }
+  } else addDer(bytes, 'certificate', sourceName);
+  return { items: items, notices: notices };
+}
+
+global.CertCore.x509 = {
+  parseCertificate: parseCertificate, parseCSR: parseCSR, parseCRL: parseCRL,
+  parseName: parseName, parseSPKI: parseSPKI, parseExtensions: parseExtensions,
+  certsFromPKCS7: certsFromPKCS7, loadBytes: loadBytes, pemEncode: pemEncode,
+  generalName: generalName, generalNames: generalNames, oidName: oidName, oidLabel: oidLabel,
+  OID_NAMES: OID_NAMES, DN_SHORT: DN_SHORT, KEY_USAGE: KEY_USAGE
+};
+})(typeof window !== 'undefined' ? window : globalThis);
+</script>
+
+<script>
+/* =======================================================================
+   UI: file intake, rendering, chain detection, search.
+   All certificate text is inserted as text nodes, never as HTML.
+   ======================================================================= */
+(function () {
+'use strict';
+var C = window.CertCore, A = C.asn1, X = C.x509;
+
+var SAMPLE_PEM = "-----BEGIN CERTIFICATE-----\nMIIDxzCCA26gAwIBAgIJAPOhssTV5vcIMAoGCCqGSM49BAMCMFkxCzAJBgNVBAYT\nAlVTMSEwHwYDVQQKDBhFeGFtcGxlIFNhbXBsZSBBdXRob3JpdHkxJzAlBgNVBAMM\nHkV4YW1wbGUgU2FtcGxlIEludGVybWVkaWF0ZSBFMTAeFw0yNjExMjMyMjM1Mzda\nFw0yNzAyMjEyMjM1MzdaMIGDMQswCQYDVQQGEwJVUzETMBEGA1UECAwKQ2FsaWZv\ncm5pYTEWMBQGA1UEBwwNU2FuIEZyYW5jaXNjbzEVMBMGA1UECgwMRXhhbXBsZSBD\nb3JwMRUwEwYDVQQLDAxXZWIgU2VydmljZXMxGTAXBgNVBAMMEHd3dy5leGFtcGxl\nLnRlc3QwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAASuDYhIgO40xDRaD2OvDsEz\nHI6ofNcap9LRVzMoOnlA0xhuLCC2rAnQy8rh0i4jP6HKaGDz+dbfStrxqMlP8n5I\no4IB8jCCAe4wDAYDVR0TAQH/BAIwADAOBgNVHQ8BAf8EBAMCBaAwHQYDVR0lBBYw\nFAYIKwYBBQUHAwEGCCsGAQUFBwMCMIGIBgNVHREEgYAwfoIQd3d3LmV4YW1wbGUu\ndGVzdIIMZXhhbXBsZS50ZXN0ghIqLmFwaS5leGFtcGxlLnRlc3SHBMsAcSqHECAB\nDbgAAAAAAAAAAAAAAAGBFXNlY3VyaXR5QGV4YW1wbGUudGVzdIYZaHR0cHM6Ly93\nd3cuZXhhbXBsZS50ZXN0LzAdBgNVHQ4EFgQUn4dxxwOy4HxFCnQSJsdCPencpsAw\nHwYDVR0jBBgwFoAU8FkEG/Mp4V8mthtmpJbj47nywSIwZQYIKwYBBQUHAQEEWTBX\nMCUGCCsGAQUFBzABhhlodHRwOi8vb2NzcC5leGFtcGxlLnRlc3QvMC4GCCsGAQUF\nBzAChiJodHRwOi8vY2VydC5leGFtcGxlLnRlc3QvaW50ZXIuY3J0MDIGA1UdHwQr\nMCkwJ6AloCOGIWh0dHA6Ly9jcmwuZXhhbXBsZS50ZXN0L2ludGVyLmNybDBJBgNV\nHSAEQjBAMAgGBmeBDAECATA0BgkrBgEEAYaNHwEwJzAlBggrBgEFBQcCARYZaHR0\ncHM6Ly9jcHMuZXhhbXBsZS50ZXN0LzAKBggqhkjOPQQDAgNHADBEAiAmQC/NgL9m\nitGnacVBXgak2FnaJKTS9c7gJujm9jFF4wIgReWW24RZ7spHgD9sn0d6Ak26oSXs\nB6JOG3AxXR7JMiw=\n-----END CERTIFICATE-----\n-----BEGIN CERTIFICATE-----\nMIIDYzCCAkugAwIBAgIFSi+Rt8MwDQYJKoZIhvcNAQELBQAwVDELMAkGA1UEBhMC\nVVMxITAfBgNVBAoMGEV4YW1wbGUgU2FtcGxlIEF1dGhvcml0eTEiMCAGA1UEAwwZ\nRXhhbXBsZSBTYW1wbGUgUm9vdCBDQSBSMTAeFw0yNjExMjMyMjM1MzdaFw0zMTEx\nMjIyMjM1MzdaMFkxCzAJBgNVBAYTAlVTMSEwHwYDVQQKDBhFeGFtcGxlIFNhbXBs\nZSBBdXRob3JpdHkxJzAlBgNVBAMMHkV4YW1wbGUgU2FtcGxlIEludGVybWVkaWF0\nZSBFMTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABFpoIXYpyrZpa/P6wwkYe7tN\nVf3mgZnkOtECcwe4Fw8mK7cawGjYfiKMcoNABFx3C77oBMvgdRJ3Ytb/p5mCHqqj\nggEAMIH9MBIGA1UdEwEB/wQIMAYBAf8CAQAwDgYDVR0PAQH/BAQDAgGGMB0GA1Ud\nDgQWBBTwWQQb8ynhXya2G2akluPjufLBIjAfBgNVHSMEGDAWgBTlH9uXOM3OL7Ho\nZxsAozgl5m22ETBkBggrBgEFBQcBAQRYMFYwJQYIKwYBBQUHMAGGGWh0dHA6Ly9v\nY3NwLmV4YW1wbGUudGVzdC8wLQYIKwYBBQUHMAKGIWh0dHA6Ly9jZXJ0LmV4YW1w\nbGUudGVzdC9yb290LmNydDAxBgNVHR8EKjAoMCagJKAihiBodHRwOi8vY3JsLmV4\nYW1wbGUudGVzdC9yb290LmNybDANBgkqhkiG9w0BAQsFAAOCAQEABJhL0BOma0IR\ni2hKJapv5yHeA2JECuQi+mRg/fJlNe5ERbga5axzlLL7U/n9Hqa7cwOMj44n8+G/\nc5r1M7vruaGkypZR4IVluvYwh5l4ByIfeycOehnVmlQ4s3IvujFcbH/h60Ln4GQv\nnTuiCXX1hhW56ksSUEbWWBOylH5NLPiMlQswM6KSFNldXtDlcho4u+sp3BjMyMkB\nwOsgcOBXz45Ugb3RhWoHkNcepAUdMjlISqiEw7UT9bfiWugfmX/2HehHX7ubD1Qi\ncc907R4PfnEEodozBhvB/iWmWg//84586vcREaAaAIbBtyrNbPLLbj2arHlswH7g\nMwXxztwrqw==\n-----END CERTIFICATE-----\n-----BEGIN CERTIFICATE-----\nMIIDmTCCAoGgAwIBAgIURy/84gT08Igijt4oLSHIuMTKZtAwDQYJKoZIhvcNAQEL\nBQAwVDELMAkGA1UEBhMCVVMxITAfBgNVBAoMGEV4YW1wbGUgU2FtcGxlIEF1dGhv\ncml0eTEiMCAGA1UEAwwZRXhhbXBsZSBTYW1wbGUgUm9vdCBDQSBSMTAeFw0yNjEx\nMjMyMjM1MzdaFw0zNjExMjAyMjM1MzdaMFQxCzAJBgNVBAYTAlVTMSEwHwYDVQQK\nDBhFeGFtcGxlIFNhbXBsZSBBdXRob3JpdHkxIjAgBgNVBAMMGUV4YW1wbGUgU2Ft\ncGxlIFJvb3QgQ0EgUjEwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQCb\njmIZIFRJu2+UMD17gB138C4SlIX19NkUmLNgzaU1dc5Jkn34xHXSRPJRxIY5p6Wi\nJJwsOmLN0oDHAsO5FcVpefYsGZ/TQmdkdOFJr5E9LavdBjJd6gOlvysHI9IeDKVM\nn5VY3Uohdsc77NAlNh2IN2JHyA6DGl395H8+vW6wgw72DJaqgIscnDODGJPS1vDT\n40+FAX+FY4xy5d8IA80SIMnj/RcAY7SWmBORjz26AkPpxvHtQDW8z/6D2GrXcXNH\nJsHWzZxlxUGYkvKbwGnwyhg3A7EHRdjjoXViC2FmDVxrk4x7b8sH1hrGtlSywaUm\nd2S/tUwPzWyDFt8XZCL/AgMBAAGjYzBhMB8GA1UdIwQYMBaAFOUf25c4zc4vsehn\nGwCjOCXmbbYRMA8GA1UdEwEB/wQFMAMBAf8wDgYDVR0PAQH/BAQDAgGGMB0GA1Ud\nDgQWBBTlH9uXOM3OL7HoZxsAozgl5m22ETANBgkqhkiG9w0BAQsFAAOCAQEAcauA\nvr+QYvV6J2Wg/uv2ESXExWniCZNDZ8DNZwH20YK6AxRZdtv7tGrYC9hjZVVfCEYF\n0PuF4upyIkXAAl4cufsjZftgAt0cenKMhIrpJ1cS65YGnyMnmdWcKwG+VtydTu7a\nsRwdvBNghJSbsBb9igien8d88k2GwGo0Q1cs5rmCcOihQswgonJm3GeSpAWLP9nw\nZeDMNt2IG+FzhhmvOa5Y5utn/PfPEGck4qy8Cj/OY/0P8y+hbLskOID/bgCHrhR8\nRRvNUvxyP2m0C/0V9IT1PEobrJqOXEWBb/9i3exgDiFNQ83z8sSBYuVuqiIU4/qE\nXciRRwMW/EvclEhB1Q==\n-----END CERTIFICATE-----\n";
+
+/* ---------------- tiny DOM helper ---------------- */
+function h(tag, attrs) {
+  var e = document.createElement(tag), i, k;
+  if (attrs) for (k in attrs) {
+    if (!Object.prototype.hasOwnProperty.call(attrs, k)) continue;
+    var v = attrs[k];
+    if (v == null) continue;
+    if (k === 'class') e.className = v;
+    else if (k === 'text') e.textContent = v;
+    else if (k.slice(0, 2) === 'on') e.addEventListener(k.slice(2), v);
+    else e.setAttribute(k, v);
+  }
+  for (i = 2; i < arguments.length; i++) add(e, arguments[i]);
+  return e;
+}
+function add(parent, kid) {
+  if (kid == null || kid === false) return;
+  if (Array.isArray(kid)) { kid.forEach(function (x) { add(parent, x); }); return; }
+  parent.appendChild(typeof kid === 'object' ? kid : document.createTextNode(String(kid)));
+}
+function $(id) { return document.getElementById(id); }
+
+/* ---------------- formatting ---------------- */
+var DAY = 86400000;
+function fmtDate(d, fallback) {
+  if (!d) return fallback || '(unreadable)';
+  return d.toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '') + ' UTC';
+}
+function humanSpan(ms) {
+  var days = Math.round(Math.abs(ms) / DAY);
+  if (days < 1) return 'less than a day';
+  if (days < 60) return days + (days === 1 ? ' day' : ' days');
+  var months = Math.round(days / 30.44);
+  if (days < 730) return months + ' months (' + days + ' days)';
+  return (Math.round(days / 36.525) / 10) + ' years (' + days + ' days)';
+}
+function certStatus(cert, now) {
+  if (!cert.notBefore || !cert.notAfter) return { level: '', label: 'Dates unreadable', detail: '' };
+  if (now < cert.notBefore)
+    return { level: 'warn', label: 'Not yet valid', detail: 'starts in ' + humanSpan(cert.notBefore - now) };
+  if (now > cert.notAfter)
+    return { level: 'bad', label: 'Expired', detail: humanSpan(now - cert.notAfter) + ' ago' };
+  var left = cert.notAfter - now;
+  if (left < 30 * DAY)
+    return { level: 'warn', label: 'Expires soon', detail: humanSpan(left) + ' left' };
+  return { level: 'ok', label: 'Valid', detail: humanSpan(left) + ' left' };
+}
+function roleOf(item) {
+  if (item.kind !== 'certificate')
+    return { key: 'other', short: item.kind === 'request' ? 'Request' : 'CRL',
+             label: item.kind === 'request' ? 'Certificate request' : 'Revocation list' };
+  if (item.isCA) {
+    return item.selfIssued
+      ? { key: 'root', short: 'Root', label: 'Root CA' }
+      : { key: 'intermediate', short: 'Intermediate', label: 'Intermediate CA' };
+  }
+  return { key: 'leaf', short: 'Leaf', label: 'Leaf (end-entity)' };
+}
+function certRole(cert) { return roleOf(cert).label; }
+
+/* compact "90 days" / "2.9 years", for the hierarchy rows */
+function compactSpan(ms) {
+  var days = Math.round(Math.abs(ms) / DAY);
+  if (days < 1) return 'today';
+  if (days <= 400) return days + (days === 1 ? ' day' : ' days');
+  return (Math.round(days / 36.525) / 10) + ' years';
+}
+function expiryText(item) {
+  if (item.kind !== 'certificate') return '';
+  if (!item.notAfter) return 'expiry date unreadable';
+  var now = new Date(), day = item.notAfter.toISOString().slice(0, 10);
+  if (item.notBefore && now < item.notBefore)
+    return 'not valid until ' + item.notBefore.toISOString().slice(0, 10);
+  if (now > item.notAfter) return 'expired ' + day + '  \u00b7  ' + compactSpan(now - item.notAfter) + ' ago';
+  return 'expires ' + day + '  \u00b7  ' + compactSpan(item.notAfter - now) + ' left';
+}
+
+/* ---------------- state ---------------- */
+var state = { items: [], seq: 0, filter: '', sort: 'file', currentFile: null, loadId: 0, selectedId: null };
+
+/* Only one file is shown at a time: loading anything new clears what came before. */
+function resetState() {
+  state.items = [];
+  state.seq = 0;
+  state.filter = '';
+  state.currentFile = null;
+  state.selectedId = null;
+  var box = $('search');
+  if (box) box.value = '';
+}
+
+/* ---------------- intake ---------------- */
+function showNotices(list) {
+  var box = $('notices');
+  list.forEach(function (n) {
+    box.appendChild(h('div', { class: 'notice' + (n.level === 'err' ? ' err' : ''), text: n.text }));
+  });
+}
+function clearNotices() { $('notices').textContent = ''; }
+
+function ingest(bytes, name) {
+  var res;
+  try { res = X.loadBytes(bytes, name); }
+  catch (e) { showNotices([{ level: 'err', text: name + ': ' + e.message }]); return 0; }
+  showNotices(res.notices);
+  var added = 0;
+  res.items.forEach(function (item) {
+    var fp = item.fingerprints.sha256;
+    var dup = null;
+    for (var i = 0; i < state.items.length; i++)
+      if (state.items[i].fingerprints.sha256 === fp) { dup = state.items[i]; break; }
+    if (dup) {
+      if (dup.alsoIn.indexOf(item.origin) < 0) dup.alsoIn.push(item.origin);
+      return;
+    }
+    item.id = 'c' + (++state.seq);
+    item.alsoIn = [];
+    item.searchText = buildSearchText(item);
+    state.items.push(item);
+    added++;
+  });
+  return added;
+}
+
+function buildSearchText(item) {
+  var parts = [item.kind, item.commonName, item.source];
+  if (item.subject) parts.push(item.subject.dn);
+  if (item.issuer) parts.push(item.issuer.dn);
+  if (item.san) parts = parts.concat(item.san);
+  if (item.serialHex) parts.push(item.serialHex);
+  if (item.serialDecimal) parts.push(item.serialDecimal);
+  if (item.fingerprints) parts.push(item.fingerprints.sha256, item.fingerprints.sha1);
+  if (item.publicKey) parts.push(item.publicKey.summary);
+  if (item.eku) parts = parts.concat(item.eku);
+  return parts.filter(Boolean).join(' \n ').toLowerCase();
+}
+
+function readFiles(files) {
+  if (!files || !files.length) return;
+  var file = files[0], ignored = files.length - 1;
+  resetState();
+  var myLoad = ++state.loadId;               /* anything still in flight is now stale */
+  clearNotices();
+  render();                                  /* drop the previous file straight away */
+  if (ignored) showNotices([{ level: 'warn',
+    text: 'One file is shown at a time — opened ' + file.name + ' and ignored ' +
+          ignored + ' other file' + (ignored > 1 ? 's' : '') + '.' }]);
+  var fr = new FileReader();
+  fr.onload = function () {
+    if (myLoad !== state.loadId) return;     /* superseded by a newer file */
+    state.currentFile = file.name;
+    var n = ingest(new Uint8Array(fr.result), file.name);
+    if (!n) showNotices([{ level: 'warn', text: 'No certificates were found in ' + file.name + '.' }]);
+    render();
+  };
+  fr.onerror = function () {
+    if (myLoad !== state.loadId) return;
+    showNotices([{ level: 'err', text: file.name + ': could not be read' }]);
+    render();
+  };
+  fr.readAsArrayBuffer(file);
+}
+
+function ingestText(text, name) {
+  resetState();
+  state.loadId++;                            /* supersede any pending file read */
+  clearNotices();
+  var bytes = new Uint8Array(text.length);
+  for (var i = 0; i < text.length; i++) bytes[i] = text.charCodeAt(i) & 0xff;
+  var enc = (typeof TextEncoder !== 'undefined') ? new TextEncoder().encode(text) : bytes;
+  state.currentFile = name || 'pasted text';
+  var n = ingest(enc, state.currentFile);
+  if (!n) showNotices([{ level: 'warn', text: 'No certificates were found in that text.' }]);
+  render();
+}
+
+/* ---------------- chain detection ---------------- */
+function buildChains() {
+  var certs = state.items.filter(function (i) { return i.kind === 'certificate'; });
+  var bySubject = {};
+  certs.forEach(function (c) {
+    var key = c.subject.dn;
+    if (!bySubject[key]) bySubject[key] = [];
+    bySubject[key].push(c);
+  });
+  certs.forEach(function (c) {
+    c.parent = null; c.children = [];
+    var cands = bySubject[c.issuer.dn] || [];
+    for (var i = 0; i < cands.length; i++) {
+      var p = cands[i];
+      if (p === c) continue;
+      if (c.aki && p.ski && c.aki !== p.ski) continue;   /* key id mismatch: not the issuer */
+      c.parent = p; break;
+    }
+    if (!c.parent && !c.selfIssued && cands.length) c.parent = cands[0] !== c ? cands[0] : null;
+  });
+  certs.forEach(function (c) { if (c.parent) c.parent.children.push(c); });
+  /* guard against cycles from odd input */
+  certs.forEach(function (c) {
+    var seen = {}, p = c;
+    while (p) {
+      if (seen[p.id]) { c.parent = null; break; }
+      seen[p.id] = 1; p = p.parent;
+    }
+  });
+  /* leaf-to-root paths with more than one member */
+  var paths = [];
+  certs.forEach(function (c) {
+    if (c.children.length) return;           /* only start from leaves */
+    var path = [], p = c, guard = 0;
+    while (p && guard++ < 40) { path.push(p); p = p.parent; }
+    if (path.length > 1) paths.push(path);
+  });
+  return paths;
+}
+
+function tabFor(item, depth) {
+  var role = roleOf(item);
+  var st = item.kind === 'certificate' ? certStatus(item, new Date()) : { level: '' };
+  var tab = h('button', {
+    class: 'tab role-' + role.key, type: 'button', role: 'tab',
+    'data-tab': item.id, 'aria-selected': 'false', tabindex: '-1',
+    title: item.subject ? item.subject.dn : item.commonName,
+    onclick: function () { selectItem(item.id); }
+  });
+  add(tab, h('span', { class: 'trow' },
+    h('span', { class: 'tpill role-' + role.key, text: role.short }),
+    h('span', { class: 'tname', text: item.commonName })));
+  var sub = expiryText(item);
+  if (item.kind === 'certificate' && !item.parent && !item.selfIssued)
+    add(tab, h('span', { class: 'trow' },
+      h('span', { class: 'texp ' + st.level, text: sub }),
+      h('span', { class: 'tnote', text: '· issuer not in this file' })));
+  else if (sub)
+    add(tab, h('span', { class: 'texp ' + st.level, text: sub }));
+  return tab;
+}
+
+/* certificates grouped by chain: root first, then its intermediates and leaves */
+function orderedGroups() {
+  var certs = state.items.filter(function (i) { return i.kind === 'certificate'; });
+  var groups = [];
+
+  if (state.sort !== 'file') {                      /* sorting flattens the grouping */
+    groups.push({ multi: false, rows: sortedItems()
+      .filter(function (i) { return i.kind === 'certificate'; })
+      .map(function (i) { return { item: i, depth: 0 }; }) });
+  } else {
+    var seen = {}, tops = [];
+    certs.forEach(function (c) {
+      var top = c, guard = 0;
+      while (top.parent && guard++ < 40) top = top.parent;
+      if (seen[top.id]) return;
+      seen[top.id] = 1;
+      tops.push(top);
+    });
+    tops.forEach(function (top) {
+      var rows = [];
+      (function walk(node, depth) {
+        rows.push({ item: node, depth: depth });
+        node.children.slice().sort(function (a, b) {
+          return String(a.commonName).toLowerCase().localeCompare(String(b.commonName).toLowerCase());
+        }).forEach(function (child) { walk(child, depth + 1); });
+      })(top, 0);
+      groups.push({ multi: rows.length > 1, rows: rows });
+    });
+    groups.sort(function (a, b) { return (b.multi ? 1 : 0) - (a.multi ? 1 : 0); });
+  }
+
+  var others = state.items.filter(function (i) { return i.kind !== 'certificate'; });
+  if (others.length)
+    groups.push({ multi: false, other: true,
+      rows: others.map(function (i) { return { item: i, depth: 0 }; }) });
+  return groups;
+}
+
+/* draws the tab strip; returns how many tabs are visible under the current filter */
+function renderTabs() {
+  var box = $('tabs');
+  box.textContent = '';
+  $('chainbox').hidden = state.items.length === 0;
+  if (!state.items.length) return 0;
+
+  var filter = state.filter.trim().toLowerCase();
+  var visible = [];
+
+  orderedGroups().forEach(function (group) {
+    var rows = group.rows.filter(function (r) {
+      return !filter || r.item.searchText.indexOf(filter) >= 0;
+    });
+    if (!rows.length) return;
+    if (group.multi && box.childNodes.length) add(box, h('span', { class: 'tabbreak' }));
+    var prevDepth = -1;
+    rows.forEach(function (r, i) {
+      var isChildOfPrevious = i > 0 && r.depth === prevDepth + 1;
+      if (i) {
+        if (isChildOfPrevious && group.multi)
+          add(box, h('span', { class: 'tabarrow', text: '›', 'aria-hidden': 'true' }));
+        else if (group.multi)
+          add(box, h('span', { class: 'tabbreak' }));   /* a sibling, not a descendant */
+      }
+      var tab = tabFor(r.item, r.depth);
+      if (group.multi && !isChildOfPrevious && r.depth > 0)
+        tab.style.marginLeft = (r.depth * 26) + 'px';   /* show which level it sits at */
+      add(box, tab);
+      visible.push(r.item);
+      prevDepth = r.depth;
+    });
+    if (group.multi) add(box, h('span', { class: 'tabbreak' }));
+  });
+
+  /* keep a sensible tab selected: the current one, else the first leaf, else the first tab */
+  var stillThere = visible.some(function (i) { return i.id === state.selectedId; });
+  if (!stillThere) {
+    var leaf = null;
+    for (var k = 0; k < visible.length; k++)
+      if (roleOf(visible[k]).key === 'leaf') { leaf = visible[k]; break; }
+    state.selectedId = visible.length ? (leaf ? leaf.id : visible[0].id) : null;
+  }
+  box.classList.toggle('scroll', visible.length > 12);
+  markSelectedTab();
+  return visible.length;
+}
+
+function markSelectedTab() {
+  var tabs = $('tabs').querySelectorAll('[data-tab]');
+  Array.prototype.forEach.call(tabs, function (t) {
+    var on = t.getAttribute('data-tab') === state.selectedId;
+    t.setAttribute('aria-selected', on ? 'true' : 'false');
+    t.tabIndex = on ? 0 : -1;
+  });
+}
+
+function itemById(id) {
+  for (var i = 0; i < state.items.length; i++) if (state.items[i].id === id) return state.items[i];
+  return null;
+}
+
+function selectItem(id, keepFocus) {
+  if (!itemById(id)) return;
+  state.selectedId = id;
+  markSelectedTab();
+  renderDetail();
+  var tab = $('tabs').querySelector('[data-tab="' + id + '"]');
+  if (tab) {
+    if (keepFocus) tab.focus();
+    if (tab.scrollIntoView) tab.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  }
+}
+
+/* the panel under the tabs: full contents of the selected certificate */
+function renderDetail(noMatch) {
+  var box = $('detail');
+  box.textContent = '';
+  if (!state.items.length) return;
+  if (noMatch) {
+    add(box, h('div', { class: 'empty', text: 'No certificate in this file matches "' + state.filter + '".' }));
+    return;
+  }
+  var item = itemById(state.selectedId);
+  if (!item) return;
+  if (!item.__detail) item.__detail = detailFor(item);
+  add(box, item.__detail);
+}
+
+
+
+/* ---------------- rendering ---------------- */
+function kvList(rows) {
+  var dl = h('dl', { class: 'kv' });
+  rows.forEach(function (r) {
+    if (!r) return;
+    add(dl, h('dt', { text: r.label }));
+    var dd = h('dd', r.mono ? { class: 'mono' } : null);
+    if (r.node) add(dd, r.node);
+    else {
+      var txt = r.value == null ? '' : String(r.value);
+      txt.split('\n').forEach(function (lineText, i) {
+        if (i) add(dd, h('br'));
+        add(dd, lineText);
+      });
+    }
+    if (r.hint) add(dd, h('span', { class: 'oid', text: '  ' + r.hint }));
+    add(dl, dd);
+  });
+  return dl;
+}
+function block(title, body) {
+  return h('section', { class: 'block' }, h('h3', { text: title }), body);
+}
+function chipRow(values) {
+  var row = h('div', { class: 'chips' });
+  values.forEach(function (v) { add(row, h('span', { class: 'chip', text: v })); });
+  return row;
+}
+function nameBlock(title, name, extra) {
+  var rows = name.rdns.map(function (r) {
+    return { label: r.label, value: r.value, hint: r.label === r.oid ? null : null };
+  });
+  rows.push({ label: 'Distinguished name', value: name.dn, mono: true });
+  if (extra) extra.forEach(function (r) { rows.push(r); });
+  return block(title, kvList(rows));
+}
+
+/* ASN.1 tree, built only when its disclosure is first opened */
+function treeNode(node, depth) {
+  var label = A.tagLabel(node);
+  var preview = A.nodePreview(node, function (o) { return X.OID_NAMES[o] || null; });
+  var inner = node.constructed ? null : A.innerNodes(node);
+  var children = node.children || inner;
+
+  if (children && children.length) {
+    var det = h('details', { open: depth < 2 ? '' : null });
+    var sum = h('summary', { class: 'node' },
+      h('span', { class: 't', text: label }),
+      h('span', { class: 'm', text: '  ' + (inner && !node.constructed ? 'wraps ' + children.length + ' element(s)' : preview) }));
+    add(det, sum);
+    var kidBox = h('div', { class: 'kids' });
+    children.forEach(function (c) { add(kidBox, treeNode(c, depth + 1)); });
+    add(det, kidBox);
+    return det;
+  }
+  var line = h('div', { class: 'node' },
+    h('span', { class: 't', text: label }),
+    preview ? h('span', { class: 'v', text: '  ' + preview }) : null);
+  if (node.parseError) add(line, h('span', { class: 'm', text: '  (' + node.parseError + ')' }));
+  return line;
+}
+
+function lazyDetails(summaryText, buildFn) {
+  var det = h('details', { class: 'tree-wrap' }, h('summary', { text: summaryText }));
+  var built = false;
+  det.addEventListener('toggle', function () {
+    if (det.open && !built) { built = true; add(det, buildFn()); }
+  });
+  return det;
+}
+
+function copyButton(label, getText) {
+  return h('button', {
+    class: 'btn sm', type: 'button', text: label,
+    onclick: function (ev) {
+      var btn = ev.currentTarget, text = getText();
+      function flash(msg) {
+        var old = btn.textContent;
+        btn.textContent = msg;
+        setTimeout(function () { btn.textContent = old; }, 1100);
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function () { flash('Copied'); },
+          function () { fallback(); });
+      } else fallback();
+      function fallback() {
+        var ta = h('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.select();
+        try { flash(document.execCommand('copy') ? 'Copied' : 'Copy failed'); }
+        catch (e) { flash('Copy failed'); }
+        document.body.removeChild(ta);
+      }
+    }
+  });
+}
+function downloadButton(label, filename, getText, mime) {
+  return h('button', {
+    class: 'btn sm', type: 'button', text: label,
+    onclick: function () {
+      var blob = new Blob([getText()], { type: mime || 'application/x-pem-file' });
+      var url = URL.createObjectURL(blob);
+      var a = h('a', { href: url, download: filename });
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+    }
+  });
+}
+function safeFileName(s, ext) {
+  var base = String(s || 'certificate').replace(/[^A-Za-z0-9._-]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 60);
+  return (base || 'certificate') + ext;
+}
+
+function extensionBlock(exts) {
+  if (!exts || !exts.length) return null;
+  var wrap = h('div');
+  exts.forEach(function (e) {
+    var box = h('div', { class: 'ext' });
+    var head = h('div', { class: 'exthead' },
+      h('b', { text: e.name || 'Unrecognised extension' }),
+      h('span', { class: 'oid', text: e.oid }));
+    if (e.critical) add(head, h('span', { class: 'badge bad', text: 'critical' }));
+    add(box, head);
+
+    if (e.chips && e.chips.length) add(box, chipRow(e.chips));
+    if (e.rows && e.rows.length) add(box, kvList(e.rows));
+    if (e.parseError) add(box, h('div', { class: 'oid', text: 'value is not valid DER: ' + e.parseError }));
+    if (e.decodeError) add(box, h('div', { class: 'oid', text: 'partially decoded: ' + e.decodeError }));
+
+    var hasDetail = (e.chips && e.chips.length) || (e.rows && e.rows.length);
+    if (!hasDetail && e.node) {
+      add(box, lazyDetails('Value (ASN.1)', function () {
+        return h('div', { class: 'tree' }, treeNode(e.node, 0));
+      }));
+    } else if (e.node) {
+      add(box, lazyDetails('Raw value', function () {
+        return h('div', { class: 'tree' }, treeNode(e.node, 0));
+      }));
+    }
+    if (!e.node) add(box, h('div', { class: 'mono', text: C.hexColon(e.bytes) }));
+    add(wrap, box);
+  });
+  return block('Extensions (' + exts.length + ')', wrap);
+}
+
+function keyBlock(pk) {
+  var rows = [{ label: 'Algorithm', value: pk.algorithm, hint: pk.oid }];
+  if (pk.bits) rows.push({ label: 'Key size', value: pk.bits + ' bit' });
+  pk.rows.forEach(function (r) { rows.push(r); });
+  rows.push({ label: 'SPKI SHA-256', value: pk.fpNote || '', mono: true, node: null, skip: true });
+  rows.pop();
+  return block('Public key', kvList(rows));
+}
+
+function fingerprintBlock(item) {
+  var f = item.fingerprints;
+  return block('Fingerprints', kvList([
+    { label: 'SHA-256', value: f.sha256, mono: true },
+    { label: 'SHA-1', value: f.sha1, mono: true },
+    f.spkiSha256B64 ? { label: 'Public key pin', value: 'sha256//' + f.spkiSha256B64, mono: true } : null
+  ]));
+}
+
+function pemBlock(item) {
+  var pre = h('pre', { class: 'block-pre', text: item.pem });
+  var name = safeFileName(item.commonName, item.kind === 'request' ? '.csr' : '.pem');
+  return block('PEM', h('div', null, pre,
+    h('div', { class: 'rowbtns' },
+      copyButton('Copy PEM', function () { return item.pem; }),
+      downloadButton('Download PEM', name, function () { return item.pem; }),
+      copyButton('Copy SHA-256', function () { return item.fingerprints.sha256; }),
+      downloadButton('Download DER', safeFileName(item.commonName, '.der'),
+        function () { return item.der; }, 'application/pkix-cert')
+    )));
+}
+
+function asn1Block(item) {
+  return block('ASN.1 structure', lazyDetails('Show decoded DER tree', function () {
+    return h('div', { class: 'tree' }, treeNode(item.asn1, 0));
+  }));
+}
+
+function certBody(item) {
+  var now = new Date();
+  var st = certStatus(item, now);
+  var body = h('div', { class: 'body' });
+  var issuerExtra = [];
+  if (item.parent) {
+    issuerExtra.push({ label: 'Issuer certificate', node:
+      h('button', { class: 'lnk', type: 'button', text: 'open tab: ' + item.parent.commonName,
+        onclick: function () { selectItem(item.parent.id); } }) });
+  } else if (item.selfIssued) {
+    issuerExtra.push({ label: 'Issuer certificate', value: 'self-issued (subject equals issuer)' });
+  } else {
+    issuerExtra.push({ label: 'Issuer certificate', value: 'not in this file' });
+  }
+
+  var lifetime = (item.notBefore && item.notAfter) ? humanSpan(item.notAfter - item.notBefore) : null;
+
+  add(body, block('Overview', kvList([
+    { label: 'Subject', value: item.commonName },
+    { label: 'Type', value: certRole(item) + (item.pathLen !== null && item.pathLen !== undefined ?
+        ', path length ' + item.pathLen : '') },
+    { label: 'Status', value: st.label + (st.detail ? ' — ' + st.detail : '') },
+    { label: 'Serial number', value: item.serialHex +
+        (item.serialDecimal ? '  (' + item.serialDecimal + ')' : ''), mono: true },
+    { label: 'Version', value: 'v' + item.version },
+    { label: 'Public key', value: item.publicKey.summary },
+    { label: 'Signature', value: item.signatureAlgorithm.name,
+      hint: item.signatureAlgorithm.note || item.signatureAlgorithm.oid },
+    { label: 'Loaded from', value: item.origin + (item.alsoIn.length ? ' (also in ' + item.alsoIn.join(', ') + ')' : '') }
+  ])));
+
+  add(body, block('Validity', kvList([
+    { label: 'Not before', value: fmtDate(item.notBefore, item.notBeforeText) },
+    { label: 'Not after', value: fmtDate(item.notAfter, item.notAfterText) },
+    lifetime ? { label: 'Lifetime', value: lifetime } : null,
+    { label: 'Right now', value: st.label + (st.detail ? ' — ' + st.detail : '') }
+  ])));
+
+  if (item.san && item.san.length)
+    add(body, block('Subject alternative names (' + item.san.length + ')', chipRow(item.san)));
+
+  add(body, nameBlock('Subject', item.subject,
+    item.subjectUniqueId ? [{ label: 'Subject unique ID', value: item.subjectUniqueId, mono: true }] : null));
+  add(body, nameBlock('Issuer', item.issuer,
+    issuerExtra.concat(item.issuerUniqueId ?
+      [{ label: 'Issuer unique ID', value: item.issuerUniqueId, mono: true }] : [])));
+
+  add(body, keyBlock(item.publicKey));
+  add(body, fingerprintBlock(item));
+  add(body, extensionBlock(item.extensions));
+  if (item.signature)
+    add(body, block('Signature value', kvList([
+      { label: 'Algorithm', value: item.signatureAlgorithm.name, hint: item.signatureAlgorithm.oid },
+      { label: 'Bits', value: String(item.signature.bits) },
+      { label: 'Value', value: C.hexColon(item.signature.bytes), mono: true }
+    ])));
+  add(body, pemBlock(item));
+  add(body, asn1Block(item));
+  return body;
+}
+
+function csrBody(item) {
+  var body = h('div', { class: 'body' });
+  add(body, block('Overview', kvList([
+    { label: 'Subject', value: item.commonName },
+    { label: 'Version', value: 'v' + item.version },
+    { label: 'Public key', value: item.publicKey.summary },
+    { label: 'Signature', value: item.signatureAlgorithm.name, hint: item.signatureAlgorithm.oid },
+    { label: 'Loaded from', value: item.origin }
+  ])));
+  if (item.san && item.san.length)
+    add(body, block('Requested subject alternative names', chipRow(item.san)));
+  add(body, nameBlock('Subject', item.subject));
+  add(body, keyBlock(item.publicKey));
+  if (item.attributes.length)
+    add(body, block('Attributes', kvList(item.attributes.map(function (a) {
+      return { label: a.name, value: a.value, hint: a.oid };
+    }))));
+  var exts = extensionBlock(item.extensions);
+  if (exts) add(body, exts);
+  add(body, fingerprintBlock(item));
+  add(body, pemBlock(item));
+  add(body, asn1Block(item));
+  return body;
+}
+
+function crlBody(item) {
+  var body = h('div', { class: 'body' });
+  add(body, block('Overview', kvList([
+    { label: 'Issuer', value: item.issuer.dn, mono: true },
+    { label: 'Version', value: 'v' + item.version },
+    { label: 'This update', value: item.thisUpdate.text },
+    { label: 'Next update', value: item.nextUpdate ? item.nextUpdate.text : 'not stated' },
+    { label: 'Revoked entries', value: String(item.revokedCount) },
+    { label: 'Signature', value: item.signatureAlgorithm.name, hint: item.signatureAlgorithm.oid },
+    { label: 'Loaded from', value: item.origin }
+  ])));
+  if (item.revoked.length)
+    add(body, block('Revoked certificates' + (item.revokedCount > item.revoked.length ?
+      ' (first ' + item.revoked.length + ' of ' + item.revokedCount + ')' : ''),
+      kvList(item.revoked.map(function (r) {
+        return { label: r.serial, value: r.date, mono: true };
+      }))));
+  var exts = extensionBlock(item.extensions);
+  if (exts) add(body, exts);
+  add(body, fingerprintBlock(item));
+  add(body, pemBlock(item));
+  add(body, asn1Block(item));
+  return body;
+}
+
+
+
+function detailFor(item) {
+  var now = new Date();
+  var st = item.kind === 'certificate' ? certStatus(item, now) : null;
+  var role = roleOf(item);
+  var card = h('div', { class: 'detailcard role-' + role.key, 'data-detail': item.id });
+  var tags = h('div', { class: 'tags' });
+
+  add(tags, h('span', { class: 'badge role-' + role.key, text: role.label }));
+  if (item.kind === 'certificate') {
+    add(tags, h('span', { class: 'badge ' + st.level,
+      text: st.label + (st.detail ? ' · ' + st.detail : '') }));
+    if (!item.hasBasicConstraints && item.version >= 3)
+      add(tags, h('span', { class: 'badge', text: 'no basicConstraints' }));
+    if (item.isPrecertificate) add(tags, h('span', { class: 'badge warn', text: 'CT precertificate' }));
+  }
+  if (item.publicKey) add(tags, h('span', { class: 'badge', text: item.publicKey.summary }));
+  if (item.san && item.san.length)
+    add(tags, h('span', { class: 'badge', text: item.san.length + ' SAN' + (item.san.length > 1 ? 's' : '') }));
+  if (item.eku && item.eku.length && item.eku.length <= 3)
+    item.eku.forEach(function (u) { add(tags, h('span', { class: 'badge', text: u })); });
+  else if (item.eku && item.eku.length)
+    add(tags, h('span', { class: 'badge', text: item.eku.length + ' key usages' }));
+
+  var subtitle = item.kind === 'crl' ? item.issuer.dn : item.subject.dn;
+  add(card, h('div', { class: 'dhead' },
+    h('h2', { text: item.commonName }),
+    h('div', { class: 'sub', text: subtitle || '(empty subject)' }),
+    tags));
+
+  add(card, item.kind === 'request' ? csrBody(item) :
+            item.kind === 'crl' ? crlBody(item) : certBody(item));
+  return card;
+}
+
+function sortedItems() {
+  var arr = state.items.slice();
+  if (state.sort === 'expiry') {
+    arr.sort(function (a, b) {
+      var x = a.notAfter ? a.notAfter.getTime() : Infinity;
+      var y = b.notAfter ? b.notAfter.getTime() : Infinity;
+      return x - y;
+    });
+  } else if (state.sort === 'subject') {
+    arr.sort(function (a, b) {
+      return String(a.commonName).toLowerCase().localeCompare(String(b.commonName).toLowerCase());
+    });
+  }
+  return arr;
+}
+
+function render() {
+  var has = state.items.length > 0;
+  buildChains();
+
+  $('stats').hidden = !has;
+  $('toolbar').hidden = !has;
+  $('dropzone').classList.toggle('compact', has);
+  $('dzDefault').hidden = has;
+  $('dzCurrent').hidden = !has;
+  if (has) {
+    $('dzName').textContent = state.currentFile || 'pasted text';
+    $('dzMeta').textContent = '  \u00b7  ' + state.items.length +
+      (state.items.length === 1 ? ' item  \u00b7  ' : ' items  \u00b7  ') +
+      'drop another file to replace it';
+  }
+
+  renderStats();
+  var shown = renderTabs();
+  renderDetail(has && shown === 0);
+
+  $('footer').textContent = has ?
+    (shown === state.items.length ?
+      state.items.length + ' item' + (state.items.length === 1 ? '' : 's') + ' from ' +
+        (state.currentFile || 'pasted text') +
+        '. Nothing was uploaded anywhere \u2014 parsing happens in this page.' :
+      'Showing ' + shown + ' of ' + state.items.length + ' items.') : '';
+}
+
+function renderStats() {
+  $('stats').textContent = '';
+  if (!state.items.length) return;
+  var now = new Date(), roles = { leaf: 0, intermediate: 0, root: 0 },
+      expired = 0, soon = 0, others = 0, certs = 0;
+  state.items.forEach(function (i) {
+    if (i.kind !== 'certificate') { others++; return; }
+    certs++;
+    roles[roleOf(i).key]++;
+    var st = certStatus(i, now);
+    if (st.level === 'bad') expired++;
+    else if (st.level === 'warn') soon++;
+  });
+  var box = $('stats');
+  box.textContent = '';
+  function stat(n, label, cls) {
+    add(box, h('div', { class: 'stat' + (cls ? ' ' + cls : '') },
+      h('b', { text: String(n) }), h('span', { text: label })));
+  }
+  stat(roles.leaf, roles.leaf === 1 ? 'leaf certificate' : 'leaf certificates', 'role-leaf');
+  stat(roles.intermediate, roles.intermediate === 1 ? 'intermediate CA' : 'intermediate CAs', 'role-intermediate');
+  stat(roles.root, roles.root === 1 ? 'root CA' : 'root CAs', 'role-root');
+  stat(certs - expired - soon, 'currently valid', 'ok');
+  if (soon) stat(soon, 'expiring or pending', 'warn');
+  if (expired) stat(expired, 'expired', 'bad');
+  if (others) stat(others, 'requests / CRLs');
+}
+
+/* ---------------- events ---------------- */
+$('pickBtn').addEventListener('click', function () { $('fileInput').click(); });
+$('fileInput').addEventListener('change', function (e) {
+  readFiles(e.target.files);
+  e.target.value = '';
+});
+
+var dz = $('dropzone');
+['dragenter', 'dragover'].forEach(function (ev) {
+  document.addEventListener(ev, function (e) {
+    if (e.dataTransfer && Array.prototype.indexOf.call(e.dataTransfer.types || [], 'Files') >= 0) {
+      e.preventDefault(); dz.classList.add('drag');
+    }
+  });
+});
+['dragleave', 'dragend'].forEach(function (ev) {
+  document.addEventListener(ev, function (e) {
+    if (!e.relatedTarget) dz.classList.remove('drag');
+  });
+});
+document.addEventListener('drop', function (e) {
+  if (!e.dataTransfer) return;
+  e.preventDefault();
+  dz.classList.remove('drag');
+  if (e.dataTransfer.files && e.dataTransfer.files.length) readFiles(e.dataTransfer.files);
+  else {
+    var txt = e.dataTransfer.getData('text');
+    if (txt) ingestText(txt, 'dropped text');
+  }
+});
+dz.addEventListener('click', function () { $('fileInput').click(); });
+
+$('pasteBtn').addEventListener('click', function () {
+  var p = $('pastePanel');
+  p.hidden = !p.hidden;
+  this.setAttribute('aria-expanded', String(!p.hidden));
+  if (!p.hidden) $('pasteArea').focus();
+});
+$('cancelPaste').addEventListener('click', function () {
+  $('pastePanel').hidden = true;
+  $('pasteBtn').setAttribute('aria-expanded', 'false');
+});
+$('parsePaste').addEventListener('click', function () {
+  var v = $('pasteArea').value;
+  if (v.trim()) { ingestText(v, 'pasted text'); $('pastePanel').hidden = true; }
+});
+document.addEventListener('paste', function (e) {
+  var target = e.target;
+  if (target && (target.tagName === 'TEXTAREA' || target.tagName === 'INPUT')) return;
+  var txt = e.clipboardData && e.clipboardData.getData('text');
+  if (txt && txt.indexOf('-----BEGIN ') >= 0) { e.preventDefault(); ingestText(txt, 'pasted text'); }
+});
+
+$('search').addEventListener('input', function () { state.filter = this.value; render(); });
+$('sortBy').addEventListener('change', function () { state.sort = this.value; render(); });
+function setSections(open) {
+  var list = $('detail').querySelectorAll('details');
+  Array.prototype.forEach.call(list, function (d) {
+    if (d.open !== open) { d.open = open; d.dispatchEvent(new Event('toggle')); }
+  });
+}
+$('expandAll').addEventListener('click', function () { setSections(true); });
+$('collapseAll').addEventListener('click', function () { setSections(false); });
+
+/* arrow-key navigation across the tab strip */
+$('tabs').addEventListener('keydown', function (e) {
+  var keys = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: 1, ArrowUp: -1, Home: 0, End: 0 };
+  if (!(e.key in keys)) return;
+  var tabs = Array.prototype.slice.call($('tabs').querySelectorAll('[data-tab]'));
+  if (!tabs.length) return;
+  var cur = tabs.findIndex(function (t) { return t.getAttribute('data-tab') === state.selectedId; });
+  var next;
+  if (e.key === 'Home') next = 0;
+  else if (e.key === 'End') next = tabs.length - 1;
+  else next = (cur + keys[e.key] + tabs.length) % tabs.length;
+  e.preventDefault();
+  selectItem(tabs[next].getAttribute('data-tab'), true);
+});
+$('clearAll').addEventListener('click', function () {
+  resetState();
+  state.loadId++;
+  clearNotices();
+  render();
+});
+
+/* theme */
+var THEME_KEY = 'certviewer.theme';
+function applyTheme(t) {
+  if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+  else document.documentElement.removeAttribute('data-theme');
+}
+try { applyTheme(localStorage.getItem(THEME_KEY)); } catch (e) {}
+$('themeBtn').addEventListener('click', function () {
+  var cur = document.documentElement.getAttribute('data-theme') || 'auto';
+  var next = cur === 'auto' ? 'light' : cur === 'light' ? 'dark' : 'auto';
+  applyTheme(next);
+  try { next === 'auto' ? localStorage.removeItem(THEME_KEY) : localStorage.setItem(THEME_KEY, next); } catch (e) {}
+  this.textContent = next === 'auto' ? 'Theme' : next === 'light' ? 'Light' : 'Dark';
+});
+
+/* sample chain, if one was embedded */
+if (SAMPLE_PEM.indexOf('BEGIN CERTIFICATE') > 0) {
+  var btn = h('button', { class: 'btn', id: 'sampleBtn', text: 'Load sample chain',
+    onclick: function () { ingestText(SAMPLE_PEM, 'sample chain'); } });
+  $('themeBtn').parentNode.insertBefore(btn, $('themeBtn'));
+}
+
+/* small hook so the page can be driven from the console or a test harness */
+window.CertViewer = { load: ingestText, loadBytes: ingest, render: render, state: state };
+
+render();
+})();
+</script>
+</body>
+</html>
