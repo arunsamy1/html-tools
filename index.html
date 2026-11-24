@@ -71,13 +71,13 @@
   <div class="sidebar">
     <div class="sidebar-title">Home</div>
     <div class="nav-item active depth-0" data-folder="btc_eth" title="btc_eth" onclick="showFolder('btc_eth')">btc_eth</div>
+    <div class="nav-item depth-0" data-folder="certificate" title="certificate" onclick="showFolder('certificate')">certificate</div>
     <div class="nav-item depth-0" data-folder="date_time" title="date_time" onclick="showFolder('date_time')">date_time</div>
     <div class="nav-item depth-0" data-folder="finance" title="finance" onclick="showFolder('finance')">finance</div>
     <div class="nav-item depth-0" data-folder="fin_charts" title="fin_charts" onclick="showFolder('fin_charts')">fin_charts</div>
     <div class="nav-item depth-0" data-folder="fm_radio" title="fm_radio" onclick="showFolder('fm_radio')">fm_radio</div>
     <div class="nav-item depth-0" data-folder="office_pwd" title="office_pwd" onclick="showFolder('office_pwd')">office_pwd</div>
     <div class="nav-item depth-0" data-folder="security" title="security" onclick="showFolder('security')">security</div>
-    <div class="nav-item depth-1" data-folder="security/certificate_viewer" title="security/certificate_viewer" onclick="showFolder('security/certificate_viewer')">certificate_viewer</div>
     <div class="nav-item depth-0" data-folder="study_tools" title="study_tools" onclick="showFolder('study_tools')">study_tools</div>
     <div class="nav-item depth-0" data-folder="utilities" title="utilities" onclick="showFolder('utilities')">utilities</div>
     <div class="nav-item depth-0" data-folder="wallpapers" title="wallpapers" onclick="showFolder('wallpapers')">wallpapers</div>
@@ -116,6 +116,22 @@
         <tr>
           <td>7</td>
           <td><a class="file-path" href="btc_eth/eth_etf_price_calc.html">btc_eth/eth_etf_price_calc.html</a><button class="open-btn" onclick="openInNewTab('btc_eth/eth_etf_price_calc.html')">New tab</button><button class="download-btn" onclick="downloadFile('btc_eth/eth_etf_price_calc.html','eth_etf_price_calc.html')">Download</button></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="folder-panel" id="folder-certificate">
+    <h2>certificate</h2>
+    <table>
+      <thead><tr><th>#</th><th>File Path</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td><a class="file-path" href="certificate/certificate-chain-generator.html">certificate/certificate-chain-generator.html</a><button class="open-btn" onclick="openInNewTab('certificate/certificate-chain-generator.html')">New tab</button><button class="download-btn" onclick="downloadFile('certificate/certificate-chain-generator.html','certificate-chain-generator.html')">Download</button></td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td><a class="file-path" href="certificate/certificate-viewer.html">certificate/certificate-viewer.html</a><button class="open-btn" onclick="openInNewTab('certificate/certificate-viewer.html')">New tab</button><button class="download-btn" onclick="downloadFile('certificate/certificate-viewer.html','certificate-viewer.html')">Download</button></td>
         </tr>
       </tbody>
     </table>
@@ -243,63 +259,55 @@
         </tr>
         <tr>
           <td>2</td>
-          <td><a class="file-path" href="security/decrypt.html">security/decrypt.html</a><button class="open-btn" onclick="openInNewTab('security/decrypt.html')">New tab</button><button class="download-btn" onclick="downloadFile('security/decrypt.html','decrypt.html')">Download</button></td>
+          <td><a class="file-path" href="security/certificate-chain-generator.html">security/certificate-chain-generator.html</a><button class="open-btn" onclick="openInNewTab('security/certificate-chain-generator.html')">New tab</button><button class="download-btn" onclick="downloadFile('security/certificate-chain-generator.html','certificate-chain-generator.html')">Download</button></td>
         </tr>
         <tr>
           <td>3</td>
-          <td><a class="file-path" href="security/encryptor_backkup_2026-05-14.html">security/encryptor_backkup_2026-05-14.html</a><button class="open-btn" onclick="openInNewTab('security/encryptor_backkup_2026-05-14.html')">New tab</button><button class="download-btn" onclick="downloadFile('security/encryptor_backkup_2026-05-14.html','encryptor_backkup_2026-05-14.html')">Download</button></td>
+          <td><a class="file-path" href="security/decrypt.html">security/decrypt.html</a><button class="open-btn" onclick="openInNewTab('security/decrypt.html')">New tab</button><button class="download-btn" onclick="downloadFile('security/decrypt.html','decrypt.html')">Download</button></td>
         </tr>
         <tr>
           <td>4</td>
-          <td><a class="file-path" href="security/encryptor_backup_2026-05-13.html">security/encryptor_backup_2026-05-13.html</a><button class="open-btn" onclick="openInNewTab('security/encryptor_backup_2026-05-13.html')">New tab</button><button class="download-btn" onclick="downloadFile('security/encryptor_backup_2026-05-13.html','encryptor_backup_2026-05-13.html')">Download</button></td>
+          <td><a class="file-path" href="security/encryptor_backkup_2026-05-14.html">security/encryptor_backkup_2026-05-14.html</a><button class="open-btn" onclick="openInNewTab('security/encryptor_backkup_2026-05-14.html')">New tab</button><button class="download-btn" onclick="downloadFile('security/encryptor_backkup_2026-05-14.html','encryptor_backkup_2026-05-14.html')">Download</button></td>
         </tr>
         <tr>
           <td>5</td>
-          <td><a class="file-path" href="security/encryptor_backup_2026-09-13.html">security/encryptor_backup_2026-09-13.html</a><button class="open-btn" onclick="openInNewTab('security/encryptor_backup_2026-09-13.html')">New tab</button><button class="download-btn" onclick="downloadFile('security/encryptor_backup_2026-09-13.html','encryptor_backup_2026-09-13.html')">Download</button></td>
+          <td><a class="file-path" href="security/encryptor_backup_2026-05-13.html">security/encryptor_backup_2026-05-13.html</a><button class="open-btn" onclick="openInNewTab('security/encryptor_backup_2026-05-13.html')">New tab</button><button class="download-btn" onclick="downloadFile('security/encryptor_backup_2026-05-13.html','encryptor_backup_2026-05-13.html')">Download</button></td>
         </tr>
         <tr>
           <td>6</td>
-          <td><a class="file-path" href="security/encryptor_old.html">security/encryptor_old.html</a><button class="open-btn" onclick="openInNewTab('security/encryptor_old.html')">New tab</button><button class="download-btn" onclick="downloadFile('security/encryptor_old.html','encryptor_old.html')">Download</button></td>
+          <td><a class="file-path" href="security/encryptor_backup_2026-09-13.html">security/encryptor_backup_2026-09-13.html</a><button class="open-btn" onclick="openInNewTab('security/encryptor_backup_2026-09-13.html')">New tab</button><button class="download-btn" onclick="downloadFile('security/encryptor_backup_2026-09-13.html','encryptor_backup_2026-09-13.html')">Download</button></td>
         </tr>
         <tr>
           <td>7</td>
-          <td><a class="file-path" href="security/htmltest_02.html">security/htmltest_02.html</a><button class="open-btn" onclick="openInNewTab('security/htmltest_02.html')">New tab</button><button class="download-btn" onclick="downloadFile('security/htmltest_02.html','htmltest_02.html')">Download</button></td>
+          <td><a class="file-path" href="security/encryptor_old.html">security/encryptor_old.html</a><button class="open-btn" onclick="openInNewTab('security/encryptor_old.html')">New tab</button><button class="download-btn" onclick="downloadFile('security/encryptor_old.html','encryptor_old.html')">Download</button></td>
         </tr>
         <tr>
           <td>8</td>
-          <td><a class="file-path" href="security/htmltest.html">security/htmltest.html</a><button class="open-btn" onclick="openInNewTab('security/htmltest.html')">New tab</button><button class="download-btn" onclick="downloadFile('security/htmltest.html','htmltest.html')">Download</button></td>
+          <td><a class="file-path" href="security/htmltest_02.html">security/htmltest_02.html</a><button class="open-btn" onclick="openInNewTab('security/htmltest_02.html')">New tab</button><button class="download-btn" onclick="downloadFile('security/htmltest_02.html','htmltest_02.html')">Download</button></td>
         </tr>
         <tr>
           <td>9</td>
-          <td><a class="file-path" href="security/liberty-password-tool.html">security/liberty-password-tool.html</a><button class="open-btn" onclick="openInNewTab('security/liberty-password-tool.html')">New tab</button><button class="download-btn" onclick="downloadFile('security/liberty-password-tool.html','liberty-password-tool.html')">Download</button></td>
+          <td><a class="file-path" href="security/htmltest.html">security/htmltest.html</a><button class="open-btn" onclick="openInNewTab('security/htmltest.html')">New tab</button><button class="download-btn" onclick="downloadFile('security/htmltest.html','htmltest.html')">Download</button></td>
         </tr>
         <tr>
           <td>10</td>
-          <td><a class="file-path" href="security/pkikeypair.html">security/pkikeypair.html</a><button class="open-btn" onclick="openInNewTab('security/pkikeypair.html')">New tab</button><button class="download-btn" onclick="downloadFile('security/pkikeypair.html','pkikeypair.html')">Download</button></td>
+          <td><a class="file-path" href="security/liberty-password-tool.html">security/liberty-password-tool.html</a><button class="open-btn" onclick="openInNewTab('security/liberty-password-tool.html')">New tab</button><button class="download-btn" onclick="downloadFile('security/liberty-password-tool.html','liberty-password-tool.html')">Download</button></td>
         </tr>
         <tr>
           <td>11</td>
-          <td><a class="file-path" href="security/sha3512384256224.html">security/sha3512384256224.html</a><button class="open-btn" onclick="openInNewTab('security/sha3512384256224.html')">New tab</button><button class="download-btn" onclick="downloadFile('security/sha3512384256224.html','sha3512384256224.html')">Download</button></td>
+          <td><a class="file-path" href="security/pkikeypair.html">security/pkikeypair.html</a><button class="open-btn" onclick="openInNewTab('security/pkikeypair.html')">New tab</button><button class="download-btn" onclick="downloadFile('security/pkikeypair.html','pkikeypair.html')">Download</button></td>
         </tr>
         <tr>
           <td>12</td>
-          <td><a class="file-path" href="security/test123.html">security/test123.html</a><button class="open-btn" onclick="openInNewTab('security/test123.html')">New tab</button><button class="download-btn" onclick="downloadFile('security/test123.html','test123.html')">Download</button></td>
+          <td><a class="file-path" href="security/sha3512384256224.html">security/sha3512384256224.html</a><button class="open-btn" onclick="openInNewTab('security/sha3512384256224.html')">New tab</button><button class="download-btn" onclick="downloadFile('security/sha3512384256224.html','sha3512384256224.html')">Download</button></td>
         </tr>
         <tr>
           <td>13</td>
-          <td><a class="file-path" href="security/test4_base64.html">security/test4_base64.html</a><button class="open-btn" onclick="openInNewTab('security/test4_base64.html')">New tab</button><button class="download-btn" onclick="downloadFile('security/test4_base64.html','test4_base64.html')">Download</button></td>
+          <td><a class="file-path" href="security/test123.html">security/test123.html</a><button class="open-btn" onclick="openInNewTab('security/test123.html')">New tab</button><button class="download-btn" onclick="downloadFile('security/test123.html','test123.html')">Download</button></td>
         </tr>
-      </tbody>
-    </table>
-  </div>
-  <div class="folder-panel" id="folder-security/certificate_viewer">
-    <h2>security/certificate_viewer</h2>
-    <table>
-      <thead><tr><th>#</th><th>File Path</th></tr></thead>
-      <tbody>
         <tr>
-          <td>1</td>
-          <td><a class="file-path" href="security/certificate_viewer/certificate-viewer.html">security/certificate_viewer/certificate-viewer.html</a><button class="open-btn" onclick="openInNewTab('security/certificate_viewer/certificate-viewer.html')">New tab</button><button class="download-btn" onclick="downloadFile('security/certificate_viewer/certificate-viewer.html','certificate-viewer.html')">Download</button></td>
+          <td>14</td>
+          <td><a class="file-path" href="security/test4_base64.html">security/test4_base64.html</a><button class="open-btn" onclick="openInNewTab('security/test4_base64.html')">New tab</button><button class="download-btn" onclick="downloadFile('security/test4_base64.html','test4_base64.html')">Download</button></td>
         </tr>
       </tbody>
     </table>
