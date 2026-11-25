@@ -1,0 +1,1457 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Leaf Certificate Generator</title>
+<style>
+  :root {
+    --fs: 17px;
+    --bg: #f4f6f9;
+    --panel: #ffffff;
+    --panel-2: #fafbfd;
+    --border: #d4d9e1;
+    --text: #15181d;
+    --muted: #5d6471;
+    --accent: #2f5bd7;
+    --accent-ink: #ffffff;
+    --ok: #156b3f;
+    --warn: #8a5a00;
+    --err: #b3261e;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    --radius: 10px;
+  }
+  /* explicit themes (JS resolves "system" to light or dark) */
+  :root[data-theme="dark"] {
+    --bg: #14161a; --panel: #1c1f25; --panel-2: #22262d; --border: #333842;
+    --text: #e8eaee; --muted: #a0a8b6; --accent: #6c93ff; --accent-ink: #0d1016;
+    --ok: #52c98c; --warn: #e0ab4a; --err: #ff8a80;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme]) {
+      --bg: #14161a; --panel: #1c1f25; --panel-2: #22262d; --border: #333842;
+      --text: #e8eaee; --muted: #a0a8b6; --accent: #6c93ff; --accent-ink: #0d1016;
+      --ok: #52c98c; --warn: #e0ab4a; --err: #ff8a80;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { font-size: var(--fs); }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 1rem/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    padding: 1.6rem 1rem 4rem;
+  }
+  .wrap { max-width: 72rem; margin: 0 auto; }
+  header { margin-bottom: 1.2rem; }
+  h1 { font-size: 1.5rem; margin: 0 0 0.3rem; letter-spacing: -0.2px; }
+  .sub { color: var(--muted); font-size: 0.92rem; margin: 0; max-width: 62rem; }
+  .card {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 1.1rem 1.15rem; margin-bottom: 1rem;
+  }
+  h2 { font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted);
+       margin: 0 0 0.85rem; font-weight: 600; }
+  .grid { display: grid; gap: 0.75rem 1rem; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); }
+  .grid-2 { display: grid; gap: 0.75rem 1rem; grid-template-columns: repeat(auto-fit, minmax(22rem, 1fr)); }
+  label { display: block; font-size: 0.85rem; color: var(--muted); margin-bottom: 0.25rem; }
+  .lblrow { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem; }
+  .lblrow label { margin-bottom: 0; }
+  input[type=text], input[type=number], input[type=password], select, textarea {
+    width: 100%; padding: 0.5rem 0.6rem; font-size: 1rem; font-family: inherit;
+    color: var(--text); background: var(--panel-2);
+    border: 1px solid var(--border); border-radius: 7px;
+  }
+  .passbox { display: none; margin-top: 14px; padding: 0.75rem 0.85rem; background: var(--panel-2);
+             border: 1px solid var(--border); border-radius: 8px; }
+  .passbox.show { display: block; }
+  .passrow { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+  .passrow input { flex: 1 1 16rem; font-family: var(--mono); }
+  textarea { font-family: var(--mono); font-size: 0.84rem; resize: vertical; }
+  textarea.pem-in { height: 9.5rem; white-space: pre; overflow: auto; }
+  textarea.pem-opt { height: 6.5rem; white-space: pre; overflow: auto; }
+  ::placeholder { color: var(--muted); opacity: 0.85; }
+  input:focus, select:focus, textarea:focus, button:focus-visible { outline: 2px solid var(--accent); outline-offset: -1px; }
+  .row { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; }
+  .check { display: flex; gap: 0.5rem; align-items: center; font-size: 0.92rem; color: var(--text); }
+  .check input { width: 1.05rem; height: 1.05rem; accent-color: var(--accent); }
+  button {
+    font: inherit; font-weight: 550; cursor: pointer; border-radius: 7px;
+    border: 1px solid var(--border); background: var(--panel-2); color: var(--text);
+    padding: 0.5rem 0.9rem;
+  }
+  button:hover:not(:disabled) { border-color: var(--accent); }
+  button:disabled { opacity: 0.5; cursor: default; }
+  button.primary { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+  button.sm { padding: 0.28rem 0.6rem; font-size: 0.85rem; font-weight: 500; }
+  .subsec { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border); }
+  .status { font-size: 0.92rem; min-height: 1.3rem; }
+  .status.err { color: var(--err); }
+  .status.ok { color: var(--ok); }
+  .banner { border-left: 3px solid var(--warn); background: var(--panel-2); padding: 0.65rem 0.8rem;
+            border-radius: 6px; font-size: 0.92rem; margin-bottom: 1rem; }
+  .banner code { font-family: var(--mono); font-size: 0.85rem; }
+
+  /* appearance bar */
+  .appearance { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
+                margin-top: 0.9rem; padding: 0.6rem 0.75rem; background: var(--panel);
+                border: 1px solid var(--border); border-radius: var(--radius); }
+  .aplabel { font-size: 0.74rem; color: var(--muted); text-transform: uppercase;
+             letter-spacing: 0.07em; font-weight: 600; }
+  .aplabel + * { margin-left: 0.1rem; }
+  .apdiv { width: 1px; align-self: stretch; background: var(--border); margin: 0 0.35rem; }
+  .themes { display: flex; gap: 0.35rem; flex-wrap: wrap; }
+  button.theme.active { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+  .fsval { font-family: var(--mono); font-size: 0.8rem; color: var(--muted);
+           min-width: 3.4em; text-align: center; }
+
+  .out { display: none; }
+  .out.show { display: block; }
+  .pem { width: 100%; height: 11rem; white-space: pre; overflow: auto; }
+  .filehead { display: flex; justify-content: space-between; align-items: center; gap: 0.6rem;
+              margin: 0.9rem 0 0.4rem; flex-wrap: wrap; }
+  .filename { font-family: var(--mono); font-size: 0.95rem; font-weight: 600; }
+  dl.meta { display: grid; grid-template-columns: max-content 1fr; gap: 0.2rem 0.9rem;
+            margin: 0 0 0.3rem; font-size: 0.85rem; }
+  dl.meta dt { color: var(--muted); }
+  dl.meta dd { margin: 0; font-family: var(--mono); overflow-wrap: anywhere; }
+  .chainbar { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; font-size: 0.85rem;
+              color: var(--muted); margin-bottom: 0.65rem; }
+  .pill { background: var(--panel-2); border: 1px solid var(--border); border-radius: 999px;
+          padding: 0.2rem 0.65rem; }
+  footer { color: var(--muted); font-size: 0.85rem; margin-top: 0.5rem; }
+  footer code { font-family: var(--mono); }
+  pre.cmds { background: var(--panel-2); border: 1px solid var(--border); border-radius: 7px;
+             padding: 0.7rem 0.8rem; overflow-x: auto; font-family: var(--mono);
+             font-size: 0.88rem; line-height: 1.5; margin: 0; }
+  @media (max-width: 560px) {
+    body { padding: 1rem 1rem 3rem; }
+    .apdiv { display: none; }
+  }
+</style>
+<script>
+  /* apply saved appearance before first paint to avoid a flash */
+  (function () {
+    try {
+      var p = JSON.parse(localStorage.getItem("certgen.prefs.v1") || "{}");
+      var t = (p.theme === "light" || p.theme === "dark" || p.theme === "system") ? p.theme : "system";
+      if (t === "system") {
+        t = (window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light";
+      }
+      document.documentElement.setAttribute("data-theme", t);
+      if (p.fs) document.documentElement.style.setProperty("--fs", p.fs + "px");
+    } catch (e) {}
+  })();
+</script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Leaf Certificate Generator</h1>
+    <p class="sub">Signs an X.509 v3 leaf (server/client) certificate using an existing Intermediate CA certificate and private key (encrypted or unencrypted). Everything runs locally in this page; no key or certificate leaves your browser.</p>
+
+    <div class="appearance" role="group" aria-label="Appearance">
+      <span class="aplabel">Theme</span>
+      <div class="themes" id="themes">
+        <button type="button" class="sm theme" data-theme-choice="system">System</button>
+        <button type="button" class="sm theme" data-theme-choice="light">Light</button>
+        <button type="button" class="sm theme" data-theme-choice="dark">Dark</button>
+      </div>
+      <span class="apdiv"></span>
+      <span class="aplabel">Text size</span>
+      <button type="button" class="sm" id="fsDown" aria-label="Smaller text">A&minus;</button>
+      <span class="fsval" id="fsVal">17px</span>
+      <button type="button" class="sm" id="fsUp" aria-label="Larger text">A+</button>
+    </div>
+  </header>
+
+  <div id="insecure" class="banner" style="display:none">
+    <strong>Web Crypto unavailable.</strong> This browser only exposes <code>crypto.subtle</code> in a secure context.
+    Serve the file instead of opening it directly: <code>python3 -m http.server 8000</code> then visit
+    <code>http://localhost:8000/leaf-certificate-generator.html</code>.
+  </div>
+
+  <div class="card">
+    <h2>Intermediate CA (Signing Issuer)</h2>
+    <div class="grid-2">
+      <div>
+        <div class="lblrow">
+          <label for="intCertPem">Intermediate CA certificate (PEM) *</label>
+          <button type="button" class="sm" id="loadIntCert">Load file</button>
+          <input type="file" id="intCertFile" accept=".crt,.pem,.cer,text/plain" hidden>
+        </div>
+        <textarea id="intCertPem" class="pem-in" placeholder="-----BEGIN CERTIFICATE-----&#10;...&#10;-----END CERTIFICATE-----" spellcheck="false"></textarea>
+      </div>
+      <div>
+        <div class="lblrow">
+          <label for="intKeyPem">Intermediate CA private key (PEM, encrypted or unencrypted) *</label>
+          <button type="button" class="sm" id="loadIntKey">Load file</button>
+          <input type="file" id="intKeyFile" accept=".key,.pem,text/plain" hidden>
+        </div>
+        <textarea id="intKeyPem" class="pem-in" placeholder="-----BEGIN ENCRYPTED PRIVATE KEY-----&#10;...&#10;-----END ENCRYPTED PRIVATE KEY-----" spellcheck="false"></textarea>
+      </div>
+    </div>
+    <div style="margin-top:12px">
+      <label for="intKeyPass">Intermediate CA private key passphrase (required if key is encrypted)</label>
+      <div class="passrow">
+        <input type="password" id="intKeyPass" placeholder="Enter Intermediate CA key passphrase" autocomplete="current-password" spellcheck="false">
+        <button type="button" class="sm" id="toggleIntPass">Show</button>
+      </div>
+    </div>
+    <div style="margin-top:12px">
+      <div class="lblrow">
+        <label for="rootCertPem">Root CA certificate (PEM, optional &mdash; to also output <code>fullchain.pem</code>)</label>
+        <button type="button" class="sm" id="loadRootCert">Load file</button>
+        <input type="file" id="rootCertFile" accept=".crt,.pem,.cer,text/plain" hidden>
+      </div>
+      <textarea id="rootCertPem" class="pem-opt" placeholder="Optional: -----BEGIN CERTIFICATE----- ..." spellcheck="false"></textarea>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Leaf Subject &amp; SANs</h2>
+    <div class="grid">
+      <div>
+        <label for="domain">Domain (leaf CN) *</label>
+        <input type="text" id="domain" value="example.com" placeholder="example.com" spellcheck="false">
+      </div>
+      <div>
+        <label for="org">Organization (O)</label>
+        <input type="text" id="org" value="Example Org" spellcheck="false">
+      </div>
+      <div>
+        <label for="country">Country (C, 2 letters)</label>
+        <input type="text" id="country" value="US" maxlength="2" spellcheck="false">
+      </div>
+      <div>
+        <label for="ou">Organizational unit (OU)</label>
+        <input type="text" id="ou" value="" placeholder="Optional" spellcheck="false">
+      </div>
+      <div>
+        <label for="state">State / province (ST)</label>
+        <input type="text" id="state" value="" placeholder="Optional" spellcheck="false">
+      </div>
+      <div>
+        <label for="locality">Locality (L)</label>
+        <input type="text" id="locality" value="" placeholder="Optional" spellcheck="false">
+      </div>
+    </div>
+    <div class="row" style="margin-top:14px">
+      <span class="check"><input type="checkbox" id="wildcard" checked><label for="wildcard" style="margin:0">Add <code>*.domain</code> to SAN</label></span>
+      <span class="check"><input type="checkbox" id="localhostSan"><label for="localhostSan" style="margin:0">Add <code>localhost</code> + <code>127.0.0.1</code></label></span>
+    </div>
+    <div class="grid" style="margin-top:14px">
+      <div>
+        <label for="extraDns">Extra DNS names (comma or newline separated)</label>
+        <textarea id="extraDns" rows="2" placeholder="api.example.com, www.example.com" spellcheck="false"></textarea>
+      </div>
+      <div>
+        <label for="extraIps">IP addresses (comma or newline separated)</label>
+        <textarea id="extraIps" rows="2" placeholder="192.168.1.10, ::1" spellcheck="false"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Leaf Key &amp; validity</h2>
+    <div class="grid">
+      <div>
+        <label for="leafAlg">Leaf key algorithm</label>
+        <select id="leafAlg">
+          <option value="RSA-2048">RSA 2048</option>
+          <option value="RSA-3072">RSA 3072</option>
+          <option value="RSA-4096" selected>RSA 4096</option>
+          <option value="EC-P256">ECDSA P-256</option>
+          <option value="EC-P384">ECDSA P-384</option>
+          <option value="EC-P521">ECDSA P-521</option>
+        </select>
+      </div>
+      <div>
+        <label for="hash">Signature hash</label>
+        <select id="hash">
+          <option value="SHA-256">SHA-256</option>
+          <option value="SHA-384">SHA-384</option>
+          <option value="SHA-512" selected>SHA-512</option>
+        </select>
+      </div>
+      <div>
+        <label for="leafDays">Validity (days)</label>
+        <input type="number" id="leafDays" value="397" min="1" max="36500">
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:14px">
+      <span class="check"><input type="checkbox" id="encryptLeafKey"><label for="encryptLeafKey" style="margin:0">Encrypt leaf private key with passphrase (PKCS#8 PBES2 / AES-256-CBC)</label></span>
+    </div>
+    <div class="passbox" id="leafPassBox">
+      <label for="leafKeyPass">Leaf private key passphrase *</label>
+      <div class="passrow">
+        <input type="password" id="leafKeyPass" placeholder="Enter passphrase to encrypt the leaf private key" autocomplete="new-password" spellcheck="false">
+        <button type="button" class="sm" id="toggleLeafPass">Show</button>
+        <button type="button" class="sm" id="genLeafPass">Generate</button>
+      </div>
+    </div>
+
+    <div class="subsec">
+      <h2>Extensions &amp; filename</h2>
+      <div class="grid">
+        <div>
+          <label for="filePrefix">Output filename prefix (blank = from domain)</label>
+          <input type="text" id="filePrefix" value="" placeholder="example.com" spellcheck="false">
+        </div>
+      </div>
+      <div class="row" style="margin-top:14px">
+        <span class="check"><input type="checkbox" id="ekuServer" checked><label for="ekuServer" style="margin:0">EKU includes <code>serverAuth</code></label></span>
+        <span class="check"><input type="checkbox" id="ekuClient" checked><label for="ekuClient" style="margin:0">EKU includes <code>clientAuth</code></label></span>
+        <span class="check"><input type="checkbox" id="leafBc" checked><label for="leafBc" style="margin:0">Include <code>basicConstraints</code> (CA:FALSE)</label></span>
+        <span class="check"><input type="checkbox" id="includeAki" checked><label for="includeAki" style="margin:0">Include AKI</label></span>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:18px">
+      <button class="primary" id="gen">Generate Leaf Certificate</button>
+      <button id="zip" disabled>Download all as .zip</button>
+      <span class="status" id="status"></span>
+    </div>
+  </div>
+
+  <div class="out" id="out">
+    <div class="card">
+      <h2>Leaf Certificate &amp; Chain</h2>
+      <div class="chainbar" id="chainbar"></div>
+      <div id="files"></div>
+    </div>
+    <div class="card">
+      <h2>Verify &amp; use</h2>
+      <pre class="cmds" id="cmds"></pre>
+    </div>
+  </div>
+
+  <footer>
+    Leaf private key is PKCS#8 PEM (unencrypted by default for server compatibility, or AES-256-CBC encrypted when enabled above). The Intermediate CA private key is decrypted in memory only to sign the leaf certificate and never leaves this page.
+  </footer>
+</div>
+
+<script>
+"use strict";
+
+/* ========================================================================
+   Byte + DER helpers
+   ======================================================================== */
+const TE = new TextEncoder();
+const TD = new TextDecoder();
+
+function cat(...parts) {
+  let n = 0;
+  for (const p of parts) n += p.length;
+  const out = new Uint8Array(n);
+  let o = 0;
+  for (const p of parts) { out.set(p, o); o += p.length; }
+  return out;
+}
+
+function tlv(tag, body) {
+  let lenBytes;
+  const len = body.length;
+  if (len < 0x80) {
+    lenBytes = [len];
+  } else {
+    const t = [];
+    let n = len;
+    while (n > 0) { t.unshift(n & 0xff); n = Math.floor(n / 256); }
+    lenBytes = [0x80 | t.length].concat(t);
+  }
+  return cat(new Uint8Array([tag]), new Uint8Array(lenBytes), body);
+}
+
+const SEQ         = b => tlv(0x30, b);
+const SET         = b => tlv(0x31, b);
+const NULLV       = () => new Uint8Array([0x05, 0x00]);
+const BOOL        = v => new Uint8Array([0x01, 0x01, v ? 0xff : 0x00]);
+const OCTETSTRING = b => tlv(0x04, b);
+const UTF8        = s => tlv(0x0c, TE.encode(s));
+const PRINT       = s => tlv(0x13, TE.encode(s));
+const CTX_C       = (n, b) => tlv(0xa0 | n, b);          // constructed context-specific
+const EMPTY       = new Uint8Array(0);
+
+function OID(dotted) {
+  const p = dotted.split(".").map(Number);
+  const bytes = [40 * p[0] + p[1]];
+  for (let i = 2; i < p.length; i++) {
+    let v = p[i];
+    const group = [v & 0x7f];
+    v = Math.floor(v / 128);
+    while (v > 0) { group.unshift((v & 0x7f) | 0x80); v = Math.floor(v / 128); }
+    bytes.push(...group);
+  }
+  return tlv(0x06, new Uint8Array(bytes));
+}
+
+function INTEGER(bytes) {               // unsigned big-endian -> DER INTEGER
+  let i = 0;
+  while (i < bytes.length - 1 && bytes[i] === 0) i++;
+  let b = bytes.slice(i);
+  if (b.length === 0) b = new Uint8Array([0]);
+  if (b[0] & 0x80) b = cat(new Uint8Array([0]), b);
+  return tlv(0x02, b);
+}
+const INT_SMALL = n => INTEGER(new Uint8Array([n]));
+
+function intFromUint(n) {
+  const bytes = [];
+  let v = n;
+  do { bytes.unshift(v & 0xff); v = Math.floor(v / 256); } while (v > 0);
+  return INTEGER(new Uint8Array(bytes));
+}
+
+function BITSTRING(bytes, unused) {
+  return tlv(0x03, cat(new Uint8Array([unused || 0]), bytes));
+}
+
+function derTime(date) {
+  const pad = n => String(n).padStart(2, "0");
+  const y = date.getUTCFullYear();
+  const core = pad(date.getUTCMonth() + 1) + pad(date.getUTCDate()) +
+               pad(date.getUTCHours()) + pad(date.getUTCMinutes()) +
+               pad(date.getUTCSeconds()) + "Z";
+  if (y >= 1950 && y < 2050) return tlv(0x17, TE.encode(pad(y % 100) + core));  // UTCTime
+  return tlv(0x18, TE.encode(String(y) + core));                               // GeneralizedTime
+}
+
+/* ========================================================================
+   DER reader & PEM parser
+   ======================================================================== */
+function readTLV(b, off) {
+  if (off >= b.length) throw new Error("Unexpected end of DER data.");
+  const tag = b[off];
+  let i = off + 1;
+  if (i >= b.length) throw new Error("Truncated DER length.");
+  let len = b[i++];
+  if (len & 0x80) {
+    const n = len & 0x7f;
+    if (n === 0 || i + n > b.length) throw new Error("Unsupported or truncated DER length.");
+    len = 0;
+    for (let k = 0; k < n; k++) len = len * 256 + b[i++];
+  }
+  if (i + len > b.length) throw new Error("Truncated DER value.");
+  return { tag, start: off, vstart: i, len, end: i + len };
+}
+
+function childrenOf(b, tlvNode) {
+  const list = [];
+  let off = tlvNode.vstart;
+  while (off < tlvNode.end) {
+    const c = readTLV(b, off);
+    list.push(c);
+    off = c.end;
+  }
+  return list;
+}
+
+function decodeOid(bytes) {
+  if (bytes.length === 0) throw new Error("Empty OID.");
+  const out = [Math.floor(bytes[0] / 40), bytes[0] % 40];
+  let v = 0;
+  for (let i = 1; i < bytes.length; i++) {
+    v = v * 128 + (bytes[i] & 0x7f);
+    if (!(bytes[i] & 0x80)) { out.push(v); v = 0; }
+  }
+  return out.join(".");
+}
+
+function decodeUint(bytes) {
+  let v = 0;
+  for (let i = 0; i < bytes.length; i++) v = v * 256 + bytes[i];
+  return v;
+}
+
+function spkiPublicKeyBits(spki) {
+  const outer = readTLV(spki, 0);
+  const alg = readTLV(spki, outer.vstart);
+  const bits = readTLV(spki, alg.end);
+  return spki.slice(bits.vstart + 1, bits.end);   // drop the "unused bits" octet
+}
+
+function parsePem(pemText, expectedLabels) {
+  const m = pemText.match(/-----BEGIN ([A-Z0-9 ]+)-----([\s\S]*?)-----END \1-----/);
+  if (!m) throw new Error("No valid PEM block found.");
+  const label = m[1];
+  if (expectedLabels && !expectedLabels.includes(label)) {
+    throw new Error("Expected " + expectedLabels.join(" or ") + ", got " + label + ".");
+  }
+  const b64Str = m[2].replace(/\s+/g, "");
+  if (!b64Str) throw new Error("Empty PEM body for " + label + ".");
+  let bin;
+  try { bin = atob(b64Str); }
+  catch (e) { throw new Error("Invalid Base64 inside " + label + " PEM."); }
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return { label, bytes };
+}
+
+/* ========================================================================
+   X.509 parsing & structures
+   ======================================================================== */
+const ATTR = {
+  CN: "2.5.4.3", C: "2.5.4.6", L: "2.5.4.7",
+  ST: "2.5.4.8", O: "2.5.4.10", OU: "2.5.4.11"
+};
+const OID_TO_ATTR = Object.fromEntries(Object.entries(ATTR).map(([k, v]) => [v, k]));
+const NAME_ORDER = ["C", "ST", "L", "O", "OU", "CN"];
+
+function buildName(fields) {
+  const rdns = [];
+  for (const k of NAME_ORDER) {
+    const v = (fields[k] || "").trim();
+    if (!v) continue;
+    const value = (k === "C") ? PRINT(v.toUpperCase().slice(0, 2)) : UTF8(v);
+    rdns.push(SET(SEQ(cat(OID(ATTR[k]), value))));
+  }
+  return SEQ(cat(...rdns));
+}
+
+function nameToString(fields) {
+  return NAME_ORDER.filter(k => (fields[k] || "").trim())
+    .map(k => k + "=" + (k === "C" ? fields[k].trim().toUpperCase() : fields[k].trim())).join(", ");
+}
+
+function derNameToString(der, nameNode) {
+  const parts = [];
+  for (const rdn of childrenOf(der, nameNode)) {
+    for (const atv of childrenOf(der, rdn)) {
+      const pair = childrenOf(der, atv);
+      if (pair.length < 2) continue;
+      const oid = decodeOid(der.slice(pair[0].vstart, pair[0].end));
+      const key = OID_TO_ATTR[oid] || oid;
+      const val = TD.decode(der.slice(pair[1].vstart, pair[1].end));
+      parts.push(key + "=" + val);
+    }
+  }
+  return parts.join(", ");
+}
+
+function parseCertificateInfo(der) {
+  const cert = readTLV(der, 0);
+  if (cert.tag !== 0x30) throw new Error("Certificate is not a DER SEQUENCE.");
+  const certParts = childrenOf(der, cert);
+  if (certParts.length < 3) throw new Error("Malformed X.509 Certificate.");
+
+  const tbs = certParts[0];
+  const tbsFields = childrenOf(der, tbs);
+  let idx = 0;
+  if (tbsFields[0] && tbsFields[0].tag === 0xa0) idx = 1; // optional version [0]
+  if (tbsFields.length < idx + 6) throw new Error("Malformed TBSCertificate.");
+
+  const subjectNode = tbsFields[idx + 4];
+  const spkiNode    = tbsFields[idx + 5];
+  const subjectDer  = der.slice(subjectNode.start, subjectNode.end);
+  const spkiDer     = der.slice(spkiNode.start, spkiNode.end);
+  const subjectText = derNameToString(der, subjectNode);
+
+  let cn = subjectText;
+  for (const rdn of childrenOf(der, subjectNode)) {
+    for (const atv of childrenOf(der, rdn)) {
+      const pair = childrenOf(der, atv);
+      if (pair.length >= 2 && decodeOid(der.slice(pair[0].vstart, pair[0].end)) === ATTR.CN) {
+        cn = TD.decode(der.slice(pair[1].vstart, pair[1].end));
+      }
+    }
+  }
+
+  let ski = null;
+  let isCa = null;
+  for (let i = idx + 6; i < tbsFields.length; i++) {
+    if (tbsFields[i].tag !== 0xa3) continue;
+    const extSeq = childrenOf(der, tbsFields[i])[0];
+    for (const ext of childrenOf(der, extSeq)) {
+      const f = childrenOf(der, ext);
+      if (f.length < 2) continue;
+      const oid = decodeOid(der.slice(f[0].vstart, f[0].end));
+      const valNode = f[f.length - 1];
+      const valBytes = der.slice(valNode.vstart, valNode.end);
+      if (oid === "2.5.29.14") {
+        const os = readTLV(valBytes, 0);
+        if (os.tag === 0x04) ski = valBytes.slice(os.vstart, os.end);
+      } else if (oid === "2.5.29.19") {
+        const bc = readTLV(valBytes, 0);
+        const bcParts = childrenOf(valBytes, bc);
+        isCa = !!(bcParts[0] && bcParts[0].tag === 0x01 && valBytes[bcParts[0].vstart] !== 0);
+      }
+    }
+  }
+
+  return { subjectDer, spkiDer, subjectText, cn, ski, isCa };
+}
+
+function extension(oid, critical, value) {
+  return SEQ(cat(OID(oid), critical ? BOOL(true) : EMPTY, OCTETSTRING(value)));
+}
+
+const KU = { digitalSignature: 0, keyEncipherment: 2 };
+
+function keyUsageExt(bitIndexes) {
+  const max = Math.max(...bitIndexes);
+  const nbytes = Math.floor(max / 8) + 1;
+  const b = new Uint8Array(nbytes);
+  for (const i of bitIndexes) b[Math.floor(i / 8)] |= 0x80 >> (i % 8);
+  const unused = nbytes * 8 - (max + 1);
+  return extension("2.5.29.15", true, BITSTRING(b, unused));
+}
+
+function basicConstraintsExt(isCa, pathLen) {
+  let body = EMPTY;
+  if (isCa) {
+    body = BOOL(true);
+    if (pathLen !== null && pathLen !== undefined) body = cat(body, INT_SMALL(pathLen));
+  }
+  return extension("2.5.29.19", isCa, SEQ(body));
+}
+
+function ekuExt(oids) {
+  return extension("2.5.29.37", false, SEQ(cat(...oids.map(OID))));
+}
+
+function parseIp(s) {
+  s = s.trim();
+  if (/^\d{1,3}(\.\d{1,3}){3}$/.test(s)) {
+    const p = s.split(".").map(Number);
+    if (p.every(n => n >= 0 && n <= 255)) return new Uint8Array(p);
+    return null;
+  }
+  if (!s.includes(":")) return null;
+  const halves = s.split("::");
+  const b = new Uint8Array(16);
+  const put = (hexStr, idx) => {
+    const v = parseInt(hexStr, 16);
+    if (!Number.isFinite(v) || v < 0 || v > 0xffff) throw new Error("bad");
+    b[idx * 2] = v >> 8; b[idx * 2 + 1] = v & 0xff;
+  };
+  try {
+    if (halves.length === 1) {
+      const parts = s.split(":");
+      if (parts.length !== 8) return null;
+      parts.forEach((h, i) => put(h, i));
+    } else if (halves.length === 2) {
+      const head = halves[0] ? halves[0].split(":") : [];
+      const tail = halves[1] ? halves[1].split(":") : [];
+      if (head.length + tail.length > 8) return null;
+      head.forEach((h, i) => put(h, i));
+      tail.forEach((h, i) => put(h, 8 - tail.length + i));
+    } else return null;
+  } catch (e) { return null; }
+  return b;
+}
+
+function sanExt(dnsNames, ips) {
+  const items = [];
+  for (const d of dnsNames) items.push(tlv(0x82, TE.encode(d)));       // dNSName  [2] IA5String
+  for (const ip of ips) items.push(tlv(0x87, ip));                      // iPAddress [7] OCTET STRING
+  return extension("2.5.29.17", false, SEQ(cat(...items)));
+}
+
+function skiExt(keyIdBytes) {
+  return extension("2.5.29.14", false, OCTETSTRING(keyIdBytes));
+}
+function akiExt(keyIdBytes) {
+  return extension("2.5.29.35", false, SEQ(tlv(0x80, keyIdBytes)));     // keyIdentifier [0]
+}
+
+/* ========================================================================
+   Crypto & PKCS#8 import / encrypt / decrypt
+   ======================================================================== */
+const SIG_OID = {
+  RSA: { "SHA-256": "1.2.840.113549.1.1.11", "SHA-384": "1.2.840.113549.1.1.12", "SHA-512": "1.2.840.113549.1.1.13" },
+  EC:  { "SHA-256": "1.2.840.10045.4.3.2",   "SHA-384": "1.2.840.10045.4.3.3",   "SHA-512": "1.2.840.10045.4.3.4" }
+};
+const PRF_HASH = {
+  "1.2.840.113549.2.7":  "SHA-1",
+  "1.2.840.113549.2.9":  "SHA-256",
+  "1.2.840.113549.2.10": "SHA-384",
+  "1.2.840.113549.2.11": "SHA-512"
+};
+const AES_CBC_LEN = {
+  "2.16.840.1.101.3.4.1.2":  128,
+  "2.16.840.1.101.3.4.1.22": 192,
+  "2.16.840.1.101.3.4.1.42": 256
+};
+const EC_CURVES = {
+  "1.2.840.10045.3.1.7": "P-256",
+  "1.3.132.0.34":        "P-384",
+  "1.3.132.0.35":        "P-521"
+};
+
+const isRsa = alg => alg.startsWith("RSA");
+
+async function generateKeyPair(alg, hash) {
+  if (isRsa(alg)) {
+    return crypto.subtle.generateKey({
+      name: "RSASSA-PKCS1-v1_5",
+      modulusLength: parseInt(alg.split("-")[1], 10),
+      publicExponent: new Uint8Array([0x01, 0x00, 0x01]),
+      hash
+    }, true, ["sign", "verify"]);
+  }
+  const namedCurve = { "EC-P256": "P-256", "EC-P384": "P-384", "EC-P521": "P-521" }[alg];
+  return crypto.subtle.generateKey({ name: "ECDSA", namedCurve }, true, ["sign", "verify"]);
+}
+
+function sigAlgIdentifier(signerAlg, hash) {
+  if (isRsa(signerAlg)) return SEQ(cat(OID(SIG_OID.RSA[hash]), NULLV()));
+  return SEQ(OID(SIG_OID.EC[hash]));                 // params absent for ECDSA
+}
+
+async function signTbs(signerAlg, hash, privateKey, publicKey, tbs) {
+  if (isRsa(signerAlg)) {
+    const raw = new Uint8Array(await crypto.subtle.sign({ name: "RSASSA-PKCS1-v1_5" }, privateKey, tbs));
+    const ok = await crypto.subtle.verify({ name: "RSASSA-PKCS1-v1_5" }, publicKey, raw, tbs);
+    return { sigValue: raw, ok };
+  }
+  const raw = new Uint8Array(await crypto.subtle.sign({ name: "ECDSA", hash }, privateKey, tbs));
+  const ok = await crypto.subtle.verify({ name: "ECDSA", hash }, publicKey, raw, tbs);
+  const half = raw.length / 2;
+  const der = SEQ(cat(INTEGER(raw.slice(0, half)), INTEGER(raw.slice(half))));  // r,s -> DER
+  return { sigValue: der, ok };
+}
+
+function randomSerial() {
+  const b = crypto.getRandomValues(new Uint8Array(16));
+  b[0] &= 0x7f;                    // keep it positive
+  if (b[0] === 0) b[0] = 0x01;
+  return b;
+}
+
+async function keyIdentifier(spki) {
+  const digest = await crypto.subtle.digest("SHA-1", spkiPublicKeyBits(spki));
+  return new Uint8Array(digest);
+}
+
+async function encryptPkcs8(pkcs8Bytes, passphrase) {
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const iv = crypto.getRandomValues(new Uint8Array(16));
+  const iterations = 210000;
+
+  const baseKey = await crypto.subtle.importKey(
+    "raw", TE.encode(passphrase), "PBKDF2", false, ["deriveKey"]
+  );
+  const aesKey = await crypto.subtle.deriveKey(
+    { name: "PBKDF2", salt, iterations, hash: "SHA-256" },
+    baseKey,
+    { name: "AES-CBC", length: 256 },
+    false,
+    ["encrypt"]
+  );
+  const encryptedData = new Uint8Array(
+    await crypto.subtle.encrypt({ name: "AES-CBC", iv }, aesKey, pkcs8Bytes)
+  );
+
+  const pbkdf2Params = SEQ(cat(
+    OCTETSTRING(salt),
+    intFromUint(iterations),
+    INT_SMALL(32),
+    SEQ(cat(OID("1.2.840.113549.2.9"), NULLV()))   // hmacWithSHA256
+  ));
+  const pbes2Params = SEQ(cat(
+    SEQ(cat(OID("1.2.840.113549.1.5.12"), pbkdf2Params)),          // id-PBKDF2
+    SEQ(cat(OID("2.16.840.1.101.3.4.1.42"), OCTETSTRING(iv)))      // aes256-CBC
+  ));
+  return SEQ(cat(
+    SEQ(cat(OID("1.2.840.113549.1.5.13"), pbes2Params)),           // id-PBES2
+    OCTETSTRING(encryptedData)
+  ));
+}
+
+async function decryptPkcs8(encDer, passphrase) {
+  const top = readTLV(encDer, 0);
+  if (top.tag !== 0x30) throw new Error("Encrypted key is not a DER SEQUENCE.");
+  const parts = childrenOf(encDer, top);
+  if (parts.length < 2) throw new Error("Malformed EncryptedPrivateKeyInfo.");
+
+  const algParts = childrenOf(encDer, parts[0]);
+  const schemeOid = decodeOid(encDer.slice(algParts[0].vstart, algParts[0].end));
+  if (schemeOid !== "1.2.840.113549.1.5.13") {
+    throw new Error("Unsupported key encryption algorithm (" + schemeOid + "). Expected PBES2.");
+  }
+
+  const pbes2Parts = childrenOf(encDer, algParts[1]);
+  const kdfAlg = childrenOf(encDer, pbes2Parts[0]);
+  const kdfOid = decodeOid(encDer.slice(kdfAlg[0].vstart, kdfAlg[0].end));
+  if (kdfOid !== "1.2.840.113549.1.5.12") {
+    throw new Error("Unsupported KDF (" + kdfOid + "). Expected PBKDF2.");
+  }
+
+  const pbkdf2Parts = childrenOf(encDer, kdfAlg[1]);
+  const salt = encDer.slice(pbkdf2Parts[0].vstart, pbkdf2Parts[0].end);
+  const iterations = decodeUint(encDer.slice(pbkdf2Parts[1].vstart, pbkdf2Parts[1].end));
+  let prfHash = "SHA-1";
+  for (let i = 2; i < pbkdf2Parts.length; i++) {
+    if (pbkdf2Parts[i].tag === 0x30) {
+      const prfOidNode = childrenOf(encDer, pbkdf2Parts[i])[0];
+      const prfOid = decodeOid(encDer.slice(prfOidNode.vstart, prfOidNode.end));
+      prfHash = PRF_HASH[prfOid];
+      if (!prfHash) throw new Error("Unsupported PBKDF2 PRF (" + prfOid + ").");
+    }
+  }
+
+  const encAlg = childrenOf(encDer, pbes2Parts[1]);
+  const cipherOid = decodeOid(encDer.slice(encAlg[0].vstart, encAlg[0].end));
+  const keyLen = AES_CBC_LEN[cipherOid];
+  if (!keyLen) throw new Error("Unsupported PBES2 cipher (" + cipherOid + "). Expected AES-128/192/256-CBC.");
+  const iv = encDer.slice(encAlg[1].vstart, encAlg[1].end);
+  const ciphertext = encDer.slice(parts[1].vstart, parts[1].end);
+
+  const baseKey = await crypto.subtle.importKey(
+    "raw", TE.encode(passphrase), "PBKDF2", false, ["deriveKey"]
+  );
+  const aesKey = await crypto.subtle.deriveKey(
+    { name: "PBKDF2", salt, iterations, hash: prfHash },
+    baseKey,
+    { name: "AES-CBC", length: keyLen },
+    false,
+    ["decrypt"]
+  );
+
+  try {
+    return new Uint8Array(await crypto.subtle.decrypt({ name: "AES-CBC", iv }, aesKey, ciphertext));
+  } catch (e) {
+    throw new Error("Failed to decrypt Intermediate CA private key — check the passphrase.");
+  }
+}
+
+async function importSigningCaKey(pkcs8Der, caSpkiDer, hash) {
+  const pkInfo = readTLV(pkcs8Der, 0);
+  if (pkInfo.tag !== 0x30) throw new Error("Decrypted key is not valid PKCS#8 PrivateKeyInfo.");
+  const parts = childrenOf(pkcs8Der, pkInfo);
+  if (parts.length < 3) throw new Error("Malformed PKCS#8 PrivateKeyInfo.");
+
+  const algSeq = childrenOf(pkcs8Der, parts[1]);
+  const algOid = decodeOid(pkcs8Der.slice(algSeq[0].vstart, algSeq[0].end));
+
+  let signerAlg, importParams;
+  if (algOid === "1.2.840.113549.1.1.1") {
+    signerAlg = "RSA";
+    importParams = { name: "RSASSA-PKCS1-v1_5", hash };
+  } else if (algOid === "1.2.840.10045.2.1") {
+    signerAlg = "EC";
+    const curveOid = algSeq[1] ? decodeOid(pkcs8Der.slice(algSeq[1].vstart, algSeq[1].end)) : "";
+    const namedCurve = EC_CURVES[curveOid];
+    if (!namedCurve) throw new Error("Unsupported EC curve in Intermediate CA private key (" + curveOid + ").");
+    importParams = { name: "ECDSA", namedCurve };
+  } else {
+    throw new Error("Unsupported Intermediate CA private key algorithm (" + algOid + ").");
+  }
+
+  let privateKey, publicKey;
+  try {
+    privateKey = await crypto.subtle.importKey("pkcs8", pkcs8Der, importParams, false, ["sign"]);
+  } catch (e) {
+    throw new Error("Could not import Intermediate CA private key: " + (e && e.message ? e.message : e));
+  }
+  try {
+    publicKey = await crypto.subtle.importKey("spki", caSpkiDer, importParams, false, ["verify"]);
+  } catch (e) {
+    throw new Error("Intermediate CA certificate public key does not match the Intermediate CA private key type.");
+  }
+
+  const probe = TE.encode("ca-key-pair-check");
+  const check = await signTbs(signerAlg, hash, privateKey, publicKey, probe);
+  if (!check.ok) {
+    throw new Error("The Intermediate CA private key does not match the Intermediate CA certificate.");
+  }
+  return { signerAlg, privateKey, publicKey };
+}
+
+/**
+ * Assemble and sign one X.509 v3 certificate.
+ */
+async function makeCertificate(o) {
+  const algId = sigAlgIdentifier(o.signerAlg, o.hash);
+  const tbs = SEQ(cat(
+    CTX_C(0, INT_SMALL(2)),                       // version v3
+    INTEGER(o.serial),
+    algId,
+    o.issuer,
+    SEQ(cat(derTime(o.notBefore), derTime(o.notAfter))),
+    o.subject,
+    o.subjectSpki,
+    CTX_C(3, SEQ(cat(...o.extensions)))           // extensions [3]
+  ));
+  const { sigValue, ok } = await signTbs(o.signerAlg, o.hash, o.signerPrivateKey, o.signerPublicKey, tbs);
+  const der = SEQ(cat(tbs, algId, BITSTRING(sigValue, 0)));
+  return { der, selfCheck: ok };
+}
+
+/* ========================================================================
+   Encoding / output helpers
+   ======================================================================== */
+function b64(bytes) {
+  let s = "";
+  const CH = 0x8000;
+  for (let i = 0; i < bytes.length; i += CH) s += String.fromCharCode.apply(null, bytes.subarray(i, i + CH));
+  return btoa(s);
+}
+function toPem(bytes, label) {
+  const body = b64(bytes).replace(/(.{64})/g, "$1\n").replace(/\n$/, "");
+  return "-----BEGIN " + label + "-----\n" + body + "\n-----END " + label + "-----\n";
+}
+function hex(bytes, sep) {
+  return Array.from(bytes).map(b => b.toString(16).padStart(2, "0")).join(sep || "");
+}
+async function fingerprint(der) {
+  return hex(new Uint8Array(await crypto.subtle.digest("SHA-256", der)), ":").toUpperCase();
+}
+function utcString(d) { return d.toISOString().replace("T", " ").replace(/\.\d+Z$/, " UTC"); }
+
+function download(name, text) {
+  const blob = new Blob([text], { type: "application/octet-stream" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+
+/* ---- store-only ZIP writer (no dependencies) ---- */
+const CRC_TABLE = (() => {
+  const t = new Uint32Array(256);
+  for (let n = 0; n < 256; n++) {
+    let c = n;
+    for (let k = 0; k < 8; k++) c = (c & 1) ? (0xedb88320 ^ (c >>> 1)) : (c >>> 1);
+    t[n] = c >>> 0;
+  }
+  return t;
+})();
+function crc32(buf) {
+  let c = 0xffffffff;
+  for (let i = 0; i < buf.length; i++) c = CRC_TABLE[(c ^ buf[i]) & 0xff] ^ (c >>> 8);
+  return (c ^ 0xffffffff) >>> 0;
+}
+function makeZip(files) {
+  const now = new Date();
+  const dosTime = ((now.getHours() << 11) | (now.getMinutes() << 5) | (now.getSeconds() >> 1)) & 0xffff;
+  const dosDate = (((now.getFullYear() - 1980) << 9) | ((now.getMonth() + 1) << 5) | now.getDate()) & 0xffff;
+  const local = [], central = [];
+  let offset = 0;
+  for (const f of files) {
+    const nameB = TE.encode(f.name);
+    const data = typeof f.data === "string" ? TE.encode(f.data) : f.data;
+    const crc = crc32(data);
+    const lh = new Uint8Array(30 + nameB.length);
+    const d1 = new DataView(lh.buffer);
+    d1.setUint32(0, 0x04034b50, true); d1.setUint16(4, 20, true); d1.setUint16(6, 0, true);
+    d1.setUint16(8, 0, true); d1.setUint16(10, dosTime, true); d1.setUint16(12, dosDate, true);
+    d1.setUint32(14, crc, true); d1.setUint32(18, data.length, true); d1.setUint32(22, data.length, true);
+    d1.setUint16(26, nameB.length, true); d1.setUint16(28, 0, true);
+    lh.set(nameB, 30);
+    local.push(lh, data);
+
+    const cd = new Uint8Array(46 + nameB.length);
+    const d2 = new DataView(cd.buffer);
+    d2.setUint32(0, 0x02014b50, true); d2.setUint16(4, 20, true); d2.setUint16(6, 20, true);
+    d2.setUint16(8, 0, true); d2.setUint16(10, 0, true);
+    d2.setUint16(12, dosTime, true); d2.setUint16(14, dosDate, true);
+    d2.setUint32(16, crc, true); d2.setUint32(20, data.length, true); d2.setUint32(24, data.length, true);
+    d2.setUint16(28, nameB.length, true); d2.setUint16(30, 0, true); d2.setUint16(32, 0, true);
+    d2.setUint16(34, 0, true); d2.setUint16(36, 0, true); d2.setUint32(38, 0, true);
+    d2.setUint32(42, offset, true);
+    cd.set(nameB, 46);
+    central.push(cd);
+    offset += lh.length + data.length;
+  }
+  const cdBytes = cat(...central);
+  const eocd = new Uint8Array(22);
+  const d3 = new DataView(eocd.buffer);
+  d3.setUint32(0, 0x06054b50, true); d3.setUint16(4, 0, true); d3.setUint16(6, 0, true);
+  d3.setUint16(8, files.length, true); d3.setUint16(10, files.length, true);
+  d3.setUint32(12, cdBytes.length, true); d3.setUint32(16, offset, true); d3.setUint16(20, 0, true);
+  return new Blob([cat(...local, cdBytes, eocd)], { type: "application/zip" });
+}
+
+/* ========================================================================
+   UI wiring
+   ======================================================================== */
+const $ = id => document.getElementById(id);
+let bundle = null;          // { prefix, files: [{name, data}] }
+
+if (!window.crypto || !crypto.subtle) {
+  $("insecure").style.display = "block";
+  $("gen").disabled = true;
+}
+
+function splitList(s) {
+  return s.split(/[\s,;]+/).map(x => x.trim()).filter(Boolean);
+}
+
+function setStatus(msg, cls) {
+  const el = $("status");
+  el.textContent = msg;
+  el.className = "status" + (cls ? " " + cls : "");
+}
+
+function wireFilePicker(btnId, inputId, targetId) {
+  $(btnId).addEventListener("click", () => $(inputId).click());
+  $(inputId).addEventListener("change", async e => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    $(targetId).value = await file.text();
+    e.target.value = "";
+  });
+}
+wireFilePicker("loadIntCert",  "intCertFile",  "intCertPem");
+wireFilePicker("loadIntKey",   "intKeyFile",   "intKeyPem");
+wireFilePicker("loadRootCert", "rootCertFile", "rootCertPem");
+
+$("toggleIntPass").addEventListener("click", () => {
+  const inp = $("intKeyPass");
+  const show = inp.type === "password";
+  inp.type = show ? "text" : "password";
+  $("toggleIntPass").textContent = show ? "Hide" : "Show";
+});
+
+$("encryptLeafKey").addEventListener("change", () => {
+  $("leafPassBox").classList.toggle("show", $("encryptLeafKey").checked);
+  if ($("encryptLeafKey").checked) $("leafKeyPass").focus();
+});
+
+$("toggleLeafPass").addEventListener("click", () => {
+  const inp = $("leafKeyPass");
+  const show = inp.type === "password";
+  inp.type = show ? "text" : "password";
+  $("toggleLeafPass").textContent = show ? "Hide" : "Show";
+});
+
+$("genLeafPass").addEventListener("click", () => {
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%^&*-_";
+  const rnd = crypto.getRandomValues(new Uint8Array(24));
+  let pw = "";
+  for (let i = 0; i < rnd.length; i++) pw += alphabet[rnd[i] % alphabet.length];
+  $("leafKeyPass").value = pw;
+  $("leafKeyPass").type = "text";
+  $("toggleLeafPass").textContent = "Hide";
+});
+
+$("gen").addEventListener("click", () => {
+  generate().catch(err => {
+    console.error(err);
+    setStatus("Error: " + (err && err.message ? err.message : err), "err");
+    $("gen").disabled = false;
+  });
+});
+
+async function generate() {
+  const intCertText  = $("intCertPem").value.trim();
+  const intKeyText   = $("intKeyPem").value.trim();
+  const rootCertText = $("rootCertPem").value.trim();
+  if (!intCertText) { setStatus("Paste or load the Intermediate CA certificate (PEM).", "err"); return; }
+  if (!intKeyText)  { setStatus("Paste or load the Intermediate CA private key (PEM).", "err"); return; }
+
+  const domain = $("domain").value.trim();
+  if (!domain) { setStatus("Enter a domain name (CN).", "err"); return; }
+
+  const country = $("country").value.trim();
+  if (country && !/^[A-Za-z]{2}$/.test(country)) {
+    setStatus("Country (C) must be 2 letters (e.g. US) or left blank.", "err");
+    return;
+  }
+
+  const encryptLeaf = $("encryptLeafKey").checked;
+  const leafPassphrase = $("leafKeyPass").value;
+  if (encryptLeaf && !leafPassphrase) {
+    setStatus("Enter a passphrase to encrypt the leaf private key.", "err");
+    $("leafKeyPass").focus();
+    return;
+  }
+
+  const defaultSafe = domain.replace(/^\*\./, "wildcard.").replace(/[^a-zA-Z0-9._-]/g, "_") || "leaf";
+  const rawPrefix = ($("filePrefix").value.trim() || defaultSafe).replace(/[^a-zA-Z0-9._-]/g, "_");
+  const safe = rawPrefix || defaultSafe;
+
+  $("gen").disabled = true;
+  $("zip").disabled = true;
+
+  try {
+    setStatus("Parsing Intermediate CA certificate & key…");
+    await new Promise(r => setTimeout(r, 10));
+
+    const intCertPem = parsePem(intCertText, ["CERTIFICATE"]);
+    const intInfo = parseCertificateInfo(intCertPem.bytes);
+    if (intInfo.isCa === false) {
+      throw new Error("The supplied Intermediate certificate has BasicConstraints CA:FALSE and cannot sign a leaf certificate.");
+    }
+
+    let rootInfo = null, normalizedRootPem = null;
+    if (rootCertText) {
+      const rootCertPem = parsePem(rootCertText, ["CERTIFICATE"]);
+      rootInfo = parseCertificateInfo(rootCertPem.bytes);
+      normalizedRootPem = toPem(rootCertPem.bytes, "CERTIFICATE");
+    }
+
+    const intKeyPem = parsePem(intKeyText, ["ENCRYPTED PRIVATE KEY", "PRIVATE KEY"]);
+    let intPkcs8 = intKeyPem.bytes;
+    if (intKeyPem.label === "ENCRYPTED PRIVATE KEY") {
+      const intPass = $("intKeyPass").value;
+      if (!intPass) {
+        $("intKeyPass").focus();
+        throw new Error("Enter the passphrase for the encrypted Intermediate CA private key.");
+      }
+      setStatus("Decrypting Intermediate CA private key…");
+      await new Promise(r => setTimeout(r, 10));
+      intPkcs8 = await decryptPkcs8(intKeyPem.bytes, intPass);
+    }
+
+    const hash = $("hash").value;
+    const intSigner = await importSigningCaKey(intPkcs8, intInfo.spkiDer, hash);
+    const intKid = intInfo.ski || await keyIdentifier(intInfo.spkiDer);
+
+    /* SAN list */
+    const dns = [];
+    const ips = [];
+    const ipText = [];
+    const domainIp = parseIp(domain);
+    if (domainIp) {
+      ips.push(domainIp); ipText.push(domain);
+    } else {
+      dns.push(domain);
+      if ($("wildcard").checked && !domain.startsWith("*.")) dns.push("*." + domain);
+    }
+    if ($("localhostSan").checked) {
+      if (!dns.includes("localhost")) dns.push("localhost");
+      if (!ipText.includes("127.0.0.1")) { ips.push(parseIp("127.0.0.1")); ipText.push("127.0.0.1"); }
+    }
+    for (const d of splitList($("extraDns").value)) if (!dns.includes(d)) dns.push(d);
+    for (const raw of splitList($("extraIps").value)) {
+      const parsed = parseIp(raw);
+      if (!parsed) throw new Error("Not a valid IP address: " + raw);
+      if (!ipText.includes(raw)) { ips.push(parsed); ipText.push(raw); }
+    }
+
+    setStatus("Generating leaf key pair…");
+    await new Promise(r => setTimeout(r, 10));
+
+    const leafAlg = $("leafAlg").value;
+    const leafFields = {
+      C:  country.toUpperCase(),
+      ST: $("state").value.trim(),
+      L:  $("locality").value.trim(),
+      O:  $("org").value.trim(),
+      OU: $("ou").value.trim(),
+      CN: domain
+    };
+    const leafName = buildName(leafFields);
+
+    const DAY = 86400000;
+    const now = new Date();
+    const notBefore = new Date(now.getTime() - 3600000);
+    const days = Math.max(1, parseInt($("leafDays").value, 10) || 397);
+    const notAfter = new Date(now.getTime() + days * DAY);
+
+    const leafKeys = await generateKeyPair(leafAlg, hash);
+    const leafSpki = new Uint8Array(await crypto.subtle.exportKey("spki", leafKeys.publicKey));
+    const leafKid  = await keyIdentifier(leafSpki);
+
+    setStatus("Signing leaf certificate…");
+    await new Promise(r => setTimeout(r, 10));
+
+    const leafKu = isRsa(leafAlg)
+      ? [KU.digitalSignature, KU.keyEncipherment]
+      : [KU.digitalSignature];
+    const ekus = [];
+    if ($("ekuServer").checked) ekus.push("1.3.6.1.5.5.7.3.1");
+    if ($("ekuClient").checked) ekus.push("1.3.6.1.5.5.7.3.2");
+
+    const extensions = [];
+    if ($("leafBc").checked) extensions.push(basicConstraintsExt(false, null));
+    extensions.push(keyUsageExt(leafKu));
+    if (ekus.length) extensions.push(ekuExt(ekus));
+    extensions.push(sanExt(dns, ips), skiExt(leafKid));
+    if ($("includeAki").checked) extensions.push(akiExt(intKid));
+
+    const serial = randomSerial();
+    const leaf = await makeCertificate({
+      serial,
+      issuer: intInfo.subjectDer,
+      subject: leafName,
+      subjectSpki: leafSpki,
+      notBefore,
+      notAfter,
+      signerAlg: intSigner.signerAlg,
+      hash,
+      signerPrivateKey: intSigner.privateKey,
+      signerPublicKey: intSigner.publicKey,
+      extensions
+    });
+
+    /* PEM output */
+    const leafCertPem = toPem(leaf.der, "CERTIFICATE");
+    const leafPkcs8 = new Uint8Array(await crypto.subtle.exportKey("pkcs8", leafKeys.privateKey));
+    let leafKeyPem;
+    if (encryptLeaf) {
+      setStatus("Encrypting leaf private key…");
+      await new Promise(r => setTimeout(r, 10));
+      leafKeyPem = toPem(await encryptPkcs8(leafPkcs8, leafPassphrase), "ENCRYPTED PRIVATE KEY");
+    } else {
+      leafKeyPem = toPem(leafPkcs8, "PRIVATE KEY");
+    }
+
+    const normalizedIntPem = toPem(intCertPem.bytes, "CERTIFICATE");
+    const chainPem = leafCertPem + normalizedIntPem;
+    const fullchainPem = normalizedRootPem ? (chainPem + normalizedRootPem) : null;
+
+    const certFile  = safe + ".crt";
+    const keyFile   = safe + ".key";
+    const chainFile = safe + "-chain.pem";
+    const fullFile  = safe + "-fullchain.pem";
+    const sanSummary = dns.concat(ipText).join(", ");
+
+    const readme = buildReadme({
+      domain, safe, certFile, keyFile, chainFile,
+      fullFile: fullchainPem ? fullFile : null,
+      intCn: intInfo.cn,
+      rootCn: rootInfo ? rootInfo.cn : null,
+      leafAlg, hash, days, sanSummary, encryptLeaf,
+      subjectStr: nameToString(leafFields),
+      issuerStr: intInfo.subjectText
+    });
+
+    const files = [
+      { name: certFile,  data: leafCertPem },
+      { name: keyFile,   data: leafKeyPem },
+      { name: chainFile, data: chainPem }
+    ];
+    if (fullchainPem) files.push({ name: fullFile, data: fullchainPem });
+    files.push({ name: "README.txt", data: readme });
+    bundle = { prefix: safe, files };
+
+    /* render */
+    $("chainbar").innerHTML = "";
+    const chainNodes = rootInfo
+      ? [[rootInfo.cn, "root CA"], [intInfo.cn, "intermediate CA"], [domain, "leaf"]]
+      : [[intInfo.cn, "intermediate CA"], [domain, "leaf"]];
+    chainNodes.forEach((p, i) => {
+      if (i) $("chainbar").insertAdjacentHTML("beforeend", "<span>&rarr;</span>");
+      const span = document.createElement("span");
+      span.className = "pill";
+      span.textContent = p[0] + "  ·  " + p[1];
+      $("chainbar").appendChild(span);
+    });
+
+    const items = [
+      {
+        file: certFile, pem: leafCertPem, der: leaf.der,
+        label: "Leaf certificate for " + domain + " (signed by " + intInfo.cn + ")",
+        subject: nameToString(leafFields),
+        issuer: intInfo.subjectText,
+        serial, notAfter, alg: leafAlg,
+        sanSummary
+      },
+      {
+        file: keyFile, pem: leafKeyPem,
+        label: encryptLeaf
+          ? "Leaf private key (PKCS#8 encrypted PEM, PBES2 AES-256-CBC)"
+          : "Leaf private key (PKCS#8 PEM, unencrypted)"
+      },
+      {
+        file: chainFile, pem: chainPem,
+        label: "Leaf + Intermediate CA (server chain)"
+      }
+    ];
+    if (fullchainPem) {
+      items.push({
+        file: fullFile, pem: fullchainPem,
+        label: "Leaf + Intermediate CA + Root CA (full chain)"
+      });
+    }
+
+    const host = $("files");
+    host.innerHTML = "";
+    for (const it of items) {
+      const head = document.createElement("div");
+      head.className = "filehead";
+      const left = document.createElement("div");
+      left.innerHTML = '<span class="filename"></span><div style="color:var(--muted);font-size:12.5px"></div>';
+      left.querySelector(".filename").textContent = it.file;
+      left.querySelector("div").textContent = it.label;
+
+      const btns = document.createElement("div");
+      btns.className = "row";
+      const copy = document.createElement("button");
+      copy.className = "sm"; copy.textContent = "Copy";
+      copy.onclick = async () => {
+        try { await navigator.clipboard.writeText(it.pem); copy.textContent = "Copied"; }
+        catch (e) { copy.textContent = "Copy failed"; }
+        setTimeout(() => copy.textContent = "Copy", 1200);
+      };
+      const dl = document.createElement("button");
+      dl.className = "sm"; dl.textContent = "Download";
+      dl.onclick = () => download(it.file, it.pem);
+      btns.append(copy, dl);
+      head.append(left, btns);
+      host.appendChild(head);
+
+      if (it.der) {
+        const dl2 = document.createElement("dl");
+        dl2.className = "meta";
+        const rows = [
+          ["Subject", it.subject],
+          ["Issuer", it.issuer],
+          ["Serial", hex(it.serial)],
+          ["Valid", utcString(notBefore) + "  \u2192  " + utcString(it.notAfter)],
+          ["Key", it.alg + " / " + hash],
+          ["Names", it.sanSummary],
+          ["SHA-256", await fingerprint(it.der)]
+        ];
+        for (const [k, v] of rows) {
+          const dt = document.createElement("dt"); dt.textContent = k;
+          const dd = document.createElement("dd"); dd.textContent = v;
+          dl2.append(dt, dd);
+        }
+        host.appendChild(dl2);
+      }
+
+      const ta = document.createElement("textarea");
+      ta.className = "pem";
+      ta.readOnly = true;
+      ta.spellcheck = false;
+      ta.value = it.pem;
+      host.appendChild(ta);
+    }
+
+    $("cmds").textContent = verifyCommands(safe, domain, certFile, keyFile, chainFile, encryptLeaf);
+    $("out").classList.add("show");
+    $("zip").disabled = false;
+    setStatus(leaf.selfCheck
+      ? "Done. Leaf signature verified against Intermediate CA in-browser."
+      : "Done, but the signature verification check failed — please report this.", leaf.selfCheck ? "ok" : "err");
+  } finally {
+    $("gen").disabled = false;
+  }
+}
+
+function verifyCommands(safe, domain, certFile, keyFile, chainFile, encryptLeaf) {
+  const host = (domain || safe).replace(/^\*\./, "www.");
+  return [
+    "# inspect the leaf certificate",
+    "openssl x509 -in " + certFile + " -noout -text",
+    "",
+    "# verify the chain builds and the leaf is trusted under your Root CA",
+    "openssl verify -CAfile root-ca.crt -untrusted intermediate-ca.crt " + certFile,
+    "",
+    "# verify the leaf private key matches the certificate public key" + (encryptLeaf ? " (prompts for passphrase)" : ""),
+    "diff <(openssl x509 -in " + certFile + " -pubkey -noout) <(openssl pkey -in " + keyFile + " -pubout)",
+    "",
+    "# serve it locally and check what a TLS client sees",
+    "openssl s_server -cert " + certFile + " -cert_chain intermediate-ca.crt -key " + keyFile + " -port 8443 &",
+    "openssl s_client -connect localhost:8443 -CAfile root-ca.crt \\",
+    "  -servername " + host + " -verify_hostname " + host + " </dev/null   # expect: Verify return code: 0 (ok)",
+    "",
+    "# nginx",
+    "ssl_certificate     /path/to/" + chainFile + ";   # leaf + intermediate, in that order",
+    "ssl_certificate_key /path/to/" + keyFile + ";"
+  ].join("\n");
+}
+
+function buildReadme(o) {
+  const lines = [
+    "Leaf Certificate: " + o.domain,
+    "Signed by Intermediate CA: " + o.intCn + (o.rootCn ? " (Root CA: " + o.rootCn + ")" : ""),
+    "Generated " + new Date().toUTCString(),
+    "",
+    "FILES",
+    "  " + o.certFile  + "    X.509 v3 leaf certificate for " + o.domain,
+    "  " + o.keyFile   + "    Leaf private key (" + (o.encryptLeaf ? "encrypted PKCS#8 PEM, PBES2 AES-256-CBC" : "unencrypted PKCS#8 PEM") + ")",
+    "  " + o.chainFile + "    Leaf + Intermediate CA (what a TLS server should send)"
+  ];
+  if (o.fullFile) {
+    lines.push("  " + o.fullFile + "    Leaf + Intermediate CA + Root CA");
+  }
+  lines.push(
+    "",
+    "DETAILS",
+    "  Subject     : " + o.subjectStr,
+    "  Issuer      : " + o.issuerStr,
+    "  Key         : " + o.leafAlg,
+    "  Signature   : " + o.hash,
+    "  Validity    : " + o.days + " days",
+    "  SANs        : " + o.sanSummary,
+    "",
+    "VERIFY / USE",
+    verifyCommands(o.safe, o.domain, o.certFile, o.keyFile, o.chainFile, o.encryptLeaf).split("\n").map(l => l ? "  " + l : "").join("\n"),
+    ""
+  );
+  return lines.join("\n");
+}
+
+$("zip").addEventListener("click", () => {
+  if (!bundle) return;
+  const blob = makeZip(bundle.files);
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = bundle.prefix + ".zip";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+});
+
+/* ========================================================================
+   Appearance: theme presets, text size
+   ======================================================================== */
+const PREFS_KEY = "certgen.prefs.v1";
+const FS_MIN = 14, FS_MAX = 26, FS_DEFAULT = 17;
+const VALID_THEMES = ["system", "light", "dark"];
+const prefs = { theme: "system", fs: FS_DEFAULT };
+
+function loadPrefs() {
+  try {
+    const raw = localStorage.getItem(PREFS_KEY);
+    if (!raw) return;
+    const p = JSON.parse(raw);
+    if (VALID_THEMES.includes(p.theme)) prefs.theme = p.theme;
+    if (typeof p.fs === "number") prefs.fs = Math.min(FS_MAX, Math.max(FS_MIN, p.fs));
+  } catch (e) { /* private mode / blocked storage: run with defaults */ }
+}
+function savePrefs() {
+  try { localStorage.setItem(PREFS_KEY, JSON.stringify(prefs)); } catch (e) {}
+}
+
+function resolvedTheme() {
+  if (prefs.theme !== "system") return prefs.theme;
+  return (window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light";
+}
+
+function applyAppearance() {
+  const root = document.documentElement;
+  root.setAttribute("data-theme", resolvedTheme());
+  root.style.setProperty("--fs", prefs.fs + "px");
+
+  for (const b of document.querySelectorAll("#themes .theme")) {
+    b.classList.toggle("active", b.dataset.themeChoice === prefs.theme);
+  }
+  $("fsVal").textContent = prefs.fs + "px";
+  $("fsDown").disabled = prefs.fs <= FS_MIN;
+  $("fsUp").disabled = prefs.fs >= FS_MAX;
+}
+
+for (const b of document.querySelectorAll("#themes .theme")) {
+  b.addEventListener("click", () => {
+    prefs.theme = b.dataset.themeChoice;
+    savePrefs(); applyAppearance();
+  });
+}
+$("fsDown").addEventListener("click", () => {
+  prefs.fs = Math.max(FS_MIN, prefs.fs - 1); savePrefs(); applyAppearance();
+});
+$("fsUp").addEventListener("click", () => {
+  prefs.fs = Math.min(FS_MAX, prefs.fs + 1); savePrefs(); applyAppearance();
+});
+if (window.matchMedia) {
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+    if (prefs.theme === "system") applyAppearance();
+  });
+}
+
+loadPrefs();
+applyAppearance();
+</script>
+</body>
+</html>

@@ -71,6 +71,9 @@
   <div class="sidebar">
     <div class="sidebar-title">Home</div>
     <div class="nav-item active depth-0" data-folder="btc_eth" title="btc_eth" onclick="showFolder('btc_eth')">btc_eth</div>
+    <div class="nav-group depth-0">certificate/</div>
+    <div class="nav-item depth-1" data-folder="certificate/cert_chain" title="certificate/cert_chain" onclick="showFolder('certificate/cert_chain')">cert_chain</div>
+    <div class="nav-item depth-2" data-folder="certificate/cert_chain/old" title="certificate/cert_chain/old" onclick="showFolder('certificate/cert_chain/old')">old</div>
     <div class="nav-item depth-0" data-folder="certificate" title="certificate" onclick="showFolder('certificate')">certificate</div>
     <div class="nav-item depth-0" data-folder="date_time" title="date_time" onclick="showFolder('date_time')">date_time</div>
     <div class="nav-item depth-0" data-folder="finance" title="finance" onclick="showFolder('finance')">finance</div>
@@ -120,6 +123,46 @@
       </tbody>
     </table>
   </div>
+  <div class="folder-panel" id="folder-certificate/cert_chain">
+    <h2>certificate/cert_chain</h2>
+    <table>
+      <thead><tr><th>#</th><th>File Path</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td><a class="file-path" href="certificate/cert_chain/certificate-suite.html">certificate/cert_chain/certificate-suite.html</a><button class="open-btn" onclick="openInNewTab('certificate/cert_chain/certificate-suite.html')">New tab</button><button class="download-btn" onclick="downloadFile('certificate/cert_chain/certificate-suite.html','certificate-suite.html')">Download</button></td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td><a class="file-path" href="certificate/cert_chain/client-certificate-generator.html">certificate/cert_chain/client-certificate-generator.html</a><button class="open-btn" onclick="openInNewTab('certificate/cert_chain/client-certificate-generator.html')">New tab</button><button class="download-btn" onclick="downloadFile('certificate/cert_chain/client-certificate-generator.html','client-certificate-generator.html')">Download</button></td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td><a class="file-path" href="certificate/cert_chain/intermediate-ca-generator.html">certificate/cert_chain/intermediate-ca-generator.html</a><button class="open-btn" onclick="openInNewTab('certificate/cert_chain/intermediate-ca-generator.html')">New tab</button><button class="download-btn" onclick="downloadFile('certificate/cert_chain/intermediate-ca-generator.html','intermediate-ca-generator.html')">Download</button></td>
+        </tr>
+        <tr>
+          <td>4</td>
+          <td><a class="file-path" href="certificate/cert_chain/leaf-certificate-generator.html">certificate/cert_chain/leaf-certificate-generator.html</a><button class="open-btn" onclick="openInNewTab('certificate/cert_chain/leaf-certificate-generator.html')">New tab</button><button class="download-btn" onclick="downloadFile('certificate/cert_chain/leaf-certificate-generator.html','leaf-certificate-generator.html')">Download</button></td>
+        </tr>
+        <tr>
+          <td>5</td>
+          <td><a class="file-path" href="certificate/cert_chain/root-ca-generator.html">certificate/cert_chain/root-ca-generator.html</a><button class="open-btn" onclick="openInNewTab('certificate/cert_chain/root-ca-generator.html')">New tab</button><button class="download-btn" onclick="downloadFile('certificate/cert_chain/root-ca-generator.html','root-ca-generator.html')">Download</button></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="folder-panel" id="folder-certificate/cert_chain/old">
+    <h2>certificate/cert_chain/old</h2>
+    <table>
+      <thead><tr><th>#</th><th>File Path</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td><a class="file-path" href="certificate/cert_chain/old/certificate-chain-generator.html">certificate/cert_chain/old/certificate-chain-generator.html</a><button class="open-btn" onclick="openInNewTab('certificate/cert_chain/old/certificate-chain-generator.html')">New tab</button><button class="download-btn" onclick="downloadFile('certificate/cert_chain/old/certificate-chain-generator.html','certificate-chain-generator.html')">Download</button></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
   <div class="folder-panel" id="folder-certificate">
     <h2>certificate</h2>
     <table>
@@ -127,10 +170,6 @@
       <tbody>
         <tr>
           <td>1</td>
-          <td><a class="file-path" href="certificate/certificate-chain-generator.html">certificate/certificate-chain-generator.html</a><button class="open-btn" onclick="openInNewTab('certificate/certificate-chain-generator.html')">New tab</button><button class="download-btn" onclick="downloadFile('certificate/certificate-chain-generator.html','certificate-chain-generator.html')">Download</button></td>
-        </tr>
-        <tr>
-          <td>2</td>
           <td><a class="file-path" href="certificate/certificate-viewer.html">certificate/certificate-viewer.html</a><button class="open-btn" onclick="openInNewTab('certificate/certificate-viewer.html')">New tab</button><button class="download-btn" onclick="downloadFile('certificate/certificate-viewer.html','certificate-viewer.html')">Download</button></td>
         </tr>
       </tbody>
