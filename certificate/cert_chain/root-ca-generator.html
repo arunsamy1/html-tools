@@ -78,6 +78,8 @@
   button:disabled { opacity: 0.5; cursor: default; }
   button.primary { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
   button.sm { padding: 0.28rem 0.6rem; font-size: 0.85rem; font-weight: 500; }
+  /* fixed width so the row does not shift while the label flashes Copied/Empty */
+  button.copybtn { min-width: 5.1rem; }
   .subsec { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border); }
   .status { font-size: 0.92rem; min-height: 1.3rem; }
   .status.err { color: var(--err); }
@@ -232,6 +234,7 @@
         <input type="password" id="keyPass" placeholder="Enter passphrase to encrypt the private key" autocomplete="new-password" spellcheck="false">
         <button type="button" class="sm" id="togglePass">Show</button>
         <button type="button" class="sm" id="genPass">Generate</button>
+        <button type="button" class="sm copybtn" id="copyPass" title="Copy the passphrase to the clipboard without revealing it">Copy</button>
       </div>
     </div>
 
@@ -682,6 +685,30 @@ $("genPass").addEventListener("click", () => {
   $("keyPass").value = pw;
   $("keyPass").type = "text";
   $("togglePass").textContent = "Hide";
+});
+
+$("copyPass").addEventListener("click", async () => {
+  const btn = $("copyPass");
+  const flash = msg => { btn.textContent = msg; setTimeout(() => { btn.textContent = "Copy"; }, 1300); };
+  const value = $("keyPass").value;   // read straight from the field: never unmasks it
+  if (!value) { flash("Empty"); return; }
+  try {
+    await navigator.clipboard.writeText(value);
+    flash("Copied");
+  } catch (e) {
+    /* no async clipboard (older browser, blocked permission): off-screen fallback */
+    const ta = document.createElement("textarea");
+    ta.value = value;
+    ta.setAttribute("readonly", "");
+    ta.style.cssText = "position:fixed;top:-1000px;left:-1000px;opacity:0";
+    document.body.appendChild(ta);
+    ta.select();
+    let ok = false;
+    try { ok = document.execCommand("copy"); } catch (e2) { ok = false; }
+    ta.remove();
+    btn.focus();
+    flash(ok ? "Copied" : "Copy failed");
+  }
 });
 
 $("gen").addEventListener("click", () => {

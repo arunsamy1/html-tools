@@ -85,6 +85,8 @@
   button:disabled { opacity: 0.5; cursor: default; }
   button.primary { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
   button.sm { padding: 0.28rem 0.6rem; font-size: 0.85rem; font-weight: 500; }
+  /* fixed width so the row does not shift while the label flashes Copied/Empty */
+  button.copybtn { min-width: 5.1rem; }
   .subsec { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border); }
   .status { font-size: 0.92rem; min-height: 1.3rem; }
   .status.err { color: var(--err); }
@@ -278,6 +280,7 @@
           <input type="password" id="r-pass" placeholder="Enter passphrase to encrypt the private key" autocomplete="new-password" spellcheck="false">
           <button type="button" class="sm" id="r-toggle-pass">Show</button>
           <button type="button" class="sm" id="r-gen-pass">Generate</button>
+          <button type="button" class="sm copybtn" id="r-copy-pass" title="Copy the passphrase to the clipboard without revealing it">Copy</button>
         </div>
       </div>
 
@@ -429,6 +432,7 @@
           <input type="password" id="i-pass" placeholder="Enter passphrase to encrypt the intermediate private key" autocomplete="new-password" spellcheck="false">
           <button type="button" class="sm" id="i-toggle-pass">Show</button>
           <button type="button" class="sm" id="i-gen-pass">Generate</button>
+          <button type="button" class="sm copybtn" id="i-copy-pass" title="Copy the passphrase to the clipboard without revealing it">Copy</button>
         </div>
       </div>
 
@@ -601,6 +605,7 @@
           <input type="password" id="l-pass" placeholder="Enter passphrase to encrypt the leaf private key" autocomplete="new-password" spellcheck="false">
           <button type="button" class="sm" id="l-toggle-pass">Show</button>
           <button type="button" class="sm" id="l-gen-pass">Generate</button>
+          <button type="button" class="sm copybtn" id="l-copy-pass" title="Copy the passphrase to the clipboard without revealing it">Copy</button>
         </div>
       </div>
 
@@ -768,6 +773,7 @@
           <input type="password" id="c-pass" placeholder="Enter passphrase to encrypt the client private key" autocomplete="new-password" spellcheck="false">
           <button type="button" class="sm" id="c-toggle-pass">Show</button>
           <button type="button" class="sm" id="c-gen-pass">Generate</button>
+          <button type="button" class="sm copybtn" id="c-copy-pass" title="Copy the passphrase to the clipboard without revealing it">Copy</button>
         </div>
       </div>
 
@@ -1499,6 +1505,35 @@ function wirePasswordGenerator(btnId, inputId, toggleBtnId) {
   });
 }
 
+function wirePasswordCopy(btnId, inputId) {
+  const btn = $(btnId);
+  const flash = msg => {
+    btn.textContent = msg;
+    setTimeout(() => { btn.textContent = "Copy"; }, 1300);
+  };
+  btn.addEventListener("click", async () => {
+    const value = $(inputId).value;   // read straight from the field: never unmasks it
+    if (!value) { flash("Empty"); return; }
+    try {
+      await navigator.clipboard.writeText(value);
+      flash("Copied");
+    } catch (e) {
+      /* no async clipboard (older browser, blocked permission): off-screen fallback */
+      const ta = document.createElement("textarea");
+      ta.value = value;
+      ta.setAttribute("readonly", "");
+      ta.style.cssText = "position:fixed;top:-1000px;left:-1000px;opacity:0";
+      document.body.appendChild(ta);
+      ta.select();
+      let ok = false;
+      try { ok = document.execCommand("copy"); } catch (e2) { ok = false; }
+      ta.remove();
+      btn.focus();
+      flash(ok ? "Copied" : "Copy failed");
+    }
+  });
+}
+
 function wireEncryptToggle(chkId, boxId, inputId) {
   $(chkId).addEventListener("change", () => {
     $(boxId).classList.toggle("show", $(chkId).checked);
@@ -1619,6 +1654,7 @@ for (const t of TAB_ORDER) {
 wireEncryptToggle("r-encrypt", "r-passbox", "r-pass");
 wirePasswordToggle("r-toggle-pass", "r-pass");
 wirePasswordGenerator("r-gen-pass", "r-pass", "r-toggle-pass");
+wirePasswordCopy("r-copy-pass", "r-pass");
 wireZipDownload("r-zip", () => state.root.bundle);
 
 $("r-gen").addEventListener("click", () => {
@@ -1799,6 +1835,7 @@ wirePasswordToggle("i-toggle-root-pass", "i-root-pass");
 wireEncryptToggle("i-encrypt", "i-passbox", "i-pass");
 wirePasswordToggle("i-toggle-pass", "i-pass");
 wirePasswordGenerator("i-gen-pass", "i-pass", "i-toggle-pass");
+wirePasswordCopy("i-copy-pass", "i-pass");
 wireZipDownload("i-zip", () => state.intermediate.bundle);
 
 $("i-use-root").addEventListener("click", () => {
@@ -2039,6 +2076,7 @@ wirePasswordToggle("l-toggle-int-pass", "l-int-pass");
 wireEncryptToggle("l-encrypt", "l-passbox", "l-pass");
 wirePasswordToggle("l-toggle-pass", "l-pass");
 wirePasswordGenerator("l-gen-pass", "l-pass", "l-toggle-pass");
+wirePasswordCopy("l-copy-pass", "l-pass");
 wireZipDownload("l-zip", () => state.leaf.bundle);
 
 $("l-use-int").addEventListener("click", () => {
@@ -2320,6 +2358,7 @@ wirePasswordToggle("c-toggle-int-pass", "c-int-pass");
 wireEncryptToggle("c-encrypt", "c-passbox", "c-pass");
 wirePasswordToggle("c-toggle-pass", "c-pass");
 wirePasswordGenerator("c-gen-pass", "c-pass", "c-toggle-pass");
+wirePasswordCopy("c-copy-pass", "c-pass");
 wireZipDownload("c-zip", () => state.client.bundle);
 
 $("c-use-int").addEventListener("click", () => {
