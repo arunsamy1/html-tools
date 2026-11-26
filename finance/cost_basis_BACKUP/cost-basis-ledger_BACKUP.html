@@ -1,0 +1,2433 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<script>
+/* Set the saved theme before first paint, so the page never flashes the wrong one. */
+try {
+  var t = localStorage.getItem("cost-basis-ledger/theme");
+  if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
+} catch (e) {}
+</script>
+<title>Cost Basis Ledger</title>
+<style>
+:root{color-scheme:light}
+/* Page-wide text scale. Everything below is sized in rem, so this one
+   number scales the whole page and still respects a browser font setting. */
+html{font-size:115%}
+html,body{margin:0;padding:0}
+body{font:.875rem/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+img{max-width:100%}
+[hidden]{display:none!important}
+</style>
+<style>
+/* Layout: a statement — totals band, positions roll-up, then the lot ledger with its entry form. */
+:root{
+  --bg:#ffffff; --surface:#ffffff; --surface-2:#eff3f3; --surface-3:#e3e8e9;
+  --field:#f5f8f8;
+  --fg:#152027; --fg-dim:#586b74; --fg-faint:#80949c;
+  --line:#d4dcde; --line-soft:#e4eaeb;
+  --accent:#0d5c69; --accent-ink:#0a4753; --accent-soft:#dfeef0;
+  --danger:#9c3024; --danger-soft:#fbe8e5;
+  --btn-fg:#ffffff;
+  --font-display:"IBM Plex Serif",Georgia,"Times New Roman",serif;
+  --font-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0e1418; --surface:#161e23; --surface-2:#1d272d; --surface-3:#253138;
+  --field:#0a1014;
+  --fg:#e7eef1; --fg-dim:#97a9b3; --fg-faint:#6d808b;
+  --line:#2a363d; --line-soft:#222d33;
+  --accent:#58c3bc; --accent-ink:#8ad8d2; --accent-soft:#13302f;
+  --danger:#e0877a; --danger-soft:#34201d;
+  --btn-fg:#0e1418;
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0e1418; --surface:#161e23; --surface-2:#1d272d; --surface-3:#253138;
+  --field:#0a1014;
+  --fg:#e7eef1; --fg-dim:#97a9b3; --fg-faint:#6d808b;
+  --line:#2a363d; --line-soft:#222d33;
+  --accent:#58c3bc; --accent-ink:#8ad8d2; --accent-soft:#13302f;
+  --danger:#e0877a; --danger-soft:#34201d;
+  --btn-fg:#0e1418;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--font-body);line-height:1.5;
+  -webkit-font-smoothing:antialiased}
+.wrap{max-width:1180px;margin:0 auto;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:2.25rem 4rem}
+h1,h2,h3{margin:0;font-family:var(--font-display);font-weight:600;text-wrap:balance;
+  letter-spacing:-.01em}
+p{margin:0}
+button,input{font:inherit;color:inherit}
+
+/* masthead */
+.masthead{display:flex;flex-wrap:wrap;gap:1rem 1.5rem;align-items:flex-end;
+  justify-content:space-between;padding-bottom:1.25rem;border-bottom:1px solid var(--line)}
+.eyebrow{font-size:.7rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--accent);margin-bottom:.35rem}
+h1{font-size:clamp(1.7rem,4.6vw,2.3rem)}
+.sub{color:var(--fg-dim);font-size:.9rem;margin-top:.3rem;max-width:46ch}
+
+/* tiles */
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;
+  margin-top:1.75rem;background:var(--line-soft);border:1px solid var(--line-soft);
+  border-radius:3px;overflow:hidden}
+.tile{background:var(--surface);padding:1.05rem 1.15rem;min-width:0}
+.tile.lead{background:var(--accent-soft)}
+.tile dt{font-size:.68rem;font-weight:600;letter-spacing:.11em;text-transform:uppercase;
+  color:var(--fg-dim)}
+.tile.lead dt{color:var(--accent-ink)}
+.tile dd{margin:.4rem 0 0;font-family:var(--font-mono);font-variant-numeric:tabular-nums;
+  font-size:1.3rem;font-weight:500;letter-spacing:-.02em;word-break:break-word}
+.tile.lead dd{font-size:1.75rem;color:var(--accent-ink)}
+.tile dd .cur{font-size:.72em;color:var(--fg-dim);margin-right:.12em}
+.tile.lead dd .cur{color:var(--accent-ink);opacity:.72}
+
+/* status */
+.status{margin-top:1.25rem;padding:.7rem .9rem;border-radius:3px;font-size:.85rem;
+  border:1px solid var(--line);background:var(--surface);color:var(--fg-dim)}
+.status.warn{border-color:var(--danger);background:var(--danger-soft);color:var(--danger)}
+
+/* panels */
+.panel{margin-top:2.5rem}
+.panel-head{display:flex;flex-wrap:wrap;gap:.5rem 1rem;align-items:baseline;
+  justify-content:space-between;margin-bottom:.85rem}
+.panel-head h2{font-size:1.12rem}
+.note{color:var(--fg-dim);font-size:.82rem;max-width:52ch}
+.controls{display:flex;gap:.5rem;align-items:center}
+input[type="search"]{background:var(--surface);border:1px solid var(--line);border-radius:3px;
+  padding:.4rem .6rem;font-size:.85rem;width:11rem;max-width:45vw}
+input[type="search"]:focus-visible,input:focus-visible,button:focus-visible{
+  outline:2px solid var(--accent);outline-offset:1px}
+
+/* tables */
+.tscroll{overflow-x:auto;border:1px solid var(--line);border-radius:3px;background:var(--surface)}
+table{width:100%;border-collapse:collapse;font-size:.875rem;min-width:0}
+th,td{padding:.55rem .75rem;text-align:left;white-space:nowrap}
+thead th{background:var(--surface-2);font-size:.68rem;font-weight:600;letter-spacing:.09em;
+  text-transform:uppercase;color:var(--fg-dim);border-bottom:1px solid var(--line);
+  position:sticky;top:0}
+th.num,td.num{text-align:right}
+td{border-bottom:1px solid var(--line-soft)}
+tbody tr:last-child td{border-bottom:0}
+.num{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+.sym{font-weight:600;letter-spacing:.02em}
+.sortbtn{background:none;border:0;padding:0;margin:0;font:inherit;color:inherit;
+  cursor:pointer;display:inline-flex;gap:.3rem;align-items:center;letter-spacing:inherit;
+  text-transform:inherit}
+.sortbtn .car{opacity:0;font-size:.6rem}
+.sortbtn[aria-sort="ascending"] .car,.sortbtn[aria-sort="descending"] .car{opacity:1;color:var(--accent)}
+.sortbtn[aria-sort="descending"] .car{transform:rotate(180deg)}
+tfoot td{background:var(--surface-2);font-weight:600;border-top:2px solid var(--accent);
+  border-bottom:0}
+.dim{color:var(--fg-faint)}
+/* A loss is never signalled by colour alone — the minus sign is always there. */
+.gain{color:var(--accent-ink)}
+.loss{color:var(--danger)}
+.warnish{color:var(--danger)}
+tr.closed td:not(.num){color:var(--fg-faint)}
+tr.closed .sym{font-weight:500}
+.tile dd.gain{color:var(--accent-ink)}
+.tile dd.loss{color:var(--danger)}
+select{background:var(--field);border:1px solid var(--line);border-radius:3px;
+  padding:.45rem .5rem;font-size:.9rem;width:100%;color:inherit}
+.bar{display:block;height:3px;border-radius:2px;background:var(--accent);opacity:.55;
+  margin:.3rem 0 0 auto;min-width:1px}
+.rowacts{display:flex;gap:.3rem;justify-content:flex-end}
+.mini{background:none;border:1px solid var(--line);border-radius:3px;padding:.15rem .45rem;
+  font-size:.72rem;color:var(--fg-dim);cursor:pointer}
+.mini:hover{border-color:var(--accent);color:var(--accent)}
+.mini.armed{border-color:var(--danger);color:var(--danger);background:var(--danger-soft)}
+
+/* empty */
+.empty{border:1px dashed var(--line);border-radius:3px;background:var(--surface);
+  padding:1.75rem 1.25rem;text-align:center}
+.empty h3{font-size:1rem;margin-bottom:.35rem}
+
+/* form */
+.form-panel{border:1px solid var(--line);border-radius:3px;background:var(--surface);
+  padding:1.15rem 1.25rem 1.3rem}
+.form-panel h2{font-size:1rem;margin-bottom:.9rem}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:.8rem}
+.field{display:flex;flex-direction:column;gap:.3rem;min-width:0}
+.field label{font-size:.68rem;font-weight:600;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--fg-dim)}
+.field input{background:var(--field);border:1px solid var(--line);border-radius:3px;
+  padding:.45rem .55rem;font-size:.9rem;width:100%}
+.field input.num{font-family:var(--font-mono)}
+.formfoot{display:flex;flex-wrap:wrap;gap:.6rem;align-items:center;margin-top:1rem}
+.btn{background:var(--accent);color:var(--btn-fg);border:1px solid var(--accent);
+  border-radius:3px;padding:.45rem 1rem;font-size:.87rem;font-weight:500;cursor:pointer}
+.btn[disabled]{opacity:.55;cursor:default}
+.btn.ghost{background:none;color:var(--fg-dim);border-color:var(--line);font-weight:400}
+.btn.ghost:hover{color:var(--accent);border-color:var(--accent)}
+.btn.danger{background:var(--danger-soft);color:var(--danger);border-color:var(--danger);
+  font-weight:500}
+.mh-acts{display:flex;flex-wrap:wrap;gap:.5rem}
+.empty-cta{margin-top:1.1rem}
+.empty-cta .btn{display:inline-block}
+.err{color:var(--danger);font-size:.82rem}
+.ro{margin-top:1.75rem;font-style:italic}
+
+/* import */
+.io-panel{border:1px solid var(--line);border-radius:3px;background:var(--surface);
+  padding:1.15rem 1.25rem 1.3rem}
+.io-panel h2{font-size:1rem;margin-bottom:.5rem}
+code{font-family:var(--font-mono);font-size:.82em;background:var(--surface-2);
+  padding:.1em .35em;border-radius:2px}
+.drop{margin-top:.9rem;border:1px dashed var(--line);border-radius:3px;background:var(--field);
+  padding:1rem;display:flex;flex-wrap:wrap;gap:.6rem .8rem;align-items:center}
+.drop.over{border-color:var(--accent);background:var(--accent-soft)}
+.chk{display:flex;gap:.4rem;align-items:center;font-size:.82rem;color:var(--fg-dim)}
+.probs{margin:.5rem 0 0;padding-left:1.1rem;font-size:.82rem;color:var(--danger)}
+.probs li{margin-top:.15rem}
+#imp-progress{margin-top:.85rem;font-variant-numeric:tabular-nums}
+#imp-progress.err{color:var(--danger)}
+#imp-progress.good{color:var(--accent)}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
+  clip:rect(0 0 0 0);white-space:nowrap;border:0}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+@media (max-width:520px){
+  .tile.lead dd{font-size:1.45rem}
+  .panel{margin-top:2rem}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="masthead">
+    <div>
+      <p class="eyebrow">Holdings</p>
+      <h1>Cost Basis Ledger</h1>
+      <p class="sub">What each lot cost, and what the book adds up to.</p>
+    </div>
+    <div class="mh-acts">
+      <button id="btn-theme" class="btn ghost" type="button" title="Switch between a white page, a dark page, or whatever this computer uses">Theme: System</button>
+      <button id="btn-clear" class="btn ghost" hidden>Clear data</button>
+      <button id="btn-csv" class="btn ghost" hidden>Export CSV</button>
+      <button id="btn-html" class="btn ghost" hidden title="Save a standalone HTML copy of this report">Download report</button>
+    </div>
+  </header>
+
+  <dl class="tiles">
+    <div class="tile lead"><dt>Total cost basis</dt><dd id="s-cost"><span class="cur">$</span>—</dd></div>
+    <div class="tile"><dt>Shares</dt><dd id="s-shares">—</dd></div>
+    <div class="tile"><dt>Positions</dt><dd id="s-pos">—</dd></div>
+    <div class="tile"><dt>Lots</dt><dd id="s-lots">—</dd></div>
+    <div class="tile" id="tile-real" hidden><dt>Realized gain</dt>
+      <dd id="s-real"><span class="cur">$</span>—</dd></div>
+  </dl>
+
+  <div id="status" class="status">Loading your entries…</div>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2>Positions</h2>
+      <p class="note">One row per symbol, rolled up from the lots below.</p>
+    </div>
+    <div class="tscroll">
+      <table id="t-pos">
+        <thead><tr>
+          <th><button class="sortbtn" data-k="symbol">Symbol <span class="car">▲</span></button></th>
+          <th><button class="sortbtn" data-k="cat">Category <span class="car">▲</span></button></th>
+          <th><button class="sortbtn" data-k="acct">Account <span class="car">▲</span></button></th>
+          <th class="num"><button class="sortbtn" data-k="shares">Shares <span class="car">▲</span></button></th>
+          <th class="num"><button class="sortbtn" data-k="avg">Avg cost <span class="car">▲</span></button></th>
+          <th class="num"><button class="sortbtn" data-k="cost">Cost basis <span class="car">▲</span></button></th>
+          <th class="num"><button class="sortbtn" data-k="pct">% of book <span class="car">▲</span></button></th>
+        </tr></thead>
+        <tbody id="b-pos"></tbody>
+        <tfoot id="f-pos"></tfoot>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2>Lots</h2>
+      <div class="controls">
+        <label class="sr-only" for="filter">Filter by symbol</label>
+        <input id="filter" type="search" placeholder="Filter symbol…" autocomplete="off">
+      </div>
+    </div>
+    <div class="tscroll" id="lots-wrap">
+      <table id="t-lots">
+        <thead><tr>
+          <th><button class="sortbtn" data-k="symbol">Symbol <span class="car">▲</span></button></th>
+          <th><button class="sortbtn" data-k="cat">Category <span class="car">▲</span></button></th>
+          <th><button class="sortbtn" data-k="acct">Account <span class="car">▲</span></button></th>
+          <th><button class="sortbtn" data-k="date">Buy date <span class="car">▲</span></button></th>
+          <th class="num"><button class="sortbtn" data-k="shares">Shares <span class="car">▲</span></button></th>
+          <th class="num"><button class="sortbtn" data-k="sold">Sold <span class="car">▲</span></button></th>
+          <th class="num"><button class="sortbtn" data-k="left">Left <span class="car">▲</span></button></th>
+          <th class="num"><button class="sortbtn" data-k="cps">Cost / share <span class="car">▲</span></button></th>
+          <th class="num"><button class="sortbtn" data-k="cost">Cost basis <span class="car">▲</span></button></th>
+          <th class="num"><button class="sortbtn" data-k="days">Days held <span class="car">▲</span></button></th>
+          <th class="num" id="acts-head"></th>
+        </tr></thead>
+        <tbody id="b-lots"></tbody>
+        <tfoot id="f-lots"></tfoot>
+      </table>
+    </div>
+    <div id="empty" class="empty" hidden>
+      <h3 id="empty-title">Nothing loaded yet</h3>
+      <p class="note" id="empty-body" style="margin:0 auto">Import a CSV of your lots to see positions and totals. You can also type entries in by hand below.</p>
+      <p class="empty-cta" id="empty-cta"><label for="file" class="btn">Import a CSV</label></p>
+      <p class="empty-cta" id="empty-filter" hidden><button type="button" class="btn" id="btn-showall">Show all lots</button></p>
+    </div>
+  </section>
+
+  <section class="panel" id="sales-panel" hidden>
+    <div class="panel-head">
+      <h2>Sales</h2>
+      <p class="note">What left the book, and what it realised. Cost basis comes from
+        the lots each sale was matched against, never from the sale price.</p>
+    </div>
+    <div class="tscroll">
+      <table id="t-sales">
+        <thead><tr>
+          <th><button class="sortbtn" data-k="date">Sale date <span class="car">▲</span></button></th>
+          <th><button class="sortbtn" data-k="symbol">Symbol <span class="car">▲</span></button></th>
+          <th><button class="sortbtn" data-k="acct">Account <span class="car">▲</span></button></th>
+          <th class="num"><button class="sortbtn" data-k="shares">Shares <span class="car">▲</span></button></th>
+          <th class="num"><button class="sortbtn" data-k="price">Price <span class="car">▲</span></button></th>
+          <th class="num"><button class="sortbtn" data-k="proceeds">Proceeds <span class="car">▲</span></button></th>
+          <th class="num"><button class="sortbtn" data-k="basis">Cost basis <span class="car">▲</span></button></th>
+          <th class="num"><button class="sortbtn" data-k="gain">Gain <span class="car">▲</span></button></th>
+          <th><button class="sortbtn" data-k="term">Term <span class="car">▲</span></button></th>
+          <th>Matched against</th>
+          <th class="num"></th>
+        </tr></thead>
+        <tbody id="b-sales"></tbody>
+        <tfoot id="f-sales"></tfoot>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel form-panel" id="form-panel" hidden>
+    <h2 id="form-title">Add a lot</h2>
+    <form id="form" novalidate>
+      <div class="grid">
+        <div class="field">
+          <label for="f-kind">Entry</label>
+          <select id="f-kind" name="kind">
+            <option value="buy">Bought a lot</option>
+            <option value="sell">Sold shares</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="f-symbol">Symbol</label>
+          <input id="f-symbol" name="symbol" type="text" maxlength="12" autocomplete="off" spellcheck="false" placeholder="SCHD">
+        </div>
+        <div class="field" id="field-cat">
+          <label for="f-cat">Category</label>
+          <input id="f-cat" name="category" type="text" maxlength="24" autocomplete="off"
+                 list="cat-list" placeholder="ETF">
+          <datalist id="cat-list"></datalist>
+        </div>
+        <div class="field">
+          <label for="f-acct">Account</label>
+          <input id="f-acct" name="account" type="text" maxlength="24" autocomplete="off"
+                 list="acct-list" placeholder="Taxable">
+          <datalist id="acct-list"></datalist>
+        </div>
+        <div class="field">
+          <label for="f-date" id="f-date-label">Buy date</label>
+          <input id="f-date" name="date" type="date">
+        </div>
+        <div class="field">
+          <label for="f-shares">Shares</label>
+          <input id="f-shares" name="shares" class="num" type="number" step="any" min="0" inputmode="decimal" placeholder="100">
+        </div>
+        <div class="field">
+          <label for="f-cost" id="f-cost-label">Cost / share</label>
+          <input id="f-cost" name="cost" class="num" type="number" step="any" min="0" inputmode="decimal" placeholder="33.94">
+        </div>
+        <div class="field" id="field-lot" hidden>
+          <label for="f-lot">Sell from</label>
+          <select id="f-lot" name="lot"><option value="">Oldest first (FIFO)</option></select>
+        </div>
+      </div>
+      <div class="formfoot">
+        <button type="submit" class="btn" id="f-submit">Add lot</button>
+        <button type="button" class="btn ghost" id="f-cancel" hidden>Cancel</button>
+        <span class="err" id="f-err" hidden></span>
+      </div>
+    </form>
+  </section>
+
+  <section class="panel io-panel" id="io-panel" hidden>
+    <h2>Import lots from a CSV</h2>
+    <p class="note">The file needs a header row with these four columns:
+      <code>Symbol</code>, <code>Date</code>, <code>Shares</code>,
+      <code>Cost per Share</code> (<code>Buy Date</code> still works). Dates read as
+      MM/DD/YYYY or YYYY-MM-DD; leave the cell empty for a lot with no date. Export CSV
+      writes this exact shape, so a file from here imports straight back.</p>
+    <p class="note">Add a <code>Kind</code> column of <code>Buy</code> or <code>Sell</code>
+      to bring sales in too. On a sell row, <code>Cost per Share</code> is the price you sold
+      at, the date is required, and an optional <code>Lot</code> cell of
+      <code>YYYY-MM-DD@cost</code> says which lot it came out of — leave it empty and the
+      oldest open lot goes first. A row with no <code>Kind</code> is a purchase, so files
+      written before sales existed still read correctly.</p>
+    <p class="note">Two more columns are optional, and the downloaded report compares both
+      by dollar value. <code>Category</code> says what kind of holding the symbol is (ETF,
+      Stock, REIT, Bond, whatever split you think in) — tag a symbol on any one of its rows
+      and its other rows inherit it, since a category describes the symbol. <code>Account</code>
+      says where the lot is held (Taxable, Roth IRA, 401k); it is read per row and never
+      inherited, because the same symbol is often held in more than one account. Untagged
+      rows count as Uncategorized and Unassigned.</p>
+    <div class="drop" id="drop">
+      <input id="file" type="file" accept=".csv,text/csv,text/plain" class="sr-only">
+      <label for="file" class="btn ghost">Choose a CSV file</label>
+      <span class="note" id="drop-hint">or drop one here</span>
+    </div>
+    <div id="imp-report" hidden></div>
+    <div class="formfoot" id="imp-actions" hidden>
+      <button type="button" class="btn" id="imp-go">Import</button>
+      <button type="button" class="btn ghost" id="imp-cancel">Cancel</button>
+      <label class="chk" for="imp-replace">
+        <input type="checkbox" id="imp-replace"> Replace all existing lots
+      </label>
+    </div>
+    <p id="imp-progress" class="note" hidden></p>
+  </section>
+
+  <p class="note ro">Your CSV is the record. This page keeps a working copy in this browser so a reload loses nothing, but it never writes back into the file — export when you are done.</p>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var COL = "lots";
+  var db = null, downloads = null, canWrite = null;
+  var lots = [], ready = false, editId = null, armed = null;
+  var clearArmed = false, clearTimer = null;
+  var sortPos = { k:"cost", dir:"desc" };
+  var sortLot = { k:"symbol", dir:"asc" };
+  var sortSale = { k:"date", dir:"desc" };
+  var filter = "";
+
+  var $ = function(id){ return document.getElementById(id); };
+  var money = new Intl.NumberFormat("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+  var price = new Intl.NumberFormat("en-US",{minimumFractionDigits:2,maximumFractionDigits:4});
+  var qty   = new Intl.NumberFormat("en-US",{maximumFractionDigits:4});
+  var pctf  = new Intl.NumberFormat("en-US",{style:"percent",minimumFractionDigits:2,maximumFractionDigits:2});
+
+  function num(v){ var n = typeof v === "number" ? v : parseFloat(v); return isFinite(n) ? n : 0; }
+  function basis(l){ return num(l.shares) * num(l.cost); }
+  function fmtDate(iso){
+    if (!iso || typeof iso !== "string") return "";
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+    return m ? m[2] + "/" + m[3] + "/" + m[1] : iso;
+  }
+  /* Whole days between the buy date and today. Both ends are taken as UTC
+     midnight so a daylight-saving shift can't move the count by a day.
+     Returns null when the lot has no date. */
+  function daysHeld(iso){
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso || ""));
+    if (!m) return null;
+    var buy = Date.UTC(+m[1], +m[2] - 1, +m[3]);
+    var n = new Date();
+    var today = Date.UTC(n.getFullYear(), n.getMonth(), n.getDate());
+    return Math.round((today - buy) / 86400000);
+  }
+
+  function cell(row, text, cls){
+    var td = document.createElement("td");
+    if (cls) td.className = cls;
+    td.textContent = text;
+    row.appendChild(td);
+    return td;
+  }
+  /* A signed figure: the sign is part of the number, and losses are not red by
+     colour alone — the minus sign carries it for anyone who cannot see the hue. */
+  function signed(td, v){
+    var t = (v < 0 ? "-" : "") + money.format(Math.abs(v));
+    td.textContent = t;
+    td.className += (v < 0 ? " loss" : v > 0 ? " gain" : "");
+    return td;
+  }
+  function setStat(id, value, currency){
+    var dd = $(id);
+    dd.textContent = "";
+    if (currency){
+      var s = document.createElement("span");
+      s.className = "cur"; s.textContent = "$";
+      dd.appendChild(s);
+    }
+    dd.appendChild(document.createTextNode(value));
+  }
+  function status(msg, warn){
+    var el = $("status");
+    if (!msg){ el.hidden = true; return; }
+    el.textContent = msg;
+    el.className = "status" + (warn ? " warn" : "");
+    el.hidden = false;
+  }
+
+  /* ---------- derive ---------- */
+  var UNCAT = "Uncategorized";
+  var NOACCT = "Unassigned";
+
+  function cleanTag(v){
+    return String(v == null ? "" : v).replace(/\s+/g, " ").trim().slice(0, 24).trim();
+  }
+  /* A category describes the symbol, not the lot, but a CSV carries it per row.
+     So one tagged row speaks for the whole symbol: take the commonest non-empty
+     tag a symbol's lots carry (ties go alphabetical, for a stable answer). */
+  function symbolCats(){
+    var tally = Object.create(null);
+    lots.forEach(function(l){
+      var sym = String(l.symbol || "").toUpperCase();
+      var c = cleanTag(l.category);
+      if (!sym || !c) return;
+      var t = tally[sym] || (tally[sym] = Object.create(null));
+      t[c] = (t[c] || 0) + 1;
+    });
+    var out = Object.create(null);
+    Object.keys(tally).forEach(function(sym){
+      var t = tally[sym], best = null;
+      Object.keys(t).sort().forEach(function(c){
+        if (best === null || t[c] > t[best]) best = c;
+      });
+      out[sym] = best;
+    });
+    return out;
+  }
+  /* The category a lot counts under: its own tag, else its symbol's. */
+  function catOf(l, map){
+    return cleanTag(l.category) ||
+      map[String(l.symbol || "").toUpperCase()] || UNCAT;
+  }
+  /* The account a lot sits in. Unlike a category this is a fact about the lot,
+     not about the symbol: the same symbol is routinely held in two accounts, so
+     a tag on one row must never speak for another row. No inheritance. */
+  function acctOf(l){
+    return cleanTag(l.account) || NOACCT;
+  }
+
+  /* ---------- buys, sales, and what is left ----------
+     A sale is stored in the same collection as the lots, marked kind:"sell", so a
+     file written before sales existed still reads correctly: no kind means a buy. */
+  function isSell(l){ return l.kind === "sell"; }
+  /* A lot id means nothing to a person and nothing in a CSV, so a sale that names
+     one lot names it this way instead: the buy date and the cost, which the owner
+     can read and match by eye. */
+  function lotKey(l){ return String(l.date || "") + "@" + num(l.cost); }
+
+  function daysBetween(fromISO, toISO){
+    var a = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(fromISO || ""));
+    var b = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(toISO || ""));
+    if (!a || !b) return null;
+    return Math.round((Date.UTC(+b[1], +b[2] - 1, +b[3]) -
+                       Date.UTC(+a[1], +a[2] - 1, +a[3])) / 86400000);
+  }
+  /* Held more than a year — the line the tax year draws between short and long. */
+  function isLong(buyISO, sellISO){
+    var d = daysBetween(buyISO, sellISO);
+    return d !== null && d > 365;
+  }
+  /* Date first, then entry order, so two rows on one day resolve the same way
+     every time the page is opened. */
+  function byTime(a, b){
+    var x = String(a.date || "9999-12-31"), y = String(b.date || "9999-12-31");
+    if (x !== y) return x < y ? -1 : 1;
+    return (num(a.created) || 0) - (num(b.created) || 0);
+  }
+
+  /* The ledger: every buy with how much of it is still held, every sale with the
+     lots it came out of and what it realised.
+
+     Sales are matched oldest-first within a symbol (FIFO) unless the sale names a
+     lot, and only against lots in the same account — a sale out of the Roth must
+     not quietly consume the taxable lot. A sale with no account named can draw on
+     any, since there is nothing to contradict. Sales are applied in date order, so
+     the result does not depend on the order rows were typed in. */
+  function ledger(){
+    var B = [], S = [];
+    lots.forEach(function(l){
+      var sym = String(l.symbol || "").toUpperCase();
+      if (isSell(l)){
+        S.push({ ref:l, id:l.id, symbol:sym, account:acctOf(l),
+                 date:String(l.date || ""), created:num(l.created),
+                 shares:num(l.shares), price:num(l.price), pick:String(l.lot || ""),
+                 from:[], basis:0, proceeds:0, gain:0, shortGain:0, longGain:0,
+                 over:0, stray:false });
+      } else {
+        B.push({ ref:l, id:l.id, symbol:sym, account:acctOf(l),
+                 date:String(l.date || ""), created:num(l.created),
+                 shares:num(l.shares), cost:num(l.cost), sold:0 });
+      }
+    });
+
+    var queue = B.slice().sort(byTime);
+    S.sort(byTime);
+    S.forEach(function(s){
+      var want = s.shares;
+      s.proceeds = want * s.price;
+      var pool = queue.filter(function(b){
+        if (b.symbol !== s.symbol) return false;
+        if (s.account !== NOACCT && b.account !== s.account) return false;
+        return b.shares - b.sold > 1e-9;
+      });
+      if (s.pick){
+        var at = -1;
+        for (var i = 0; i < pool.length; i++){
+          if (pool[i].id === s.pick || lotKey(pool[i]) === s.pick){ at = i; break; }
+        }
+        /* The named lot leads; whatever it cannot cover falls through to FIFO. */
+        if (at > 0) pool.unshift(pool.splice(at, 1)[0]);
+        if (at === -1) s.stray = true;
+      }
+      pool.forEach(function(b){
+        if (want <= 1e-9) return;
+        var take = Math.min(b.shares - b.sold, want);
+        if (take <= 0) return;
+        b.sold += take;
+        want -= take;
+        var gain = take * (s.price - b.cost);
+        var lng = isLong(b.date, s.date);
+        s.from.push({ id:b.id, date:b.date, cost:b.cost, shares:take,
+                      gain:gain, long:lng });
+        s.basis += take * b.cost;
+        if (lng) s.longGain += gain; else s.shortGain += gain;
+      });
+      /* Nothing left to sell from: kept, flagged, and never counted as a gain. */
+      s.over = want > 1e-9 ? want : 0;
+      s.gain = s.shortGain + s.longGain;
+      s.matched = s.shares - s.over;
+      s.term = s.from.length === 0 ? ""
+        : s.longGain !== 0 && s.shortGain !== 0 ? "Mixed"
+        : s.from.every(function(f){ return f.long; }) ? "Long"
+        : s.from.some(function(f){ return f.long; }) ? "Mixed" : "Short";
+    });
+    B.forEach(function(b){
+      b.left = b.shares - b.sold;
+      if (b.left < 1e-9) b.left = 0;
+      b.leftCost = b.left * b.cost;
+      b.closed = b.left === 0 && b.sold > 0;
+    });
+    return { buys:B, sells:S };
+  }
+
+  /* One ledger per render; the snapshot handler clears it when the data moves. */
+  var ledCache = null;
+  function L(){ return ledCache || (ledCache = ledger()); }
+
+  /* Dollars per group, largest first — what the report's comparisons are built on.
+     labelOf says which group a lot falls in; leftover is the bucket for lots that
+     carry no tag, which sits last however big it is. */
+  function rollup(labelOf, leftover){
+    var acc = Object.create(null), syms = Object.create(null);
+    /* Only what is still held: a lot sold down to nothing weighs nothing here,
+       and a lot half sold weighs half. */
+    L().buys.forEach(function(b){
+      if (b.left <= 0) return;
+      var c = labelOf(b.ref, b);
+      var a = acc[c] || (acc[c] = { name:c, cost:0, shares:0, n:0, symbols:0 });
+      a.cost += b.leftCost;
+      a.shares += b.left;
+      a.n += 1;
+      var key = c + "\u0000" + b.symbol;
+      if (!syms[key]){ syms[key] = true; a.symbols += 1; }
+    });
+    var out = Object.keys(acc).map(function(k){ return acc[k]; });
+    var total = out.reduce(function(a,c){ return a + c.cost; }, 0);
+    out.forEach(function(c){ c.pct = total ? c.cost / total : 0; });
+    out.sort(function(a,b){
+      if ((a.name === leftover) !== (b.name === leftover)) {
+        return a.name === leftover ? 1 : -1;
+      }
+      return b.cost - a.cost || a.name.localeCompare(b.name);
+    });
+    return out;
+  }
+  function categories(){
+    var map = symbolCats();
+    return rollup(function(l){ return catOf(l, map); }, UNCAT);
+  }
+  function accounts(){
+    return rollup(function(l, b){ return b.account; }, NOACCT);
+  }
+
+  /* What the sales add up to. */
+  function realized(){
+    var S = L().sells;
+    var t = { n:S.length, shares:0, proceeds:0, basis:0, gain:0,
+              shortGain:0, longGain:0, over:0, stray:0 };
+    S.forEach(function(s){
+      t.shares += s.matched;
+      t.proceeds += s.matched * s.price;
+      t.basis += s.basis;
+      t.gain += s.gain;
+      t.shortGain += s.shortGain;
+      t.longGain += s.longGain;
+      if (s.over) t.over += s.over;
+      if (s.stray) t.stray += 1;
+    });
+    return t;
+  }
+
+  function positions(){
+    var map = Object.create(null), cats = symbolCats();
+    L().buys.forEach(function(b){
+      if (!b.symbol || b.left <= 0) return;
+      var p = map[b.symbol] || (map[b.symbol] = { symbol:b.symbol, shares:0, cost:0, n:0,
+                                    cat:cats[b.symbol] || UNCAT,
+                                    accts:Object.create(null) });
+      p.accts[b.account] = true;
+      p.shares += b.left;
+      p.cost += b.leftCost;
+      p.n += 1;
+    });
+    var out = Object.keys(map).map(function(k){ return map[k]; });
+    var total = out.reduce(function(a,p){ return a + p.cost; }, 0);
+    out.forEach(function(p){
+      p.avg = p.shares ? p.cost / p.shares : 0;
+      p.pct = total ? p.cost / total : 0;
+      /* One account names itself; several are counted, because no single name
+         would be true of the whole row. */
+      var names = Object.keys(p.accts).sort();
+      p.acct = names.length === 1 ? names[0] : names.length + " accounts";
+      p.split = names.length > 1;
+    });
+    return out;
+  }
+  function sorted(arr, s, keyOf){
+    var c = arr.slice();
+    c.sort(function(a,b){
+      var x = keyOf(a, s.k), y = keyOf(b, s.k), r;
+      if (typeof x === "string" || typeof y === "string"){
+        r = String(x).localeCompare(String(y));
+      } else {
+        r = (x < y) ? -1 : (x > y) ? 1 : 0;
+      }
+      if (r === 0 && s.k !== "symbol"){
+        r = String(a.symbol).localeCompare(String(b.symbol));
+      }
+      return s.dir === "desc" ? -r : r;
+    });
+    return c;
+  }
+
+  /* ---------- render ---------- */
+  function render(){
+    var led = L();
+    var buyRows = lots.filter(function(l){ return !isSell(l); });
+    var real = realized();
+    var pos = positions();
+    var symCats = symbolCats();
+    var cats = categories();
+    var accts = accounts();
+    var catCount = cats.filter(function(c){ return c.name !== UNCAT; }).length;
+    var acctCount = accts.filter(function(a){ return a.name !== NOACCT; }).length;
+    var totalCost = pos.reduce(function(a,p){ return a + p.cost; }, 0);
+    var totalShares = led.buys.reduce(function(a,b){ return a + b.left; }, 0);
+
+    /* Typing a tag that already exists should be one keystroke, not twelve. */
+    function fillList(id, rows, leftover){
+      var dl = $(id);
+      dl.textContent = "";
+      rows.forEach(function(r){
+        if (r.name === leftover) return;
+        var o = document.createElement("option");
+        o.value = r.name;
+        dl.appendChild(o);
+      });
+    }
+    fillList("cat-list", cats, UNCAT);
+    fillList("acct-list", accts, NOACCT);
+
+    setStat("s-cost", money.format(totalCost), true);
+    setStat("s-shares", qty.format(totalShares));
+    setStat("s-pos", String(pos.length));
+    setStat("s-lots", String(led.buys.filter(function(b){ return b.left > 0; }).length));
+    $("tile-real").hidden = !led.sells.length;
+    if (led.sells.length){
+      var rd = $("s-real");
+      rd.textContent = "";
+      var cur = document.createElement("span");
+      cur.className = "cur"; cur.textContent = "$";
+      rd.appendChild(cur);
+      rd.appendChild(document.createTextNode(
+        (real.gain < 0 ? "-" : "") + money.format(Math.abs(real.gain))));
+      rd.className = real.gain < 0 ? "loss" : real.gain > 0 ? "gain" : "";
+    }
+
+    /* positions */
+    var bp = $("b-pos"); bp.textContent = "";
+    sorted(pos, sortPos, function(p,k){
+      if (k === "symbol") return p.symbol;
+      if (k === "cat") return p.cat;
+      if (k === "acct") return p.acct;
+      return p[k];
+    })
+      .forEach(function(p){
+        var tr = document.createElement("tr");
+        cell(tr, p.symbol, "sym");
+        cell(tr, p.cat, p.cat === UNCAT ? "dim" : "");
+        cell(tr, p.acct, (p.acct === NOACCT || p.split) ? "dim" : "");
+        cell(tr, qty.format(p.shares), "num");
+        cell(tr, price.format(p.avg), "num");
+        cell(tr, money.format(p.cost), "num");
+        var td = cell(tr, pctf.format(p.pct), "num");
+        var bar = document.createElement("span");
+        bar.className = "bar";
+        bar.style.width = Math.max(1, Math.round(p.pct * 100)) + "%";
+        td.appendChild(bar);
+        bp.appendChild(tr);
+      });
+    var fp = $("f-pos"); fp.textContent = "";
+    if (pos.length){
+      var ftr = document.createElement("tr");
+      cell(ftr, "Total");
+      cell(ftr, catCount + (catCount === 1 ? " category" : " categories"), "dim");
+      cell(ftr, acctCount + (acctCount === 1 ? " account" : " accounts"), "dim");
+      cell(ftr, qty.format(totalShares), "num");
+      cell(ftr, "", "num");
+      cell(ftr, money.format(totalCost), "num");
+      cell(ftr, pctf.format(totalCost ? 1 : 0), "num");
+      fp.appendChild(ftr);
+    }
+
+    /* lots */
+    var f = filter.trim().toUpperCase();
+    /* The Lots table lists purchases; sales have a table of their own. */
+    var shown = f ? buyRows.filter(function(l){
+      return String(l.symbol || "").toUpperCase().indexOf(f) === 0;
+    }) : buyRows;
+
+    /* every buy, keyed by id, so a row can show what is left of it */
+    var byId = Object.create(null);
+    led.buys.forEach(function(b){ byId[b.id] = b; });
+
+    var bl = $("b-lots"); bl.textContent = "";
+    sorted(shown, sortLot, function(l,k){
+      if (k === "symbol") return String(l.symbol || "");
+      if (k === "cat")    return catOf(l, symCats);
+      if (k === "acct")   return acctOf(l);
+      if (k === "date")   return String(l.date || "");
+      if (k === "shares") return num(l.shares);
+      if (k === "sold")   return byId[l.id] ? byId[l.id].sold : 0;
+      if (k === "left")   return byId[l.id] ? byId[l.id].left : num(l.shares);
+      if (k === "cps")    return num(l.cost);
+      if (k === "days"){
+        var dh = daysHeld(l.date);
+        return dh === null ? -Infinity : dh;
+      }
+      return basis(l);
+    }).forEach(function(l){
+      var tr = document.createElement("tr");
+      cell(tr, String(l.symbol || ""), "sym");
+      var lc = catOf(l, symCats);
+      /* A tag the symbol supplied rather than this row is shown faintly:
+         it is true, but it isn't in this row of the CSV. */
+      cell(tr, lc, cleanTag(l.category) ? "" : "dim");
+      var la = acctOf(l);
+      cell(tr, la, la === NOACCT ? "dim" : "");
+      var d = fmtDate(l.date);
+      cell(tr, d || "—", d ? "" : "dim");
+      var b = byId[l.id] || { sold:0, left:num(l.shares), leftCost:basis(l), closed:false };
+      if (b.closed) tr.className = "closed";
+      cell(tr, qty.format(num(l.shares)), "num");
+      cell(tr, b.sold ? qty.format(b.sold) : "—", b.sold ? "num" : "num dim");
+      cell(tr, qty.format(b.left), b.left ? "num" : "num dim");
+      cell(tr, price.format(num(l.cost)), "num");
+      cell(tr, money.format(b.leftCost), "num");
+      var dh = daysHeld(l.date);
+      cell(tr, dh === null ? "—" : qty.format(dh), dh === null ? "num dim" : "num");
+      var act = document.createElement("td");
+      act.className = "num";
+      if (canWrite !== false){
+        var box = document.createElement("div");
+        box.className = "rowacts";
+        var e = document.createElement("button");
+        e.type = "button"; e.className = "mini"; e.textContent = "Edit";
+        e.addEventListener("click", function(){ startEdit(l.id); });
+        var x = document.createElement("button");
+        x.type = "button";
+        x.className = "mini" + (armed === l.id ? " armed" : "");
+        x.textContent = armed === l.id ? "Confirm" : "Delete";
+        x.addEventListener("click", function(){ onDelete(l.id); });
+        box.appendChild(e); box.appendChild(x);
+        act.appendChild(box);
+      }
+      tr.appendChild(act);
+      bl.appendChild(tr);
+    });
+
+    var fl = $("f-lots"); fl.textContent = "";
+    if (shown.length){
+      var sc = 0, ss = 0, sld = 0, lft = 0;
+      shown.forEach(function(l){
+        var b = byId[l.id];
+        ss += num(l.shares);
+        sld += b ? b.sold : 0;
+        lft += b ? b.left : num(l.shares);
+        sc += b ? b.leftCost : basis(l);
+      });
+      var tr2 = document.createElement("tr");
+      cell(tr2, f ? f + " total" : "Total");
+      cell(tr2, "", "");
+      cell(tr2, "", "");
+      cell(tr2, shown.length + (shown.length === 1 ? " lot" : " lots"), "dim");
+      cell(tr2, qty.format(ss), "num");
+      cell(tr2, sld ? qty.format(sld) : "", "num");
+      cell(tr2, qty.format(lft), "num");
+      cell(tr2, "", "num");
+      cell(tr2, money.format(sc), "num");
+      cell(tr2, "", "num");
+      cell(tr2, "", "num");
+      fl.appendChild(tr2);
+    }
+
+    /* ---- sales ---- */
+    $("sales-panel").hidden = !led.sells.length;
+    if (led.sells.length){
+      var bs = $("b-sales"); bs.textContent = "";
+      sorted(led.sells, sortSale, function(s,k){
+        if (k === "symbol") return s.symbol;
+        if (k === "acct")   return s.account;
+        if (k === "term")   return s.term;
+        if (k === "date")   return String(s.date || "");
+        if (k === "price")  return s.price;
+        if (k === "proceeds") return s.matched * s.price;
+        if (k === "basis")  return s.basis;
+        if (k === "gain")   return s.gain;
+        return s.shares;
+      }).forEach(function(sl){
+        var tr = document.createElement("tr");
+        cell(tr, fmtDate(sl.date) || "—", sl.date ? "" : "dim");
+        cell(tr, sl.symbol, "sym");
+        cell(tr, sl.account, sl.account === NOACCT ? "dim" : "");
+        cell(tr, qty.format(sl.shares), "num");
+        cell(tr, price.format(sl.price), "num");
+        cell(tr, money.format(sl.matched * sl.price), "num");
+        cell(tr, money.format(sl.basis), "num");
+        signed(cell(tr, "", "num"), sl.gain);
+        cell(tr, sl.term || "—", sl.term ? "" : "dim");
+        /* Which lots it actually came out of — the part a tax form asks for. */
+        var src = sl.from.length === 0 ? "nothing to match"
+          : sl.from.length === 1
+            ? (fmtDate(sl.from[0].date) || "undated") + " @ " +
+              price.format(sl.from[0].cost)
+            : sl.from.length + " lots";
+        cell(tr, src + (sl.over ? " — " + qty.format(sl.over) + " unmatched" : ""),
+             sl.over || sl.stray ? "warnish" : "dim");
+        var act = document.createElement("td");
+        act.className = "num";
+        if (canWrite !== false){
+          var box = document.createElement("div");
+          box.className = "rowacts";
+          var e = document.createElement("button");
+          e.type = "button"; e.className = "mini"; e.textContent = "Edit";
+          e.addEventListener("click", function(){ startEdit(sl.id); });
+          var x = document.createElement("button");
+          x.type = "button";
+          x.className = "mini" + (armed === sl.id ? " armed" : "");
+          x.textContent = armed === sl.id ? "Confirm" : "Delete";
+          x.addEventListener("click", function(){ onDelete(sl.id); });
+          box.appendChild(e); box.appendChild(x);
+          act.appendChild(box);
+        }
+        tr.appendChild(act);
+        bs.appendChild(tr);
+      });
+      var fs2 = $("f-sales"); fs2.textContent = "";
+      var ftr2 = document.createElement("tr");
+      cell(ftr2, "Total");
+      cell(ftr2, "", "");
+      cell(ftr2, led.sells.length + (led.sells.length === 1 ? " sale" : " sales"), "dim");
+      cell(ftr2, qty.format(real.shares), "num");
+      cell(ftr2, "", "num");
+      cell(ftr2, money.format(real.proceeds), "num");
+      cell(ftr2, money.format(real.basis), "num");
+      signed(cell(ftr2, "", "num"), real.gain);
+      cell(ftr2, (real.shortGain ? "short " + money.format(real.shortGain) : "") +
+                 (real.shortGain && real.longGain ? " / " : "") +
+                 (real.longGain ? "long " + money.format(real.longGain) : ""), "dim");
+      cell(ftr2, "", "");
+      cell(ftr2, "", "num");
+      fs2.appendChild(ftr2);
+    }
+
+    $("lots-wrap").hidden = !shown.length;
+    var empty = $("empty");
+    if (!lots.length && ready){
+      empty.hidden = false;
+      $("empty-title").textContent = "Nothing loaded yet";
+      $("empty-body").textContent = canWrite === false
+        ? "This ledger has no entries."
+        : "Import a CSV of your lots to see positions and totals. You can also type entries in by hand below.";
+      $("empty-cta").hidden = canWrite === false;
+      $("empty-filter").hidden = true;
+    } else if (lots.length && !shown.length){
+      empty.hidden = false;
+      $("empty-title").textContent = "Filter is hiding every lot";
+      $("empty-body").textContent = "No symbol starts with “" + f + "”. " +
+        lots.length + (lots.length === 1 ? " lot is" : " lots are") + " loaded.";
+      $("empty-cta").hidden = true;
+      $("empty-filter").hidden = false;
+    } else {
+      empty.hidden = true;
+    }
+
+    $("btn-clear").hidden = !(lots.length && canWrite !== false);
+    if (downloads) $("btn-html").hidden = !lots.length;
+    if (!lots.length && clearArmed) disarmClear();
+
+    syncSortUI();
+  }
+
+  function syncSortUI(){
+    [["t-pos", sortPos], ["t-lots", sortLot], ["t-sales", sortSale]].forEach(function(pair){
+      var btns = $(pair[0]).querySelectorAll(".sortbtn");
+      Array.prototype.forEach.call(btns, function(b){
+        if (b.dataset.k === pair[1].k){
+          b.setAttribute("aria-sort", pair[1].dir === "asc" ? "ascending" : "descending");
+        } else {
+          b.removeAttribute("aria-sort");
+        }
+      });
+    });
+  }
+
+  function wireSort(tableId, state){
+    var btns = $(tableId).querySelectorAll(".sortbtn");
+    Array.prototype.forEach.call(btns, function(b){
+      b.addEventListener("click", function(){
+        var k = b.dataset.k;
+        if (state.k === k){
+          state.dir = state.dir === "asc" ? "desc" : "asc";
+        } else {
+          state.k = k;
+          state.dir = (k === "symbol" || k === "date") ? "asc" : "desc";
+        }
+        render();
+      });
+    });
+  }
+
+  /* ---------- form ---------- */
+  function err(msg){
+    var e = $("f-err");
+    if (!msg){ e.hidden = true; e.textContent = ""; return; }
+    e.textContent = msg; e.hidden = false;
+  }
+  /* The form is two forms in one. Selling asks for a price and a lot, not a cost
+     and a category, and the wording has to follow or the fields lie. */
+  function selling(){ return $("f-kind").value === "sell"; }
+
+  function syncMode(){
+    var sell = selling();
+    $("f-cost-label").textContent = sell ? "Price / share" : "Cost / share";
+    $("f-date-label").textContent = sell ? "Sale date" : "Buy date";
+    $("f-cost").placeholder = sell ? "82.10" : "33.94";
+    $("field-lot").hidden = !sell;
+    $("field-cat").hidden = sell;
+    $("f-date").required = sell;
+    if (!editId){
+      $("form-title").textContent = sell ? "Record a sale" : "Add a lot";
+      $("f-submit").textContent = sell ? "Record sale" : "Add lot";
+    }
+    if (sell) fillLots();
+  }
+
+  /* The lots this sale could come out of: same symbol, same account, still open.
+     Leaving it on FIFO is the common case, so that option leads. */
+  function fillLots(){
+    var sel = $("f-lot");
+    var want = $("f-symbol").value.trim().toUpperCase();
+    var acct = cleanTag($("f-acct").value) || NOACCT;
+    var keep = sel.value;
+    sel.textContent = "";
+    var o = document.createElement("option");
+    o.value = ""; o.textContent = "Oldest first (FIFO)";
+    sel.appendChild(o);
+    if (!want) return;
+    L().buys.filter(function(b){
+      if (b.symbol !== want || b.left <= 0) return false;
+      return acct === NOACCT || b.account === acct;
+    }).sort(byTime).forEach(function(b){
+      var op = document.createElement("option");
+      op.value = b.id;
+      op.textContent = (fmtDate(b.date) || "undated") + " — " + qty.format(b.left) +
+        " left @ " + price.format(b.cost) +
+        (acct === NOACCT && b.account !== NOACCT ? " (" + b.account + ")" : "");
+      sel.appendChild(op);
+    });
+    sel.value = keep;
+    if (sel.selectedIndex < 0) sel.selectedIndex = 0;
+  }
+
+  function resetForm(){
+    editId = null;
+    $("form").reset();
+    $("f-kind").value = "buy";
+    syncMode();
+    $("form-title").textContent = "Add a lot";
+    $("f-submit").textContent = "Add lot";
+    $("f-cancel").hidden = true;
+    err("");
+  }
+  function startEdit(id){
+    var l = lots.filter(function(x){ return x.id === id; })[0];
+    if (!l) return;
+    editId = id;
+    var sell = isSell(l);
+    $("f-kind").value = sell ? "sell" : "buy";
+    $("f-symbol").value = String(l.symbol || "");
+    $("f-cat").value = cleanTag(l.category);
+    $("f-acct").value = cleanTag(l.account);
+    $("f-date").value = /^\d{4}-\d{2}-\d{2}$/.test(l.date || "") ? l.date : "";
+    $("f-shares").value = num(l.shares);
+    syncMode();
+    $("f-cost").value = sell ? num(l.price) : num(l.cost);
+    if (sell){ fillLots(); $("f-lot").value = String(l.lot || ""); }
+    $("form-title").textContent = sell ? "Edit sale" : "Edit lot";
+    $("f-submit").textContent = "Save changes";
+    $("f-cancel").hidden = false;
+    err("");
+    $("form-panel").scrollIntoView({ behavior:"smooth", block:"center" });
+    $("f-symbol").focus();
+  }
+  function readForm(){
+    var sell = selling();
+    var sym = $("f-symbol").value.trim().toUpperCase();
+    var cat = cleanTag($("f-cat").value);
+    var acct = cleanTag($("f-acct").value);
+    var date = $("f-date").value;
+    var sh = parseFloat($("f-shares").value);
+    var cs = parseFloat($("f-cost").value);
+    if (!sym) return { bad:"Enter a symbol." };
+    if (!/^[A-Z0-9.\-]{1,12}$/.test(sym)) return { bad:"Symbols use letters, digits, dots and hyphens." };
+    if (!isFinite(sh) || sh <= 0) return { bad:"Shares must be a number above zero." };
+    if (!isFinite(cs) || cs < 0){
+      return { bad:(sell ? "Price" : "Cost") + " per share must be zero or more." };
+    }
+    if (!sell){
+      return { symbol:sym, category:cat, account:acct, date:date || "",
+               shares:sh, cost:cs };
+    }
+    /* A sale has to be dated: without one it cannot be put in order against the
+       buys, and short against long is a question about elapsed time. */
+    if (!date) return { bad:"A sale needs its date." };
+    var pick = $("f-lot").value;
+    /* Don't let someone sell shares they don't have — the arithmetic downstream
+       would still run, and quietly be wrong. */
+    var held = 0, label = acct || NOACCT;
+    L().buys.forEach(function(b){
+      if (b.symbol !== sym) return;
+      if (label !== NOACCT && b.account !== label) return;
+      if (pick && b.id !== pick) return;
+      held += b.left;
+    });
+    if (editId){
+      var was = lots.filter(function(x){ return x.id === editId; })[0];
+      if (was && isSell(was)) held += num(was.shares);
+    }
+    if (sh > held + 1e-9){
+      return { bad: held <= 0
+        ? "No open " + sym + " shares" +
+          (label !== NOACCT ? " in " + label : "") + " to sell."
+        : "That is more than the " + qty.format(held) + " open " + sym +
+          " share" + (held === 1 ? "" : "s") +
+          (pick ? " in that lot" : label !== NOACCT ? " in " + label : "") + "." };
+    }
+    return { kind:"sell", symbol:sym, account:acct, date:date,
+             shares:sh, price:cs, lot:pick };
+  }
+
+  function offline(){
+    err("Storage isn't available in this view, so the change wasn't saved.");
+  }
+
+  $("form").addEventListener("submit", function(ev){
+    ev.preventDefault();
+    var v = readForm();
+    if (v.bad){ err(v.bad); return; }
+    if (!db){ offline(); return; }
+    err("");
+    var btn = $("f-submit");
+    btn.disabled = true;
+    var body = v.kind === "sell"
+      ? { kind:"sell", symbol:v.symbol, account:v.account, date:v.date,
+          shares:v.shares, price:v.price, lot:v.lot, cost:0 }
+      : { symbol:v.symbol, category:v.category, account:v.account,
+          date:v.date, shares:v.shares, cost:v.cost };
+    var p;
+    if (editId){
+      p = db.collection(COL).doc(editId).set(body);
+    } else {
+      body.created = Date.now();
+      p = db.collection(COL).add(body);
+    }
+    p.then(function(){
+      resetForm();
+      $("f-symbol").focus();
+    })["catch"](function(e){
+      err("Couldn't save that entry. " + ((e && e.message) || "Try again."));
+    })["finally"](function(){ btn.disabled = false; });
+  });
+
+  $("f-cancel").addEventListener("click", resetForm);
+  $("f-kind").addEventListener("change", syncMode);
+  /* The pickable lots depend on both of these. */
+  $("f-symbol").addEventListener("input", function(){ if (selling()) fillLots(); });
+  $("f-acct").addEventListener("input", function(){ if (selling()) fillLots(); });
+
+  function onDelete(id){
+    if (armed !== id){
+      armed = id;
+      render();
+      setTimeout(function(){
+        if (armed === id){ armed = null; render(); }
+      }, 4000);
+      return;
+    }
+    armed = null;
+    if (!db){ offline(); render(); return; }
+    if (editId === id) resetForm();
+    db.collection(COL).doc(id).delete()["catch"](function(e){
+      err("Couldn't delete that entry. " + ((e && e.message) || ""));
+    });
+    render();
+  }
+
+  $("filter").addEventListener("input", function(){
+    filter = $("filter").value;
+    render();
+  });
+
+  /* A filter left over from earlier would silently hide freshly loaded rows,
+     so importing or clearing always drops it. */
+  function clearFilter(){
+    filter = "";
+    if ($("filter").value !== "") $("filter").value = "";
+  }
+
+  $("btn-showall").addEventListener("click", function(){
+    clearFilter();
+    render();
+    $("filter").focus();
+  });
+
+  wireSort("t-pos", sortPos);
+  wireSort("t-lots", sortLot);
+  wireSort("t-sales", sortSale);
+  syncMode();
+  render();
+
+  /* ---------- CSV ---------- */
+  function csv(){
+    var q = function(v){
+      var s = String(v == null ? "" : v);
+      return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+    };
+    var map = symbolCats(), byId = Object.create(null);
+    L().buys.forEach(function(b){ byId[b.id] = b; });
+    var rows = [["Symbol","Kind","Category","Account","Date","Shares",
+                 "Cost per Share","Lot"]];
+    sorted(lots, { k:"symbol", dir:"asc" }, function(l,k){
+      return k === "symbol" ? String(l.symbol || "") : String(l.date || "");
+    }).forEach(function(l){
+      var a = acctOf(l);
+      if (isSell(l)){
+        /* The chosen lot travels as its date and cost, which survives a trip
+           through a spreadsheet and still means something to a reader. */
+        var pickRef = byId[String(l.lot || "")];
+        rows.push([l.symbol || "", "Sell", "", a === NOACCT ? "" : a,
+                   fmtDate(l.date), num(l.shares), num(l.price),
+                   pickRef ? lotKey(pickRef) : String(l.lot || "")]);
+      } else {
+        var c = catOf(l, map);
+        rows.push([l.symbol || "", "Buy", c === UNCAT ? "" : c, a === NOACCT ? "" : a,
+                   fmtDate(l.date), num(l.shares), num(l.cost), ""]);
+      }
+    });
+    return rows.map(function(r){ return r.map(q).join(","); }).join("\r\n");
+  }
+
+  $("btn-csv").addEventListener("click", function(){
+    if (!downloads) return;
+    var b = $("btn-csv");
+    b.disabled = true;
+    downloads.save({ filename:"cost-basis-lots.csv", data:csv() })
+      .then(function(){ status("CSV saved."); setTimeout(function(){ if (ready) status(""); }, 2500); })
+      ["catch"](function(e){
+        if (!e || e.code !== "declined"){
+          status("Couldn't save the CSV." + (e && e.message ? " " + e.message : ""), true);
+          setTimeout(function(){ if (ready) status(""); }, 4000);
+        }
+      })
+      ["finally"](function(){ b.disabled = false; });
+  });
+
+  /* ---------- HTML report ---------- */
+  /* Builds one self-contained HTML file: no scripts, no external requests, both
+     themes baked in so it reads the same in anyone's browser, and a print rule
+     so saving it as a PDF comes out on white paper. */
+  function esc(v){
+    return String(v == null ? "" : v).replace(/[&<>"]/g, function(c){
+      return c === "&" ? "&amp;" : c === "<" ? "&lt;" : c === ">" ? "&gt;" : "&quot;";
+    });
+  }
+
+  var REPORT_CSS = [
+    ':root{color-scheme:light;--bg:#ffffff;--surface:#ffffff;--surface-2:#eff3f3;',
+    '--fg:#152027;--fg-dim:#586b74;--fg-faint:#80949c;--line:#d4dcde;--line-soft:#e4eaeb;',
+    '--accent:#0d5c69;--accent-ink:#0a4753;--accent-soft:#dfeef0;',
+    '--font-display:"IBM Plex Serif",Georgia,"Times New Roman",serif;',
+    '--font-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;',
+    '--font-mono:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace}',
+    '@media (prefers-color-scheme:dark){:root{color-scheme:dark;--bg:#0e1418;',
+    '--surface:#161e23;--surface-2:#1d272d;--fg:#e7eef1;--fg-dim:#97a9b3;--fg-faint:#6d808b;',
+    '--line:#2a363d;--line-soft:#222d33;--accent:#58c3bc;--accent-ink:#8ad8d2;',
+    '--accent-soft:#13302f}}',
+    '*{box-sizing:border-box}html{font-size:115%}html,body{margin:0;padding:0}',
+    'body{background:var(--bg);color:var(--fg);font-family:var(--font-body);',
+    'font-size:.875rem;line-height:1.5;-webkit-font-smoothing:antialiased}',
+    '.wrap{max-width:1180px;margin:0 auto;padding:2.25rem 16px 4rem}',
+    'h1,h2{margin:0;font-family:var(--font-display);font-weight:600;letter-spacing:-.01em}',
+    'h1{font-size:2rem}h2{font-size:1.12rem}p{margin:0}',
+    '.masthead{padding-bottom:1.25rem;border-bottom:1px solid var(--line)}',
+    '.eyebrow{font-size:.7rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;',
+    'color:var(--accent);margin-bottom:.35rem}',
+    '.sub{color:var(--fg-dim);font-size:.9rem;margin-top:.3rem}',
+    '.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;',
+    'margin:1.75rem 0 0;background:var(--line-soft);border:1px solid var(--line-soft);',
+    'border-radius:3px;overflow:hidden}',
+    '.tile{background:var(--surface);padding:1.05rem 1.15rem;min-width:0}',
+    '.tile.lead{background:var(--accent-soft)}',
+    '.tile dt{font-size:.68rem;font-weight:600;letter-spacing:.11em;text-transform:uppercase;',
+    'color:var(--fg-dim)}.tile.lead dt{color:var(--accent-ink)}',
+    '.tile dd{margin:.4rem 0 0;font-family:var(--font-mono);font-variant-numeric:tabular-nums;',
+    'font-size:1.3rem;font-weight:500;letter-spacing:-.02em;word-break:break-word}',
+    '.tile.lead dd{font-size:1.75rem;color:var(--accent-ink)}',
+    '.tile dd .cur{font-size:.72em;color:var(--fg-dim);margin-right:.12em}',
+    '.tile.lead dd .cur{color:var(--accent-ink);opacity:.72}',
+    '.panel{margin-top:2.5rem}.panel-head{margin-bottom:.85rem}',
+    '.note{color:var(--fg-dim);font-size:.82rem;max-width:62ch}',
+    '.tscroll{overflow-x:auto;border:1px solid var(--line);border-radius:3px;',
+    'background:var(--surface)}',
+    'table{width:100%;border-collapse:collapse;font-size:.875rem}',
+    'th,td{padding:.55rem .75rem;text-align:left;white-space:nowrap}',
+    'thead th{background:var(--surface-2);font-size:.68rem;font-weight:600;letter-spacing:.09em;',
+    'text-transform:uppercase;color:var(--fg-dim);border-bottom:1px solid var(--line)}',
+    'th.num,td.num{text-align:right}td{border-bottom:1px solid var(--line-soft)}',
+    'tbody tr:last-child td{border-bottom:0}',
+    '.num{font-family:var(--font-mono);font-variant-numeric:tabular-nums}',
+    '.sym{font-weight:600;letter-spacing:.02em}',
+    '.sortbtn{background:none;border:0;padding:0;margin:0;font:inherit;color:inherit;',
+    'cursor:pointer;display:inline-flex;gap:.3rem;align-items:center;letter-spacing:inherit;',
+    'text-transform:inherit}th.num .sortbtn{flex-direction:row-reverse}',
+    '.sortbtn:hover{color:var(--accent)}',
+    '.sortbtn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}',
+    '.sortbtn .car{opacity:0;font-size:.6rem}',
+    '.sortbtn[aria-sort] .car{opacity:1;color:var(--accent)}',
+    '.sortbtn[aria-sort="descending"] .car{transform:rotate(180deg)}',
+    'tfoot td{background:var(--surface-2);font-weight:600;border-top:2px solid var(--accent);',
+    'border-bottom:0}.dim{color:var(--fg-faint)}',
+    '.bar{display:block;height:3px;border-radius:2px;background:var(--accent);opacity:.55;',
+    'margin:.3rem 0 0 auto;min-width:1px}',
+    '.empty{border:1px dashed var(--line);border-radius:3px;background:var(--surface);',
+    'padding:1.75rem 1.25rem;text-align:center;color:var(--fg-dim)}',
+    /* Categorical slots, in the fixed order of the validated palette. Light and
+       dark are separately stepped sets, not one set lightened. */
+    ':root{--s1:#257de0;--s2:#f47230;--s3:#00b894;--s4:#f2a600;--s5:#ee7fac;',
+    '--s6:#008a17;--s7:#6a4ce2;--s8:#ec4647;--s9:#8b9aa3}',
+    '@media (prefers-color-scheme:dark){:root{--s1:#338ced;--s2:#e76624;--s3:#00a888;',
+    '--s4:#d28e05;--s5:#e24d8b;--s6:#0aac23;--s7:#9887ef;--s8:#eb6263;--s9:#76858d}}',
+    /* The whole book, split once: segments butt together with a 2px surface gap. */
+    '.split{display:flex;gap:2px;height:22px;margin:0 0 1.15rem;border-radius:4px;',
+    'overflow:hidden;background:var(--surface)}',
+    '.split i{display:block;min-width:2px;border-radius:2px;',
+    '-webkit-print-color-adjust:exact;print-color-adjust:exact}',
+    /* One ranked bar per category, all on the same left baseline. */
+    'td.share{width:38%;min-width:150px;padding-right:1rem}',
+    '.track{display:block;width:100%;height:10px;border-radius:5px;',
+    'background:var(--surface-2)}',
+    '.track i{display:block;height:100%;border-radius:5px;min-width:2px;',
+    '-webkit-print-color-adjust:exact;print-color-adjust:exact}',
+    '.sw{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:.5rem;',
+    'vertical-align:baseline;-webkit-print-color-adjust:exact;print-color-adjust:exact}',
+    '.cat{font-weight:600}.cat.none{font-weight:400;color:var(--fg-dim)}',
+    /* A loss never relies on colour alone: the minus sign is always printed. */
+    '.gain{color:var(--accent-ink)}.loss{color:var(--danger)}',
+    '.warnish{color:var(--danger)}',
+    'tr.closed td:not(.num){color:var(--fg-faint)}tr.closed .sym{font-weight:500}',
+    '.tile dd.gain{color:var(--accent-ink)}.tile dd.loss{color:var(--danger)}',
+    '.filters{display:flex;flex-wrap:wrap;gap:.5rem .6rem;align-items:center;',
+    'margin-bottom:.7rem}',
+    '.filters input,.filters select{background:var(--surface);color:var(--fg);',
+    'border:1px solid var(--line);border-radius:3px;padding:.38rem .55rem;',
+    'font:inherit;font-size:.82rem}',
+    '.filters input{width:15rem;max-width:60vw}',
+    '.filters input:focus-visible,.filters select:focus-visible{outline:2px solid ',
+    'var(--accent);outline-offset:1px}',
+    '.filters button{background:none;border:1px solid var(--line);border-radius:3px;',
+    'padding:.3rem .6rem;font:inherit;font-size:.78rem;color:var(--fg-dim);cursor:pointer}',
+    '.filters button:hover{border-color:var(--accent);color:var(--accent)}',
+    '.fcount{color:var(--fg-dim);font-size:.8rem;margin-left:auto}',
+    'tr.nomatch td{text-align:center;color:var(--fg-dim);padding:1.4rem .75rem}',
+    '.ro{margin-top:1.75rem;font-style:italic}',
+    '@media print{:root{color-scheme:light;--bg:#fff;--surface:#fff;--surface-2:#f1f4f4;',
+    '--fg:#101820;--fg-dim:#4a5a63;--fg-faint:#76858d;--line:#b9c4c7;--line-soft:#dde3e4;',
+    '--accent:#0d5c69;--accent-ink:#0a4753;--accent-soft:#e7f1f2}',
+    'html{font-size:100%}.wrap{padding:0}.panel{margin-top:1.5rem}',
+    /* Headings repeat on every page; the totals row must NOT — as a footer group
+       it would print at the foot of each page, above rows it is totalling. */
+    'thead{display:table-header-group}tfoot{display:table-row-group}',
+    '.filters{display:none}',
+    'tr{page-break-inside:avoid}',
+    /* The page is narrower than a window, so the lead figure needs room not to wrap. */
+    '.tiles{grid-template-columns:repeat(4,1fr)}.tile{padding:.8rem .85rem}',
+    '.tile.lead dd{font-size:1.35rem}.tile dd{font-size:1.05rem}',
+    '.sortbtn{cursor:default}.car{display:none}}'
+  ].join("");
+
+  /* The one script that rides along in the saved file. It re-orders and hides rows
+     that are already there — it holds no data of its own, makes no requests, and
+     reads each cell's data-v so it works on raw numbers rather than formatted text.
+     Hiding a row re-totals the table, because a total that ignores the filter above
+     it is worse than no total at all. */
+  var REPORT_JS = [
+    '(function(){',
+    'var M=new Intl.NumberFormat("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});',
+    'var Q=new Intl.NumberFormat("en-US",{maximumFractionDigits:4});',
+    'var P=new Intl.NumberFormat("en-US",{style:"percent",minimumFractionDigits:2,',
+    'maximumFractionDigits:2});',
+    'function fmt(k,v){return k==="money"?M.format(v):k==="qty"?Q.format(v):',
+    'k==="pct"?P.format(v):String(v);}',
+    'function val(row,i,n){',
+    'var c=row.cells[i];if(!c)return n?-Infinity:"";',
+    'var v=c.getAttribute("data-v");if(v===null)v=c.textContent;',
+    'if(!n)return v;var f=parseFloat(v);return isFinite(f)?f:-Infinity;}',
+    /* the filler row that shows when nothing matches is never data */
+    'function body(tb){return Array.prototype.filter.call(tb.rows,function(r){',
+    'return r.className.indexOf("nomatch")<0;});}',
+    'function shownRows(tb){return body(tb).filter(function(r){',
+    'return r.style.display!=="none";});}',
+    /* every tfoot cell that carries data-agg recomputes from the visible rows */
+    'function retotal(t){',
+    'var tf=t.tFoot;if(!tf||!tf.rows.length)return;',
+    'var rows=shownRows(t.tBodies[0]);',
+    'Array.prototype.forEach.call(tf.rows[0].cells,function(c){',
+    'var agg=c.getAttribute("data-agg");if(!agg)return;',
+    'var i=c.cellIndex,k=c.getAttribute("data-fmt")||"";',
+    'if(agg==="rows"){var one=c.getAttribute("data-one")||"row";',
+    'var many=c.getAttribute("data-many")||"rows";',
+    'c.textContent=rows.length+" "+(rows.length===1?one:many);return;}',
+    'if(agg==="distinct"){var skip=c.getAttribute("data-skip"),seen={},n=0;',
+    'rows.forEach(function(r){var v=String(val(r,i,false)).trim();',
+    'if(!v||v===skip||seen[v])return;seen[v]=1;n++;});',
+    'var o=c.getAttribute("data-one")||"",m=c.getAttribute("data-many")||"";',
+    'c.textContent=o?n+" "+(n===1?o:m):String(n);return;}',
+    'var sum=0;rows.forEach(function(r){var v=parseFloat(val(r,i,true));',
+    'if(isFinite(v))sum+=v;});',
+    'c.textContent=rows.length?fmt(k,sum):"";});}',
+    /* sorting */
+    'var ts=document.querySelectorAll("table.sortable");',
+    'Array.prototype.forEach.call(ts,function(t){',
+    'var tb=t.tBodies[0];if(!tb)return;',
+    'var btns=t.querySelectorAll("thead .sortbtn");',
+    'Array.prototype.forEach.call(btns,function(b){',
+    'b.addEventListener("click",function(){',
+    'var i=+b.getAttribute("data-k"),n=b.getAttribute("data-t")==="n";',
+    'var dir=b.getAttribute("aria-sort")==="ascending"?"descending":"ascending";',
+    'Array.prototype.forEach.call(btns,function(o){o.removeAttribute("aria-sort");});',
+    'b.setAttribute("aria-sort",dir);',
+    'var rows=body(tb),tail=tb.querySelector("tr.nomatch");',
+    'rows.sort(function(x,y){',
+    'var a=val(x,i,n),c=val(y,i,n),r;',
+    'if(n)r=a<c?-1:a>c?1:0;else r=String(a).localeCompare(String(c));',
+    'if(r===0&&i!==0)r=String(val(x,0,false)).localeCompare(String(val(y,0,false)));',
+    'return dir==="descending"?-r:r;});',
+    'rows.forEach(function(r){tb.appendChild(r);});',
+    'if(tail)tb.appendChild(tail);});});});',
+    /* filtering */
+    'var fs=document.querySelectorAll(".filters");',
+    'Array.prototype.forEach.call(fs,function(box){',
+    'var t=document.getElementById(box.getAttribute("data-for"));if(!t)return;',
+    'var tb=t.tBodies[0];if(!tb)return;',
+    'var q=box.querySelector("input"),sels=box.querySelectorAll("select");',
+    'var out=box.querySelector(".fcount"),clr=box.querySelector("button");',
+    'var nm=tb.querySelector("tr.nomatch");',
+    'var noun=box.getAttribute("data-noun")||"row";',
+    'var nouns=box.getAttribute("data-nouns")||noun+"s";',
+    'function apply(){',
+    'var term=(q.value||"").trim().toLowerCase();',
+    'var picked=[];Array.prototype.forEach.call(sels,function(s){',
+    'if(s.value)picked.push([+s.getAttribute("data-col"),s.value]);});',
+    'var rows=body(tb),shown=0;',
+    'rows.forEach(function(r){var ok=true;',
+    /* each dropdown is an exact match on its own column; the box is a loose one */
+    'picked.forEach(function(pk){var c=r.cells[pk[0]];',
+    'if(!c||c.textContent.trim()!==pk[1])ok=false;});',
+    'if(ok&&term){ok=Array.prototype.some.call(r.cells,function(c){',
+    'return c.className.indexOf("num")<0&&',
+    'c.textContent.toLowerCase().indexOf(term)>-1;});}',
+    'r.style.display=ok?"":"none";if(ok)shown++;});',
+    'if(nm)nm.style.display=shown?"none":"";',
+    'out.textContent=shown===rows.length?rows.length+" "+',
+    '(rows.length===1?noun:nouns):"Showing "+shown+" of "+rows.length;',
+    'clr.hidden=!(term||picked.length);retotal(t);}',
+    'q.addEventListener("input",apply);',
+    'q.addEventListener("keydown",function(e){',
+    'if(e.key==="Escape"||e.keyCode===27){q.value="";apply();}});',
+    'Array.prototype.forEach.call(sels,function(s){',
+    's.addEventListener("change",apply);});',
+    'clr.addEventListener("click",function(){q.value="";',
+    'Array.prototype.forEach.call(sels,function(s){s.value="";});',
+    'apply();q.focus();});',
+    /* only now are the controls real: a viewer with scripts off never sees them */
+    'box.hidden=false;apply();});})();'
+  ].join("");
+
+  function reportHTML(){
+    var led = L();
+    var real = realized();
+    var buyRows = lots.filter(function(l){ return !isSell(l); });
+    var byId = Object.create(null);
+    led.buys.forEach(function(b){ byId[b.id] = b; });
+    var pos = positions();
+    var symCats = symbolCats();
+    var catCount = categories().filter(function(c){ return c.name !== UNCAT; }).length;
+    var acctCount = accounts().filter(function(a){ return a.name !== NOACCT; }).length;
+    var totalCost = pos.reduce(function(a,p){ return a + p.cost; }, 0);
+    var totalShares = led.buys.reduce(function(a,b){ return a + b.left; }, 0);
+    var openLots = led.buys.filter(function(b){ return b.left > 0; }).length;
+    /* A signed figure for the saved file: sign first, colour second. */
+    function sgn(v, cls){
+      return '<td class="num ' + (cls || "") + (v < 0 ? " loss" : v > 0 ? " gain" : "") +
+        '" data-v="' + esc(v) + '">' + esc((v < 0 ? "-" : "") + money.format(Math.abs(v))) +
+        '</td>';
+    }
+    var now = new Date();
+    var stamp;
+    try {
+      stamp = now.toLocaleString("en-US", { dateStyle:"long", timeStyle:"short" });
+    } catch (e){ stamp = now.toString(); }
+
+    var h = [];
+    h.push('<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">');
+    h.push('<meta name="viewport" content="width=device-width,initial-scale=1">');
+    h.push('<title>Cost Basis Report</title>');
+    h.push('<style>' + REPORT_CSS + '</style>\n</head>\n<body>\n<div class="wrap">');
+
+    h.push('<header class="masthead"><p class="eyebrow">Holdings</p>' +
+      '<h1>Cost Basis Ledger</h1>' +
+      '<p class="sub">What each lot cost, and what the book adds up to. ' +
+      'Report generated ' + esc(stamp) + '.</p></header>');
+
+    h.push('<dl class="tiles">' +
+      '<div class="tile lead"><dt>Total cost basis</dt><dd><span class="cur">$</span>' +
+        esc(money.format(totalCost)) + '</dd></div>' +
+      '<div class="tile"><dt>Shares</dt><dd>' + esc(qty.format(totalShares)) + '</dd></div>' +
+      '<div class="tile"><dt>Positions</dt><dd>' + pos.length + '</dd></div>' +
+      '<div class="tile"><dt>Lots</dt><dd>' + openLots + '</dd></div>' +
+      (led.sells.length
+        ? '<div class="tile"><dt>Realized gain</dt><dd class="' +
+          (real.gain < 0 ? "loss" : real.gain > 0 ? "gain" : "") + '">' +
+          '<span class="cur">$</span>' +
+          esc((real.gain < 0 ? "-" : "") + money.format(Math.abs(real.gain))) +
+          '</dd></div>'
+        : '') +
+      '</dl>');
+
+    if (!lots.length){
+      h.push('<section class="panel"><div class="empty">This ledger has no entries.</div>' +
+        '</section>');
+    } else {
+      /* Each column: [heading, key, sorts-numerically?, right-aligned?]. The key
+         carries the page's current sort over as the starting order and caret;
+         alignment defaults to the sort type but can differ — the share column
+         sorts on dollars while its bar reads from the left. */
+      var posCols = [
+        ["Symbol", "symbol", false], ["Category", "cat", false],
+        ["Account", "acct", false], ["Shares", "shares", true],
+        ["Avg cost", "avg", true], ["Cost basis", "cost", true],
+        ["% of book", "pct", true], ["Lots", "n", true]
+      ];
+      var lotCols = [
+        ["Symbol", "symbol", false], ["Category", "cat", false],
+        ["Account", "acct", false], ["Buy date", "date", false],
+        ["Shares", "shares", true], ["Sold", "sold", true], ["Left", "left", true],
+        ["Cost / share", "cps", true], ["Cost basis", "cost", true],
+        ["Days held", "days", true]
+      ];
+      var saleCols = [
+        ["Sale date", "date", false], ["Symbol", "symbol", false],
+        ["Account", "acct", false], ["Shares", "shares", true],
+        ["Price", "price", true], ["Proceeds", "proceeds", true],
+        ["Cost basis", "basis", true], ["Gain", "gain", true],
+        ["Term", "term", false], ["Matched against", "src", false]
+      ];
+      /* Both breakdown tables have the same shape; only the first heading differs. */
+      function groupCols(head){
+        return [
+          [head, "name", false], ["Share of book", "cost", true, false],
+          ["Cost basis", "cost2", true], ["% of book", "pct", true],
+          ["Symbols", "symbols", true], ["Lots", "n", true]
+        ];
+      }
+
+      /* The filter row above a table. It ships hidden and the script reveals it, so
+         a viewer with scripts off is never shown controls that cannot work. */
+      function filters(forId, noun, nouns, placeholder, picks){
+        var o = ['<div class="filters" hidden data-for="' + forId + '" data-noun="' +
+          esc(noun) + '" data-nouns="' + esc(nouns) + '">'];
+        o.push('<input type="search" autocomplete="off" aria-label="Filter ' +
+          esc(nouns) + '" placeholder="' + esc(placeholder) + '">');
+        /* One dropdown per tag column, each matching its own column exactly.
+           A column with nothing to choose between is left out. */
+        picks.forEach(function(k){
+          if (k.names.length < 2) return;
+          o.push('<select aria-label="' + esc(k.label) + '" data-col="' + k.col +
+            '"><option value="">' + esc(k.all) + '</option>' +
+            k.names.map(function(c){
+              return '<option value="' + esc(c) + '">' + esc(c) + '</option>';
+            }).join("") + '</select>');
+        });
+        o.push('<button type="button" hidden>Clear</button>');
+        o.push('<span class="fcount"></span></div>');
+        return o.join("");
+      }
+      /* Shown in place of the rows when a filter matches nothing. */
+      function nomatch(cols){
+        return '<tr class="nomatch" style="display:none"><td colspan="' + cols +
+          '">No ' + 'rows match that filter.</td></tr>';
+      }
+      var cats = categories();
+      var accts = accounts();
+      var catNames = cats.map(function(c){ return c.name; });
+      var acctNames = accts.map(function(a){ return a.name; });
+
+      /* A sortable header row: every heading is a button the saved file can act on. */
+      function thead(cols, active){
+        var out = ['<thead><tr>'];
+        cols.forEach(function(c, i){
+          var on = active.k && c[1] === active.k;
+          var right = c.length > 3 ? c[3] : c[2];
+          out.push('<th' + (right ? ' class="num"' : '') + '>' +
+            '<button type="button" class="sortbtn" data-k="' + i + '"' +
+            ' data-t="' + (c[2] ? 'n' : 's') + '"' +
+            (on ? ' aria-sort="' + (active.dir === "asc" ? "ascending" : "descending") + '"' : '') +
+            '>' + esc(c[0]) + ' <span class="car">\u25b2</span></button></th>');
+        });
+        out.push('</tr></thead>');
+        return out.join("");
+      }
+      /* data-v keeps the raw value next to the formatted one, so re-sorting in the
+         saved file never has to unpick thousands separators or a % sign. */
+      function td(text, raw, cls){
+        return '<td' + (cls ? ' class="' + cls + '"' : '') +
+          (raw === null ? '' : ' data-v="' + esc(raw) + '"') + '>' + esc(text) + '</td>';
+      }
+
+      /* ---- the comparisons: dollars by category, then by account ----
+         Ranked bars on one baseline, because the job is comparing the parts with
+         each other; the segmented bar above answers the other question, how the
+         one book splits. Colour is identity within a panel, so a group keeps its
+         hue in both marks. Past eight the tail shares the neutral slot rather
+         than inventing hues nobody can tell apart. */
+      function hue(i, name, leftover){
+        return name === leftover || i > 7 ? 'var(--s9)' : 'var(--s' + (i + 1) + ')';
+      }
+
+      /* overlaps: true when one symbol can appear under several groups, so the
+         Symbols column sums to more than the book holds. The total then says
+         "distinct", or it reads like an arithmetic error. */
+      function panel(title, note, rows, leftover, id, heading, overlaps){
+        var out = ['<section class="panel"><div class="panel-head"><h2>' + esc(title) +
+          '</h2><p class="note">' + note + '</p></div>'];
+
+        out.push('<div class="split">' + rows.map(function(r, i){
+          return '<i style="flex:' + (r.cost || 0.0001) + ';background:' +
+            hue(i, r.name, leftover) + '" title="' + esc(r.name) + '"></i>';
+        }).join("") + '</div>');
+
+        out.push('<div class="tscroll"><table class="sortable" id="' + id + '">' +
+          thead(groupCols(heading), { k:"cost", dir:"desc" }) + '<tbody>');
+        rows.forEach(function(r, i){
+          var w = Math.max(0.6, r.pct * 100);
+          out.push('<tr>' +
+            '<td class="cat' + (r.name === leftover ? ' none' : '') + '" data-v="' +
+              esc(r.name) + '"><span class="sw" style="background:' +
+              hue(i, r.name, leftover) + '"></span>' + esc(r.name) + '</td>' +
+            '<td class="share" data-v="' + esc(r.cost) + '"><span class="track">' +
+              '<i style="width:' + w.toFixed(2) + '%;background:' +
+              hue(i, r.name, leftover) + '"></i></span></td>' +
+            td(money.format(r.cost), r.cost, "num") +
+            td(pctf.format(r.pct), r.pct, "num") +
+            td(String(r.symbols), r.symbols, "num") +
+            td(String(r.n), r.n, "num") +
+            '</tr>');
+        });
+        out.push('</tbody><tfoot><tr><td>Total</td><td class="share"></td>' +
+          '<td class="num">' + esc(money.format(totalCost)) + '</td>' +
+          '<td class="num">' + esc(pctf.format(totalCost ? 1 : 0)) + '</td>' +
+          '<td class="num">' + pos.length + (overlaps ? ' distinct' : '') + '</td>' +
+          '<td class="num">' + lots.length + '</td></tr></tfoot></table></div></section>');
+        return out.join("");
+      }
+
+      h.push(panel("By category",
+        'Every lot counts under its symbol’s category. Bars run to each ' +
+        'category’s share of the ' + esc(money.format(totalCost)) + ' book.',
+        cats, UNCAT, "r-cat", "Category"));
+
+      h.push(panel("By account",
+        'Where the lots are held, read row by row — a symbol held in two ' +
+        'accounts counts under each. Bars run to each account’s share of the ' +
+        esc(money.format(totalCost)) + ' book.',
+        accts, NOACCT, "r-acct", "Account", true));
+
+      h.push('<section class="panel"><div class="panel-head"><h2>Positions</h2>' +
+        '<p class="note">One row per symbol, rolled up from the lots below. ' +
+        'A symbol held in more than one account reads \u201c2 accounts\u201d and its ' +
+        'figures cover all of them, so there is no account filter here \u2014 filter ' +
+        'the lots below to see one account on its own. ' +
+        'Click any column heading to re-sort.</p></div>' +
+        /* No account dropdown: these rows are per symbol, not per account, so any
+           account filter here would quietly understate an account that shares a
+           symbol with another. The Lots table below is row-exact; use that. */
+        filters("r-pos", "position", "positions",
+                "Filter symbol or category\u2026", [
+                  { label:"Category", all:"All categories", names:catNames, col:1 }
+                ]) +
+        '<div class="tscroll"><table class="sortable" id="r-pos">' +
+        thead(posCols, sortPos) + '<tbody>');
+      sorted(pos, sortPos, function(p,k){
+        if (k === "symbol") return p.symbol;
+        if (k === "cat") return p.cat;
+        if (k === "acct") return p.acct;
+        return p[k];
+      })
+        .forEach(function(p){
+          h.push('<tr>' +
+            td(p.symbol, null, "sym") +
+            td(p.cat, null, p.cat === UNCAT ? "dim" : "") +
+            td(p.acct, null, (p.acct === NOACCT || p.split) ? "dim" : "") +
+            td(qty.format(p.shares), p.shares, "num") +
+            td(price.format(p.avg), p.avg, "num") +
+            td(money.format(p.cost), p.cost, "num") +
+            '<td class="num" data-v="' + esc(p.pct) + '">' + esc(pctf.format(p.pct)) +
+              '<span class="bar" style="width:' +
+              Math.max(1, Math.round(p.pct * 100)) + '%"></span></td>' +
+            td(String(p.n), p.n, "num") +
+            '</tr>');
+        });
+      h.push(nomatch(posCols.length) + '</tbody><tfoot><tr><td>Total</td>' +
+        '<td class="dim" data-agg="distinct" data-skip="' + esc(UNCAT) +
+          '" data-one="category" data-many="categories">' + catCount +
+          (catCount === 1 ? ' category' : ' categories') + '</td>' +
+        '<td class="dim" data-agg="distinct" data-skip="' + esc(NOACCT) +
+          '" data-one="account" data-many="accounts">' + acctCount +
+          (acctCount === 1 ? ' account' : ' accounts') + '</td>' +
+        '<td class="num" data-agg="sum" data-fmt="qty">' + esc(qty.format(totalShares)) +
+          '</td><td class="num"></td>' +
+        '<td class="num" data-agg="sum" data-fmt="money">' + esc(money.format(totalCost)) +
+          '</td>' +
+        '<td class="num" data-agg="sum" data-fmt="pct">' +
+          esc(pctf.format(totalCost ? 1 : 0)) + '</td>' +
+        '<td class="num" data-agg="sum" data-fmt="int">' + lots.length +
+          '</td></tr></tfoot></table></div></section>');
+
+      /* every lot, whatever the on-page filter is set to */
+      h.push('<section class="panel"><div class="panel-head"><h2>Lots</h2>' +
+        '<p class="note">All ' + buyRows.length +
+        (buyRows.length === 1 ? ' purchase' : ' purchases') +
+        ' on record, starting in the order the page was showing them. Cost basis is ' +
+        'what is still held \u2014 a lot sold down carries only the basis of the ' +
+        'shares left. Click any column heading to re-sort.</p></div>' +
+        filters("r-lots", "lot", "lots",
+                "Filter symbol, category, account or date\u2026", [
+                  { label:"Category", all:"All categories", names:catNames, col:1 },
+                  { label:"Account", all:"All accounts", names:acctNames, col:2 }
+                ]) +
+        '<div class="tscroll"><table class="sortable" id="r-lots">' +
+        thead(lotCols, sortLot) + '<tbody>');
+      sorted(buyRows, sortLot, function(l,k){
+        var b = byId[l.id];
+        if (k === "symbol") return String(l.symbol || "");
+        if (k === "cat")    return catOf(l, symCats);
+        if (k === "acct")   return acctOf(l);
+        if (k === "date")   return String(l.date || "");
+        if (k === "shares") return num(l.shares);
+        if (k === "sold")   return b ? b.sold : 0;
+        if (k === "left")   return b ? b.left : num(l.shares);
+        if (k === "cps")    return num(l.cost);
+        if (k === "days"){
+          var d = daysHeld(l.date);
+          return d === null ? -Infinity : d;
+        }
+        return b ? b.leftCost : basis(l);
+      }).forEach(function(l){
+        var d = fmtDate(l.date);
+        var dh = daysHeld(l.date);
+        var lc = catOf(l, symCats), la = acctOf(l);
+        var b = byId[l.id] || { sold:0, left:num(l.shares), leftCost:basis(l) };
+        h.push('<tr' + (b.left === 0 && b.sold > 0 ? ' class="closed"' : '') + '>' +
+          td(String(l.symbol || ""), null, "sym") +
+          td(lc, null, cleanTag(l.category) ? "" : "dim") +
+          td(la, null, la === NOACCT ? "dim" : "") +
+          /* sorts on the ISO date, which orders correctly as plain text */
+          td(d || "\u2014", String(l.date || ""), d ? "" : "dim") +
+          td(qty.format(num(l.shares)), num(l.shares), "num") +
+          td(b.sold ? qty.format(b.sold) : "\u2014", b.sold, b.sold ? "num" : "num dim") +
+          td(qty.format(b.left), b.left, b.left ? "num" : "num dim") +
+          td(price.format(num(l.cost)), num(l.cost), "num") +
+          td(money.format(b.leftCost), b.leftCost, "num") +
+          td(dh === null ? "\u2014" : qty.format(dh), dh === null ? "" : dh,
+             dh === null ? "num dim" : "num") +
+          '</tr>');
+      });
+      var boughtShares = led.buys.reduce(function(a,b){ return a + b.shares; }, 0);
+      var soldShares = led.buys.reduce(function(a,b){ return a + b.sold; }, 0);
+      h.push(nomatch(lotCols.length) +
+        '</tbody><tfoot><tr><td>Total</td><td></td><td></td>' +
+        '<td class="dim" data-agg="rows" data-one="lot" data-many="lots">' +
+          buyRows.length + (buyRows.length === 1 ? ' lot' : ' lots') + '</td>' +
+        '<td class="num" data-agg="sum" data-fmt="qty">' + esc(qty.format(boughtShares)) +
+          '</td>' +
+        '<td class="num" data-agg="sum" data-fmt="qty">' +
+          (soldShares ? esc(qty.format(soldShares)) : '') + '</td>' +
+        '<td class="num" data-agg="sum" data-fmt="qty">' + esc(qty.format(totalShares)) +
+          '</td><td class="num"></td>' +
+        '<td class="num" data-agg="sum" data-fmt="money">' + esc(money.format(totalCost)) +
+          '</td>' +
+        '<td class="num"></td></tr></tfoot></table></div></section>');
+
+    /* ---- realised gains ----
+       Kept apart from the cost-basis figures above on purpose: one is what the
+       book is worth on paper, the other is money that has already changed hands. */
+    if (led.sells.length){
+      h.push('<section class="panel"><div class="panel-head"><h2>Realized gains</h2>' +
+        '<p class="note">Each sale against the lots it came out of. Cost basis here is ' +
+        'the purchase cost of the shares sold, never the price they went for. ' +
+        'Short and long split at one year held.</p></div>' +
+        filters("r-sales", "sale", "sales",
+                "Filter symbol, account or term\u2026", [
+                  { label:"Account", all:"All accounts", names:acctNames, col:2 }
+                ]) +
+        '<div class="tscroll"><table class="sortable" id="r-sales">' +
+        thead(saleCols, { k:"date", dir:"desc" }) + '<tbody>');
+      sorted(led.sells, sortSale, function(sl,k){
+        if (k === "symbol") return sl.symbol;
+        if (k === "acct")   return sl.account;
+        if (k === "term")   return sl.term;
+        if (k === "date")   return String(sl.date || "");
+        if (k === "price")  return sl.price;
+        if (k === "proceeds") return sl.matched * sl.price;
+        if (k === "basis")  return sl.basis;
+        if (k === "gain")   return sl.gain;
+        if (k === "src")    return sl.from.length;
+        return sl.shares;
+      }).forEach(function(sl){
+        var src = sl.from.length === 0 ? "nothing to match"
+          : sl.from.length === 1
+            ? (fmtDate(sl.from[0].date) || "undated") + " @ " +
+              price.format(sl.from[0].cost)
+            : sl.from.length + " lots";
+        if (sl.over) src += " \u2014 " + qty.format(sl.over) + " unmatched";
+        h.push('<tr>' +
+          td(fmtDate(sl.date) || "\u2014", String(sl.date || ""), "") +
+          td(sl.symbol, null, "sym") +
+          td(sl.account, null, sl.account === NOACCT ? "dim" : "") +
+          td(qty.format(sl.shares), sl.shares, "num") +
+          td(price.format(sl.price), sl.price, "num") +
+          td(money.format(sl.matched * sl.price), sl.matched * sl.price, "num") +
+          td(money.format(sl.basis), sl.basis, "num") +
+          sgn(sl.gain) +
+          td(sl.term || "\u2014", null, sl.term ? "" : "dim") +
+          td(src, null, (sl.over || sl.stray) ? "warnish" : "dim") +
+          '</tr>');
+      });
+      h.push(nomatch(saleCols.length) +
+        '</tbody><tfoot><tr><td>Total</td><td></td>' +
+        '<td class="dim" data-agg="rows" data-one="sale" data-many="sales">' +
+          led.sells.length + (led.sells.length === 1 ? ' sale' : ' sales') + '</td>' +
+        '<td class="num" data-agg="sum" data-fmt="qty">' + esc(qty.format(real.shares)) +
+          '</td><td class="num"></td>' +
+        '<td class="num" data-agg="sum" data-fmt="money">' +
+          esc(money.format(real.proceeds)) + '</td>' +
+        '<td class="num" data-agg="sum" data-fmt="money">' +
+          esc(money.format(real.basis)) + '</td>' +
+        sgn(real.gain).replace('<td class="num', '<td data-agg="sum" data-fmt="money" class="num') +
+        '<td class="dim" colspan="2">' +
+          esc((real.shortGain ? "short " + (real.shortGain < 0 ? "-" : "") +
+                money.format(Math.abs(real.shortGain)) : "") +
+              (real.shortGain && real.longGain ? "  \u00b7  " : "") +
+              (real.longGain ? "long " + (real.longGain < 0 ? "-" : "") +
+                money.format(Math.abs(real.longGain)) : "")) +
+        '</td></tr></tfoot></table></div></section>');
+    }
+    }
+
+    h.push('<p class="note ro">Cost basis only \u2014 these figures carry no market value ' +
+      'and no gain or loss. Saved from Cost Basis Ledger on ' + esc(stamp) + '.</p>');
+    h.push('</div>\n<script>' + REPORT_JS + '<\/script>\n</body>\n</html>\n');
+    return h.join("\n");
+  }
+
+  function stampSlug(){
+    var d = new Date();
+    return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
+  }
+
+  $("btn-html").addEventListener("click", function(){
+    if (!downloads) return;
+    var b = $("btn-html");
+    b.disabled = true;
+    downloads.save({
+      filename: "cost-basis-report-" + stampSlug() + ".html",
+      data: reportHTML(),
+      type: "text/html;charset=utf-8"
+    })
+      .then(function(){
+        status("Report saved" + (filter.trim() ? " — it covers all lots, not just the filtered ones." : "."));
+        setTimeout(function(){ if (ready) status(""); }, 3000);
+      })
+      ["catch"](function(e){
+        if (!e || e.code !== "declined"){
+          status("Couldn't save the report." + (e && e.message ? " " + e.message : ""), true);
+          setTimeout(function(){ if (ready) status(""); }, 4000);
+        }
+      })
+      ["finally"](function(){ b.disabled = false; });
+  });
+
+  /* ---------- CSV import ---------- */
+  var pending = null;
+
+  function parseCSV(text){
+    var rows = [], row = [], cur = "", q = false;
+    text = String(text).replace(/^﻿/, "");
+    for (var i = 0; i < text.length; i++){
+      var c = text.charAt(i);
+      if (q){
+        if (c === '"'){
+          if (text.charAt(i + 1) === '"'){ cur += '"'; i++; }
+          else { q = false; }
+        } else { cur += c; }
+      }
+      else if (c === '"'){ q = true; }
+      else if (c === ","){ row.push(cur); cur = ""; }
+      else if (c === "\n"){ row.push(cur); rows.push(row); row = []; cur = ""; }
+      else if (c !== "\r"){ cur += c; }
+    }
+    row.push(cur); rows.push(row);
+    return rows.filter(function(r){
+      return r.some(function(v){ return String(v).trim() !== ""; });
+    });
+  }
+
+  var HEAD = {
+    symbol:   ["symbol", "ticker"],
+    category: ["category", "type", "assetclass", "asset", "class", "group", "sector"],
+    account:  ["account", "acct", "accountname", "brokerage", "broker", "portfolio",
+               "custodian"],
+    kind:     ["kind", "action", "transaction", "transactiontype", "activity"],
+    lot:      ["lot", "fromlot", "lotid"],
+    date:     ["buydate", "date"],
+    shares:   ["shares", "quantity", "qty"],
+    cost:     ["costpershare", "costshare", "costperunit", "price"]
+  };
+  var LABEL = { symbol:"Symbol", category:"Category", account:"Account",
+                date:"Date", shares:"Shares", cost:"Cost per Share",
+                kind:"Kind", lot:"Lot" };
+  /* Anything that isn't plainly a sale is a purchase. */
+  function readKind(v){
+    var k = String(v == null ? "" : v).toLowerCase().replace(/[^a-z]/g, "");
+    return (k === "sell" || k === "sold" || k === "sale" || k === "s") ? "sell" : "buy";
+  }
+
+  function normKey(s){ return String(s).toLowerCase().replace(/[^a-z0-9]/g, ""); }
+  function pad2(n){ n = String(n); return n.length < 2 ? "0" + n : n; }
+
+  function parseNum(v){
+    var s = String(v == null ? "" : v).replace(/[$,\s]/g, "");
+    return s === "" ? NaN : parseFloat(s);
+  }
+  function parseDate(v){
+    var s = String(v == null ? "" : v).trim();
+    if (s === "" || s === "—" || s === "-") return "";
+    var y, mo, d, m = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(s);
+    if (m){ y = +m[1]; mo = +m[2]; d = +m[3]; }
+    else {
+      m = /^(\d{1,2})[\/.](\d{1,2})[\/.](\d{4})$/.exec(s);
+      if (!m) return null;
+      mo = +m[1]; d = +m[2]; y = +m[3];
+    }
+    if (mo < 1 || mo > 12 || d < 1 || d > 31) return null;
+    return y + "-" + pad2(mo) + "-" + pad2(d);
+  }
+
+  function mapCSV(text){
+    var rows = parseCSV(text);
+    if (!rows.length) return { fatal:"That file has no rows." };
+    var head = rows[0].map(normKey), idx = {};
+    Object.keys(HEAD).forEach(function(k){
+      idx[k] = -1;
+      HEAD[k].forEach(function(name){
+        if (idx[k] === -1) idx[k] = head.indexOf(name);
+      });
+    });
+    var missing = ["symbol", "shares", "cost"].filter(function(k){ return idx[k] === -1; });
+    if (missing.length){
+      return { fatal:"The header row is missing " + missing.map(function(k){
+        return LABEL[k];
+      }).join(" and ") + ". It needs Symbol, Buy Date, Shares and Cost per Share." };
+    }
+    var ok = [], bad = [];
+    for (var r = 1; r < rows.length; r++){
+      var row = rows[r];
+      var sym = String(row[idx.symbol] == null ? "" : row[idx.symbol]).trim().toUpperCase();
+      if (sym === "" || sym === "TOTAL") continue;
+      var sh = parseNum(row[idx.shares]);
+      var cs = parseNum(row[idx.cost]);
+      var dt = idx.date === -1 ? "" : parseDate(row[idx.date]);
+      var cat = idx.category === -1 ? "" : cleanTag(row[idx.category]);
+      var acct = idx.account === -1 ? "" : cleanTag(row[idx.account]);
+      var kind = idx.kind === -1 ? "buy" : readKind(row[idx.kind]);
+      var pick = idx.lot === -1 ? "" : String(row[idx.lot] == null ? "" : row[idx.lot]).trim();
+      var why = null;
+      if (!/^[A-Z0-9.\-]{1,12}$/.test(sym)) why = "“" + sym + "” isn't a usable symbol";
+      else if (dt === null) why = "couldn't read the date “" +
+        String(row[idx.date]).trim() + "”";
+      else if (!isFinite(sh) || sh <= 0) why = "shares must be a number above zero";
+      else if (!isFinite(cs) || cs < 0){
+        why = (kind === "sell" ? "price" : "cost") + " per share must be zero or more";
+      }
+      else if (kind === "sell" && !dt) why = "a sale needs its date";
+      if (why) bad.push({ line:r + 1, why:why });
+      else if (kind === "sell"){
+        ok.push({ kind:"sell", symbol:sym, account:acct, date:dt,
+                  shares:sh, price:cs, lot:pick });
+      }
+      else ok.push({ symbol:sym, category:cat, account:acct, date:dt,
+                     shares:sh, cost:cs });
+    }
+    return { ok:ok, bad:bad };
+  }
+
+  function prog(msg, kind){
+    var el = $("imp-progress");
+    if (!msg){ el.hidden = true; return; }
+    el.textContent = msg;
+    el.className = "note" + (kind ? " " + kind : "");
+    el.hidden = false;
+  }
+
+  function showReport(res){
+    var box = $("imp-report");
+    box.textContent = "";
+    pending = null;
+    prog("");
+    var p = document.createElement("p");
+    if (res.fatal){
+      p.className = "err";
+      p.textContent = res.fatal;
+      box.appendChild(p);
+      box.hidden = false;
+      $("imp-actions").hidden = true;
+      return;
+    }
+    p.className = "note";
+    p.textContent = res.ok.length
+      ? "Ready to import " + res.ok.length + (res.ok.length === 1 ? " lot" : " lots") +
+        (res.bad.length ? ", skipping " + res.bad.length + "." : ".")
+      : "Nothing importable in that file.";
+    box.appendChild(p);
+    if (res.bad.length){
+      var ul = document.createElement("ul");
+      ul.className = "probs";
+      res.bad.slice(0, 6).forEach(function(b){
+        var li = document.createElement("li");
+        li.textContent = "Line " + b.line + ": " + b.why;
+        ul.appendChild(li);
+      });
+      if (res.bad.length > 6){
+        var more = document.createElement("li");
+        more.textContent = "…and " + (res.bad.length - 6) + " more";
+        ul.appendChild(more);
+      }
+      box.appendChild(ul);
+    }
+    box.hidden = false;
+    pending = res.ok.length ? res.ok : null;
+    $("imp-actions").hidden = !pending;
+  }
+
+  function readFile(file){
+    if (!file) return;
+    if (file.size > 4194304){
+      showReport({ fatal:"That file is larger than 4 MB." });
+      return;
+    }
+    var fr = new FileReader();
+    fr.onload = function(){ showReport(mapCSV(String(fr.result))); };
+    fr.onerror = function(){ showReport({ fatal:"Couldn't read that file." }); };
+    fr.readAsText(file);
+  }
+
+  function clearImport(){
+    pending = null;
+    $("file").value = "";
+    $("imp-report").hidden = true;
+    $("imp-report").textContent = "";
+    $("imp-actions").hidden = true;
+    $("imp-replace").checked = false;
+  }
+
+  function attempt(fn){
+    return fn()["catch"](function(e){
+      var c = e && e.code;
+      if (c === "unavailable" || c === "resource_exhausted"){
+        return new Promise(function(res){
+          setTimeout(res, 400 + Math.random() * 500);
+        }).then(fn);
+      }
+      throw e;
+    });
+  }
+  function runQueue(tasks, conc, onStep){
+    return new Promise(function(resolve){
+      if (!tasks.length){ resolve(0); return; }
+      var next = 0, active = 0, done = 0, fails = 0;
+      function pump(){
+        if (next >= tasks.length && active === 0){ resolve(fails); return; }
+        while (active < conc && next < tasks.length){
+          active++;
+          attempt(tasks[next++])["catch"](function(){ fails++; })
+            .then(function(){
+              active--; done++;
+              if (onStep) onStep(done, tasks.length);
+              pump();
+            });
+        }
+      }
+      pump();
+    });
+  }
+
+  $("file").addEventListener("change", function(){
+    readFile($("file").files && $("file").files[0]);
+  });
+  (function(){
+    var d = $("drop");
+    ["dragenter", "dragover"].forEach(function(ev){
+      d.addEventListener(ev, function(e){ e.preventDefault(); d.classList.add("over"); });
+    });
+    ["dragleave", "dragend"].forEach(function(ev){
+      d.addEventListener(ev, function(){ d.classList.remove("over"); });
+    });
+    d.addEventListener("drop", function(e){
+      e.preventDefault();
+      d.classList.remove("over");
+      readFile(e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]);
+    });
+  })();
+  $("imp-cancel").addEventListener("click", function(){ clearImport(); prog(""); });
+
+  $("imp-go").addEventListener("click", function(){
+    if (!pending) return;
+    if (!db){ prog("Storage isn't available in this view, so nothing was imported.", "err"); return; }
+    var rows = pending;
+    var replace = $("imp-replace").checked;
+    var oldIds = replace ? lots.map(function(l){ return l.id; }) : [];
+    var go = $("imp-go"), ca = $("imp-cancel");
+    go.disabled = true; ca.disabled = true;
+    prog("Importing 0 of " + rows.length + "…");
+
+    var adds = rows.map(function(r, i){
+      return function(){
+        return db.collection(COL).add(r.kind === "sell"
+          ? { kind:"sell", symbol:r.symbol, account:r.account, date:r.date,
+              shares:r.shares, price:r.price, lot:r.lot, cost:0,
+              created:Date.now() + i }
+          : { symbol:r.symbol, category:r.category, account:r.account, date:r.date,
+              shares:r.shares, cost:r.cost, created:Date.now() + i });
+      };
+    });
+
+    /* Add first, remove the old rows only once something landed, so a failed
+       import can never leave the ledger empty. */
+    runQueue(adds, 4, function(d, t){
+      prog("Importing " + d + " of " + t + "…");
+    }).then(function(addFails){
+      var added = rows.length - addFails;
+      if (!replace || !added) return [addFails, 0];
+      prog("Imported " + added + ". Removing " + oldIds.length + " earlier lots…");
+      var dels = oldIds.map(function(id){
+        return function(){ return db.collection(COL).doc(id).delete(); };
+      });
+      return runQueue(dels, 4).then(function(delFails){ return [addFails, delFails]; });
+    }).then(function(res){
+      var addFails = res[0], delFails = res[1];
+      var added = rows.length - addFails;
+      var msg = "Imported " + added + " of " + rows.length +
+        (rows.length === 1 ? " lot." : " lots.");
+      if (replace && added) msg += " Replaced " + (oldIds.length - delFails) +
+        " earlier " + (oldIds.length - delFails === 1 ? "lot." : "lots.");
+      if (addFails) msg += " " + addFails + " row" + (addFails === 1 ? "" : "s") +
+        " couldn't be saved.";
+      if (delFails) msg += " " + delFails + " earlier " +
+        (delFails === 1 ? "lot" : "lots") + " couldn't be removed.";
+      if (replace && !added) msg += " Nothing was removed.";
+      clearFilter();
+      clearImport();
+      prog(msg, (addFails || delFails) ? "err" : "good");
+      go.disabled = false; ca.disabled = false;
+    });
+  });
+
+  /* ---------- theme ---------- */
+  var THEME_KEY = "cost-basis-ledger/theme";
+  var THEMES = ["system", "light", "dark"];
+  var LABELS = { system:"Theme: System", light:"Theme: White", dark:"Theme: Dark" };
+  var theme = "system";
+  try {
+    var saved = window.localStorage.getItem(THEME_KEY);
+    if (THEMES.indexOf(saved) > -1) theme = saved;
+  } catch (e) {}
+
+  function applyTheme(){
+    var r = document.documentElement;
+    if (theme === "system") r.removeAttribute("data-theme");
+    else r.setAttribute("data-theme", theme);
+    $("btn-theme").textContent = LABELS[theme];
+  }
+  applyTheme();
+
+  $("btn-theme").addEventListener("click", function(){
+    theme = THEMES[(THEMES.indexOf(theme) + 1) % THEMES.length];
+    try { window.localStorage.setItem(THEME_KEY, theme); } catch (e) {}
+    applyTheme();
+  });
+
+  /* ---------- clear everything ---------- */
+  function disarmClear(){
+    clearArmed = false;
+    if (clearTimer){ clearTimeout(clearTimer); clearTimer = null; }
+    var b = $("btn-clear");
+    b.textContent = "Clear data";
+    b.classList.remove("danger");
+  }
+
+  $("btn-clear").addEventListener("click", function(){
+    var b = $("btn-clear");
+    if (!clearArmed){
+      clearArmed = true;
+      b.textContent = "Confirm — delete all " + lots.length;
+      b.classList.add("danger");
+      clearTimer = setTimeout(disarmClear, 5000);
+      return;
+    }
+    disarmClear();
+    if (!db){ prog("Storage isn't available in this view.", "err"); return; }
+    var ids = lots.map(function(l){ return l.id; });
+    if (!ids.length) return;
+    b.disabled = true;
+    resetForm();
+    clearFilter();
+    clearImport();
+    prog("Clearing " + ids.length + "…");
+    var dels = ids.map(function(id){
+      return function(){ return db.collection(COL).doc(id).delete(); };
+    });
+    runQueue(dels, 4).then(function(fails){
+      b.disabled = false;
+      var gone = ids.length - fails;
+      prog(fails
+        ? "Cleared " + gone + " of " + ids.length + "; " + fails + " couldn't be removed."
+        : "Cleared " + gone + (gone === 1 ? " lot." : " lots."), fails ? "err" : "good");
+    });
+  });
+
+  /* ---------- offline storage ----------
+     A stand-in for the hosted store, exposing just the calls the page above
+     makes (collection().add / doc().set / doc().delete / onSnapshot) and
+     keeping the rows in this browser's localStorage. */
+  var SEED = [];
+  var STORE_KEY = "cost-basis-ledger/lots/v1";
+  var persistent = true;
+
+  function makeLocalDB(seedRows){
+    var rows = null, listeners = [], queued = false;
+
+    function load(){
+      if (rows) return rows;
+      var raw = null;
+      try { raw = window.localStorage.getItem(STORE_KEY); }
+      catch (e){ persistent = false; }
+      if (raw){
+        try {
+          var p = JSON.parse(raw);
+          if (p && p.length !== undefined) rows = p;
+        } catch (e){ rows = null; }
+      }
+      if (!rows){ rows = seedRows.slice(); persist(); }
+      return rows;
+    }
+    function persist(){
+      try { window.localStorage.setItem(STORE_KEY, JSON.stringify(rows)); }
+      catch (e){ persistent = false; }
+    }
+    function snapshot(){
+      var docs = rows.map(function(r){
+        return {
+          id: r.id, exists: true,
+          data: function(){ return r; },
+          metadata: { fromCache:false, hasPendingWrites:false }
+        };
+      });
+      return {
+        docs: docs, size: docs.length, empty: !docs.length,
+        docChanges: function(){ return []; },
+        metadata: { fromCache:false, hasPendingWrites:false }
+      };
+    }
+    /* Coalesce a burst of writes (an import) into one re-render. */
+    function emit(){
+      if (queued) return;
+      queued = true;
+      setTimeout(function(){
+        queued = false;
+        var s = snapshot();
+        listeners.slice().forEach(function(fn){ fn(s); });
+      }, 0);
+    }
+    function uid(){
+      return "l" + Date.now().toString(36) +
+        Math.random().toString(36).slice(2, 8);
+    }
+    function find(id){
+      for (var i = 0; i < rows.length; i++){ if (rows[i].id === id) return i; }
+      return -1;
+    }
+    function copy(id, body){
+      var rec = { id:id, symbol:body.symbol, category:body.category || "",
+                  account:body.account || "", date:body.date,
+                  shares:body.shares, cost:body.cost,
+                  created:body.created };
+      /* A sale carries three fields a buy has no use for. */
+      if (body.kind === "sell"){
+        rec.kind = "sell";
+        rec.price = body.price;
+        rec.lot = body.lot || "";
+        rec.cost = 0;
+      }
+      return rec;
+    }
+
+    var api = {
+      add: function(body){
+        load();
+        var rec = copy(uid(), body);
+        rows.push(rec); persist(); emit();
+        return Promise.resolve({ id: rec.id });
+      },
+      doc: function(id){
+        return {
+          set: function(body){
+            load();
+            var i = find(id);
+            if (i < 0) rows.push(copy(id, body)); else rows[i] = copy(id, body);
+            persist(); emit();
+            return Promise.resolve();
+          },
+          "delete": function(){
+            load();
+            var i = find(id);
+            if (i >= 0) rows.splice(i, 1);
+            persist(); emit();
+            return Promise.resolve();
+          }
+        };
+      },
+      onSnapshot: function(next){
+        listeners.push(next);
+        load(); emit();
+        return function(){
+          listeners = listeners.filter(function(f){ return f !== next; });
+        };
+      }
+    };
+    return { collection: function(){ return api; } };
+  }
+
+  /* ---------- boot (offline) ---------- */
+  db = makeLocalDB(SEED);
+  canWrite = true;
+  $("form-panel").hidden = false;
+  $("io-panel").hidden = false;
+
+  downloads = {
+    save: function(req){
+      return new Promise(function(resolve, reject){
+        try {
+          var blob = new Blob([req.data], { type: req.type || "text/csv;charset=utf-8" });
+          var url = URL.createObjectURL(blob);
+          var a = document.createElement("a");
+          a.href = url;
+          a.download = req.filename;
+          a.style.display = "none";
+          document.body.appendChild(a);
+          a.click();
+          setTimeout(function(){
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+          }, 0);
+          resolve({ status:"saved" });
+        } catch (e){
+          reject({ code:"unavailable", message:String(e && e.message || e) });
+        }
+      });
+    }
+  };
+  $("btn-csv").hidden = false;
+  $("btn-html").hidden = false;
+
+  db.collection(COL).onSnapshot(function(snap){
+    lots = snap.docs.map(function(doc){
+      var v = doc.data() || {};
+      var row = {
+        id: doc.id,
+        symbol: String(v.symbol == null ? "" : v.symbol),
+        category: String(v.category == null ? "" : v.category),
+        account: String(v.account == null ? "" : v.account),
+        date: String(v.date == null ? "" : v.date),
+        shares: num(v.shares),
+        cost: num(v.cost),
+        created: num(v.created)
+      };
+      /* Anything not explicitly marked a sale is a buy, which is what every row
+         written before sales existed will be. */
+      if (v.kind === "sell"){
+        row.kind = "sell";
+        row.price = num(v.price);
+        row.lot = String(v.lot == null ? "" : v.lot);
+      }
+      return row;
+    });
+    ledCache = null;
+    ready = true;
+    status(persistent ? "" :
+      "This browser isn't allowing the page to save anything, so changes will " +
+      "be lost when you close the tab. Use Export CSV to keep your work.", true);
+    render();
+  });
+})();
+</script>
+</body>
+</html>
