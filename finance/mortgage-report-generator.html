@@ -1,0 +1,2532 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mortgage Report Generator</title>
+
+<style data-inline="styles">/* =========================================================================
+   Mortgage loan report — stylesheet
+   Colour tokens come from a validated categorical palette (slots 1-3:
+   blue / orange / aqua). Dark mode is a selected set of steps for the dark
+   surface, not an automatic inversion.
+   ========================================================================= */
+
+:root {
+  color-scheme: light;
+
+  /* text-size setting; 1 = the browser's own default size */
+  --font-scale: 1;
+
+  /* surfaces & ink */
+  --surface-1: #ffffff;
+  --plane: #f9f9f9;
+  --text-primary: #191919;
+  --text-secondary: #666666;
+  --grid: #e7e7e7;
+  --axis: #c2c2c2;
+  --hairline: rgba(11, 11, 11, 0.10);
+  --wash: rgba(11, 11, 11, 0.035);
+
+  /* categorical series */
+  --series-1: #257de0;   /* principal */
+  --series-2: #f47230;   /* interest  */
+  --series-3: #00b894;   /* escrow    */
+
+  /* sequential blue ramp (meter track / accents) */
+  --blue-100: #cce3fd;
+  --blue-450: #257de0;
+  --blue-600: #1757ac;
+
+  /* status */
+  --good: #0aac23;
+  --good-text: #006c10;
+  --critical: #dc3c3d;
+
+  --radius: 14px;
+  --radius-sm: 8px;
+  --shadow: 0 1px 2px rgba(11, 11, 11, .04), 0 8px 24px -16px rgba(11, 11, 11, .18);
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+/* Dark values are declared under both scopes: the media query covers the OS
+   setting, the [data-theme] scope covers the in-page toggle, which wins. */
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+    --surface-1: #191919;
+    --plane: #0b0b0b;
+    --text-primary: #efefef;
+    --text-secondary: #9c9c9c;
+    --grid: #303030;
+    --axis: #474747;
+    --hairline: rgba(255, 255, 255, 0.10);
+    --wash: rgba(255, 255, 255, 0.045);
+    --series-1: #338ced;
+    --series-2: #e76624;
+    --series-3: #00a888;
+    --blue-100: #1757ac;
+    --blue-450: #338ced;
+    --blue-600: #84b9f3;
+    --good: #0aac23;
+    --good-text: #53c556;
+    --critical: #dc3c3d;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 8px 24px -16px rgba(0, 0, 0, .8);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --surface-1: #191919;
+  --plane: #0b0b0b;
+  --text-primary: #efefef;
+  --text-secondary: #9c9c9c;
+  --grid: #303030;
+  --axis: #474747;
+  --hairline: rgba(255, 255, 255, 0.10);
+  --wash: rgba(255, 255, 255, 0.045);
+  --series-1: #338ced;
+  --series-2: #e76624;
+  --series-3: #00a888;
+  --blue-100: #1757ac;
+  --blue-450: #338ced;
+  --blue-600: #84b9f3;
+  --good: #0aac23;
+  --good-text: #53c556;
+  --critical: #dc3c3d;
+  --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 8px 24px -16px rgba(0, 0, 0, .8);
+}
+
+* { box-sizing: border-box; }
+
+/* `hidden` must beat the display rules on .loader / #report / .table-pane */
+[hidden] { display: none !important; }
+
+/* Everything is sized in rem, so this one rule scales the whole report.
+   `100%` keeps the browser's own font-size preference as the baseline. */
+html {
+  font-size: calc(100% * var(--font-scale));
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--plane);
+  color: var(--text-primary);
+  font-family: var(--font);
+  font-size: 1rem;
+  line-height: 1.55;
+}
+
+h1, h2, h3 { margin: 0; font-weight: 600; letter-spacing: -0.01em; }
+p { margin: 0; }
+
+/* ----------------------------- top bar ----------------------------- */
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: color-mix(in srgb, var(--surface-1) 88%, transparent);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--hairline);
+}
+.topbar-inner {
+  max-width: 70rem;
+  margin: 0 auto;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px 16px;
+}
+.brand { display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1 1 14rem; overflow: hidden; }
+.brand > div { min-width: 0; }   /* lets .brand-sub ellipsise instead of clipping */
+.brand-mark {
+  width: 30px; height: 30px; flex: none;
+  border-radius: 9px;
+  background: linear-gradient(145deg, var(--series-1), var(--blue-600));
+}
+.topbar h1 { font-size: 1.05rem; }
+.brand-sub {
+  font-size: .84rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.topbar-actions { display: flex; gap: 8px; flex: 0 1 auto; min-width: 0; flex-wrap: wrap; justify-content: flex-end; }
+
+.btn {
+  font: inherit;
+  font-size: .86rem;
+  padding: 7px 12px;
+  min-height: 34px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--hairline);
+  background: var(--surface-1);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background .15s, border-color .15s;
+}
+.btn:hover { background: var(--wash); }
+.btn:focus-visible { outline: 2px solid var(--series-1); outline-offset: 2px; }
+.btn-quiet { background: transparent; border-color: transparent; color: var(--text-secondary); }
+.btn-quiet:hover { color: var(--text-primary); }
+.btn-icon { min-width: 62px; }
+
+.btn-primary {
+  background: var(--series-1);
+  border-color: transparent;
+  color: #ffffff;
+  font-weight: 500;
+}
+.btn-primary:hover { background: var(--blue-600); }
+.btn[disabled] { opacity: .6; cursor: progress; }
+
+/* ----------------------------- text size ----------------------------- */
+
+.sizer {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  background: var(--wash);
+  border-radius: var(--radius-sm);
+}
+.sizer-btn {
+  font-size: .9rem;
+  min-width: 34px;
+  font-weight: 500;
+  line-height: 1;
+}
+.sizer-value {
+  min-width: 3.4em;
+  text-align: center;
+  font-size: .78rem;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+.seg[disabled] { opacity: .35; cursor: default; }
+
+/* ----------------------------- toast ----------------------------- */
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translate(-50%, 8px);
+  z-index: 50;
+  max-width: min(520px, calc(100vw - 32px));
+  padding: 11px 16px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--hairline);
+  background: var(--surface-1);
+  color: var(--text-primary);
+  box-shadow: 0 10px 30px -10px rgba(11, 11, 11, .35);
+  font-size: .88rem;
+  opacity: 0;
+  transition: opacity .18s, transform .18s;
+}
+.toast.is-on { opacity: 1; transform: translate(-50%, 0); }
+.toast.is-error { border-color: var(--critical); color: var(--critical); }
+
+.toast:has(.toast-action) { display: flex; align-items: center; gap: 14px; }
+.toast-action {
+  font: inherit;
+  font-size: .85rem;
+  font-weight: 500;
+  flex: none;
+  padding: 6px 12px;
+  min-height: 32px;
+  border: 0;
+  border-radius: 6px;
+  background: var(--series-1);
+  color: #ffffff;
+  cursor: pointer;
+}
+.toast-action:hover { background: var(--blue-600); }
+.toast-action:focus-visible { outline: 2px solid var(--series-1); outline-offset: 2px; }
+
+/* ----------------------------- page ----------------------------- */
+
+.page {
+  max-width: 70rem;
+  margin: 0 auto;
+  padding: 24px 16px 56px;
+  display: grid;
+  gap: 18px;
+}
+#report { display: grid; gap: 18px; }
+
+.card {
+  background: var(--surface-1);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 20px;
+}
+.card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+.card-head h2 { font-size: 1.05rem; }
+.card-sub { font-size: .875rem; color: var(--text-secondary); margin-top: 3px; }
+.muted { color: var(--text-secondary); }
+
+/* ----------------------------- loader ----------------------------- */
+
+.loader { display: grid; gap: 12px; justify-items: center; padding: 32px 0; }
+.drop {
+  width: 100%;
+  max-width: 35rem;
+  padding: 44px 24px;
+  text-align: center;
+  background: var(--surface-1);
+  border: 1.5px dashed var(--axis);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+.drop:hover, .drop:focus-visible, .drop.is-over {
+  border-color: var(--series-1);
+  background: color-mix(in srgb, var(--series-1) 5%, var(--surface-1));
+  outline: none;
+}
+.drop-icon { width: 34px; height: 34px; color: var(--series-1); }
+.drop-title { font-weight: 600; margin-top: 10px; }
+.drop-hint { font-size: .88rem; color: var(--text-secondary); margin-top: 6px; }
+.loader-note { font-size: .86rem; color: var(--text-secondary); text-align: center; max-width: 35rem; }
+.loader-note.is-error { color: var(--critical); }
+
+/* ----------------------------- hero ----------------------------- */
+
+.hero-card {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+  gap: 32px;
+  align-items: center;
+}
+/* Grid and flex children default to min-width:auto, which lets long values
+   push a track wider than its container. These may all shrink instead. */
+.hero, .hero-progress, .tile, .card, .card-head > div { min-width: 0; }
+.hero-figure { overflow-wrap: break-word; }
+.hero-label { font-size: .875rem; color: var(--text-secondary); }
+.hero-figure {
+  font-size: 3.2rem;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  margin-top: 4px;
+}
+.hero-meta { font-size: .875rem; color: var(--text-secondary); margin-top: 8px; }
+
+.hero-progress { display: grid; gap: 8px; }
+.meter-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  font-size: .95rem;
+  font-weight: 600;
+  flex-wrap: wrap;
+}
+.meter-head .muted { font-weight: 400; font-size: .86rem; }
+.meter {
+  height: 14px;
+  border-radius: 999px;
+  background: var(--blue-100);
+  overflow: hidden;
+}
+.meter-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--blue-450);
+  transition: width .6s cubic-bezier(.2, .7, .2, 1);
+}
+.meter-foot { display: flex; justify-content: space-between; gap: 12px; font-size: .84rem; flex-wrap: wrap; }
+
+/* ----------------------------- tiles ----------------------------- */
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 13.5rem), 1fr));
+  gap: 14px;
+}
+.tile {
+  background: var(--surface-1);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 16px 18px;
+  display: grid;
+  gap: 4px;
+  align-content: start;
+}
+.tile-label { font-size: .84rem; color: var(--text-secondary); }
+.tile-value { font-size: 1.65rem; font-weight: 600; letter-spacing: -0.02em; }
+.tile-note { font-size: .8rem; color: var(--text-secondary); }
+.tile-key {
+  display: inline-block;
+  width: 9px; height: 9px;
+  border-radius: 3px;
+  margin-right: 7px;
+  vertical-align: 1px;
+}
+
+/* ----------------------------- charts ----------------------------- */
+
+.chart-wrap { position: relative; }
+.chart { position: relative; width: 100%; min-height: calc(260px * var(--font-scale)); }
+.chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+.chart-short { min-height: calc(200px * var(--font-scale)); }
+
+.chart-tip {
+  position: absolute;
+  pointer-events: none;
+  z-index: 5;
+  min-width: 140px;
+  padding: 9px 11px;
+  background: var(--surface-1);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 6px 20px -8px rgba(11, 11, 11, .3);
+  font-size: .85rem;
+  opacity: 0;
+  transition: opacity .12s;
+}
+.chart-tip.is-on { opacity: 1; }
+.tip-title { font-weight: 600; margin-bottom: 5px; }
+.tip-row { display: flex; align-items: center; gap: 8px; justify-content: space-between; }
+.tip-row + .tip-row { margin-top: 2px; }
+.tip-name { display: flex; align-items: center; gap: 6px; color: var(--text-secondary); }
+.tip-swatch { width: 8px; height: 8px; border-radius: 2px; flex: none; }
+.tip-val { font-variant-numeric: tabular-nums; }
+.tip-total {
+  margin-top: 5px;
+  padding-top: 5px;
+  border-top: 1px solid var(--hairline);
+  font-weight: 600;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  margin-bottom: 10px;
+  font-size: .85rem;
+  color: var(--text-secondary);
+}
+.legend-item { display: flex; align-items: center; gap: 7px; }
+.legend-swatch { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+.legend-line { width: 14px; height: 2px; border-radius: 2px; flex: none; }
+
+.card-tools { display: flex; gap: 2px; padding: 2px; background: var(--wash); border-radius: var(--radius-sm); flex: none; }
+.seg {
+  font: inherit;
+  font-size: .82rem;
+  padding: 5px 11px;
+  min-height: 28px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.seg.is-active { background: var(--surface-1); color: var(--text-primary); box-shadow: 0 1px 2px rgba(11, 11, 11, .08); }
+.seg:focus-visible { outline: 2px solid var(--series-1); outline-offset: 1px; }
+
+/* ----------------------------- tables ----------------------------- */
+
+.table-scroll { overflow-x: auto; margin: 0 -4px; }
+table.data {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: .9rem;
+}
+table.data th, table.data td {
+  padding: 9px 10px;
+  text-align: right;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--hairline);
+}
+table.data th:first-child, table.data td:first-child { text-align: left; }
+table.data th {
+  position: sticky;
+  top: 0;
+  background: var(--surface-1);
+  color: var(--text-secondary);
+  font-weight: 500;
+  font-size: .8rem;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  z-index: 1;
+}
+table.data td.num { font-variant-numeric: tabular-nums; }
+table.data tbody tr:hover { background: var(--wash); }
+table.data tfoot td {
+  font-weight: 600;
+  border-top: 1px solid var(--axis);
+  border-bottom: 0;
+  background: var(--surface-1);
+}
+.neg { color: var(--critical); }
+.zero { color: var(--text-secondary); }
+.tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: .78rem;
+  background: var(--wash);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+.tag-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 6px; vertical-align: 0; }
+
+th.sortable { cursor: pointer; user-select: none; }
+th.sortable:hover { color: var(--text-primary); }
+th.sortable::after { content: ""; display: inline-block; width: 8px; }
+th.sortable[aria-sort="ascending"]::after { content: " ▲"; font-size: .6rem; }
+th.sortable[aria-sort="descending"]::after { content: " ▼"; font-size: .6rem; }
+
+.table-cap { font-size: .82rem; color: var(--text-secondary); margin-top: 10px; }
+.empty { padding: 28px 10px; text-align: center; color: var(--text-secondary); font-size: .9rem; }
+
+/* ----------------------------- filters ----------------------------- */
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-end;
+  margin-bottom: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--hairline);
+}
+.field { display: grid; gap: 4px; font-size: .8rem; color: var(--text-secondary); }
+.field-grow { flex: 1 1 180px; }
+.field select, .field input {
+  font: inherit;
+  font-size: .9rem;
+  min-height: 34px;
+  padding: 6px 10px;
+  color: var(--text-primary);
+  background: var(--surface-1);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-sm);
+}
+.field select:focus-visible, .field input:focus-visible { outline: 2px solid var(--series-1); outline-offset: 0; }
+
+.page-foot { font-size: .82rem; color: var(--text-secondary); text-align: center; padding: 8px 0; }
+
+/* ----------------------------- responsive ----------------------------- */
+
+@media (max-width: 760px) {
+  .hero-card { grid-template-columns: 1fr; gap: 22px; }
+  .hero-figure { font-size: 2.6rem; }
+  .card { padding: 16px; }
+  .card-head { margin-bottom: 12px; }
+  .topbar h1 { font-size: 1rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
+
+/* ----------------------------- print ----------------------------- */
+
+@media print {
+  :root { --shadow: none; }
+  body { background: #fff; }
+  .topbar, .card-tools, .filters, .topbar-actions { display: none !important; }
+  .card { break-inside: avoid; border-color: #ddd; }
+  .table-pane[hidden] { display: none; }
+  .page { padding: 0; max-width: none; }
+}
+</style>
+</head>
+<body data-theme="auto">
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <div>
+        <h1>Mortgage report generator</h1>
+        <p class="brand-sub" id="sourceLine">No data loaded</p>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <button type="button" class="btn" id="reloadBtn" hidden="">Load another CSV</button>
+      <button type="button" class="btn" id="clearBtn" hidden="">Clear data</button>
+      <button type="button" class="btn btn-primary" id="exportBtn" hidden="">Export HTML</button>
+      <button type="button" class="btn" id="printBtn" hidden="">Print / PDF</button>
+      <div class="sizer" role="group" aria-label="Text size">
+        <button type="button" class="seg sizer-btn" id="textSmaller" aria-label="Decrease text size" title="Decrease text size">A−</button>
+        <span class="sizer-value" id="textSizeLabel" aria-live="polite">100%</span>
+        <button type="button" class="seg sizer-btn" id="textLarger" aria-label="Increase text size" title="Increase text size">A+</button>
+      </div>
+      <button type="button" class="btn btn-icon" id="themeBtn" aria-label="Switch colour theme" title="Switch colour theme">
+        <span id="themeLabel">Auto</span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main class="page">
+
+  <!-- ============ Loader ============ -->
+  <section class="loader" id="loader" hidden="">
+    <div class="drop" id="drop" tabindex="0" role="button" aria-label="Choose or drop a mortgage loan history CSV file">
+      <svg viewBox="0 0 24 24" class="drop-icon" aria-hidden="true">
+        <path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path>
+        <path d="M4 15v3.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
+      </svg>
+      <p class="drop-title">Drop your loan history CSV here</p>
+      <p class="drop-hint">…or click to choose a file. Everything is parsed in your browser — nothing is uploaded.</p>
+      <input type="file" id="fileInput" accept=".csv,text/csv" hidden="">
+    </div>
+    <p class="loader-note" id="loaderNote"></p>
+  </section>
+
+  <!-- ============ Report ============ -->
+  <div id="report" hidden="">
+
+    <!-- Hero + progress -->
+    <section class="card hero-card">
+      <div class="hero">
+        <p class="hero-label">Principal balance remaining</p>
+        <p class="hero-figure" id="heroBalance">—</p>
+        <p class="hero-meta" id="heroMeta"></p>
+      </div>
+      <div class="hero-progress">
+        <div class="meter-head">
+          <span id="paidPctLabel">—</span>
+          <span class="muted" id="paidAmtLabel"></span>
+        </div>
+        <div class="meter" role="img" id="meter" aria-label="Loan payoff progress">
+          <div class="meter-fill" id="meterFill" style="width: 0%;"></div>
+        </div>
+        <div class="meter-foot">
+          <span class="muted">Original principal <strong id="origLabel">—</strong></span>
+          <span class="muted" id="rateLabel"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- KPI tiles -->
+    <section class="tiles" id="tiles" aria-label="Key figures"></section>
+
+    <!-- Balance over time -->
+    <section class="card chart-card" id="card-balance">
+      <div class="card-head">
+        <div>
+          <h2>Principal balance over time</h2>
+          <p class="card-sub" id="balanceSub"></p>
+        </div>
+        <div class="card-tools" data-view-toggle="balance">
+          <button type="button" class="seg is-active" data-view="chart">Chart</button>
+          <button type="button" class="seg" data-view="table">Table</button>
+        </div>
+      </div>
+      <div class="chart-wrap" data-pane="chart">
+        <div class="chart" id="chart-balance"></div>
+      </div>
+      <div class="table-pane" data-pane="table" hidden=""><div id="table-balance"></div></div>
+    </section>
+
+    <!-- Payment composition -->
+    <section class="card chart-card" id="card-composition">
+      <div class="card-head">
+        <div>
+          <h2>Where each monthly payment went</h2>
+          <p class="card-sub">Scheduled payments split into principal, interest and escrow, by the month each was applied to.</p>
+        </div>
+        <div class="card-tools" data-view-toggle="composition">
+          <button type="button" class="seg is-active" data-view="chart">Chart</button>
+          <button type="button" class="seg" data-view="table">Table</button>
+        </div>
+      </div>
+      <div class="legend" id="legend-composition"></div>
+      <div class="chart-wrap" data-pane="chart">
+        <div class="chart" id="chart-composition"></div>
+      </div>
+      <div class="table-pane" data-pane="table" hidden=""><div id="table-composition"></div></div>
+    </section>
+
+    <!-- Cumulative -->
+    <section class="card chart-card" id="card-cumulative">
+      <div class="card-head">
+        <div>
+          <h2>Cumulative principal vs. interest</h2>
+          <p class="card-sub">Running totals paid since the first transaction on record.</p>
+        </div>
+        <div class="card-tools" data-view-toggle="cumulative">
+          <button type="button" class="seg is-active" data-view="chart">Chart</button>
+          <button type="button" class="seg" data-view="table">Table</button>
+        </div>
+      </div>
+      <div class="legend" id="legend-cumulative"></div>
+      <div class="chart-wrap" data-pane="chart">
+        <div class="chart" id="chart-cumulative"></div>
+      </div>
+      <div class="table-pane" data-pane="table" hidden=""><div id="table-cumulative"></div></div>
+    </section>
+
+    <!-- Escrow -->
+    <section class="card chart-card" id="card-escrow">
+      <div class="card-head">
+        <div>
+          <h2>Escrow collected vs. disbursed</h2>
+          <p class="card-sub">Taxes and insurance paid out of escrow, against what was collected each year.</p>
+        </div>
+        <div class="card-tools" data-view-toggle="escrow">
+          <button type="button" class="seg is-active" data-view="chart">Chart</button>
+          <button type="button" class="seg" data-view="table">Table</button>
+        </div>
+      </div>
+      <div class="legend" id="legend-escrow"></div>
+      <div class="chart-wrap" data-pane="chart">
+        <div class="chart chart-short" id="chart-escrow"></div>
+      </div>
+      <div class="table-pane" data-pane="table" hidden=""><div id="table-escrow"></div></div>
+    </section>
+
+    <!-- Yearly summary -->
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2>Year by year</h2>
+          <p class="card-sub">Totals per calendar year, by transaction posting date.</p>
+        </div>
+      </div>
+      <div id="table-yearly"></div>
+    </section>
+
+    <!-- Ledger -->
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2>Full transaction ledger</h2>
+          <p class="card-sub" id="ledgerCount"></p>
+        </div>
+      </div>
+      <div class="filters">
+        <label class="field">
+          <span>Transaction type</span>
+          <select id="filterType"></select>
+        </label>
+        <label class="field">
+          <span>Year</span>
+          <select id="filterYear"></select>
+        </label>
+        <label class="field field-grow">
+          <span>Search</span>
+          <input type="search" id="filterSearch" placeholder="Amount, date, type…">
+        </label>
+        <button type="button" class="btn btn-quiet" id="clearFilters">Clear</button>
+      </div>
+      <div id="table-ledger"></div>
+    </section>
+
+    <footer class="page-foot">
+      <p id="footNote"></p>
+    </footer>
+  </div>
+</main>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden=""></div>
+
+<script data-inline="data">window.__EMBEDDED__ = {csv:"",name:"",theme:"auto",scale:1,exportedAt:"2026-11-26T20:25:48.477901-06:00"};</script>
+<script data-inline="app">(function MortgageReportApp() {
+
+const DEFAULT_CSV = 'MyMortgageLoanHistory.csv';
+
+/* Empty, this page is the generator; with a loan history in it, it is the
+   report. The tab title and the masthead follow whichever it currently is. */
+const IDENTITY = {
+  report:    { tab: 'Mortgage Loan Report',      heading: 'Mortgage loan report' },
+  generator: { tab: 'Mortgage Report Generator', heading: 'Mortgage report generator' }
+};
+
+function setIdentity(hasData, root = document) {
+  const id = hasData ? IDENTITY.report : IDENTITY.generator;
+  const title = root.querySelector('title');
+  if (title) title.textContent = id.tab;
+  const heading = root.querySelector('.topbar h1');
+  if (heading) heading.textContent = id.heading;
+}
+const SVG_NS = 'http://www.w3.org/2000/svg';
+
+/* ------------------------------------------------------------------ utils */
+
+const $  = (sel, root = document) => root.querySelector(sel);
+const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+
+/* An exported report drops the authoring controls and the drop zone, so every
+   reference to them has to cope with the element simply not being there. */
+const setHidden = (sel, hidden) => { const n = $(sel); if (n) n.hidden = hidden; };
+const on = (sel, ev, fn) => { const n = $(sel); if (n) n.addEventListener(ev, fn); };
+
+/** Parse a currency cell: "$1,234.56", "-$1,234.56", "($12.00)", "" -> Number */
+function parseMoney(raw) {
+  if (raw == null) return 0;
+  let s = String(raw).trim();
+  if (!s) return 0;
+  let sign = 1;
+  if (/^\(.*\)$/.test(s)) { sign = -1; s = s.slice(1, -1); }
+  if (s.indexOf('-') !== -1) { sign = -1; }
+  s = s.replace(/[^0-9.]/g, '');
+  const n = parseFloat(s);
+  return Number.isFinite(n) ? sign * n : 0;
+}
+
+/** Parse MM/DD/YYYY (also M/D/YY and YYYY-MM-DD) -> Date at local noon, or null */
+function parseDate(raw) {
+  if (!raw) return null;
+  const s = String(raw).trim();
+  if (!s) return null;
+  let m = s.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})$/);
+  if (m) {
+    let [, mo, d, y] = m;
+    y = +y; if (y < 100) y += y < 70 ? 2000 : 1900;
+    return new Date(y, +mo - 1, +d, 12);
+  }
+  m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (m) return new Date(+m[1], +m[2] - 1, +m[3], 12);
+  const t = Date.parse(s);
+  return Number.isNaN(t) ? null : new Date(t);
+}
+
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+const fmtDate   = d => d ? `${MONTHS[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}` : '—';
+const fmtMonth  = d => d ? `${MONTHS[d.getMonth()]} ${d.getFullYear()}` : '—';
+const monthKey  = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+const dayKey    = d => `${monthKey(d)}-${String(d.getDate()).padStart(2, '0')}`;
+
+const money = (v, cents = true) => {
+  const n = Math.abs(v);
+  const s = '$' + n.toLocaleString('en-US', {
+    minimumFractionDigits: cents ? 2 : 0,
+    maximumFractionDigits: cents ? 2 : 0
+  });
+  return v < -0.005 ? '-' + s : s;
+};
+const pct = (v, dp = 1) => `${v.toFixed(dp)}%`;
+
+/** One formatter per axis, chosen from the domain, per the axis-tick rule. */
+function axisMoneyFormatter(maxAbs) {
+  if (maxAbs >= 10000) return v => (v === 0 ? '$0' : '$' + Math.round(v / 1000) + 'K');
+  return v => '$' + Math.round(v).toLocaleString('en-US');
+}
+
+const addMonths = (d, n) => {
+  const out = new Date(d.getTime());
+  out.setDate(1);
+  out.setMonth(out.getMonth() + n);
+  return out;
+};
+
+/* -------------------------------------------------------------- CSV parser */
+
+/** RFC-4180-ish parser: handles quoted fields, embedded commas/quotes/newlines. */
+function parseCSV(text) {
+  const rows = [];
+  let row = [], field = '', inQuotes = false;
+  const src = text.replace(/^﻿/, '');
+
+  for (let i = 0; i < src.length; i++) {
+    const c = src[i];
+    if (inQuotes) {
+      if (c === '"') {
+        if (src[i + 1] === '"') { field += '"'; i++; }
+        else inQuotes = false;
+      } else field += c;
+      continue;
+    }
+    if (c === '"') { inQuotes = true; continue; }
+    if (c === ',') { row.push(field); field = ''; continue; }
+    if (c === '\r') continue;
+    if (c === '\n') { row.push(field); rows.push(row); row = []; field = ''; continue; }
+    field += c;
+  }
+  if (field.length || row.length) { row.push(field); rows.push(row); }
+
+  // drop fully blank lines
+  return rows.filter(r => r.some(c => String(c).trim() !== ''));
+}
+
+/* ------------------------------------------------------------- normalising */
+
+const COLUMN_ALIASES = {
+  type:       ['transaction type', 'type', 'description'],
+  processed:  ['process date', 'processed date', 'post date', 'posted date', 'date'],
+  effective:  ['effective date', 'due date'],
+  amount:     ['transaction', 'transaction amount', 'amount', 'total'],
+  principal:  ['principal'],
+  interest:   ['interest'],
+  escrow:     ['escrow'],
+  optional:   ['optional products', 'optional product'],
+  suspense:   ['suspense', 'unapplied'],
+  fees:       ['fees and assessments', 'fees', 'fees & assessments'],
+  balance:    ['principal balance', 'balance', 'ending balance']
+};
+
+function mapColumns(header) {
+  const norm = header.map(h => String(h).trim().toLowerCase());
+  const idx = {};
+  for (const [key, aliases] of Object.entries(COLUMN_ALIASES)) {
+    for (const a of aliases) {
+      const i = norm.indexOf(a);
+      if (i !== -1) { idx[key] = i; break; }
+    }
+  }
+  return idx;
+}
+
+const isScheduledPayment = t => /^payment$/i.test(t);
+const isExtraPrincipal   = t => /principal\s*(payment|curtail)|curtailment|additional\s*principal/i.test(t);
+
+function normalise(csvRows) {
+  if (!csvRows.length) throw new Error('The file is empty.');
+
+  const idx = mapColumns(csvRows[0]);
+  const required = ['type', 'processed', 'balance'];
+  const missing = required.filter(k => idx[k] === undefined);
+  if (missing.length) {
+    throw new Error(
+      'This does not look like a loan history export — missing column(s): ' +
+      missing.map(k => COLUMN_ALIASES[k][0]).join(', ') + '.'
+    );
+  }
+
+  const cell = (r, k) => (idx[k] === undefined ? '' : (r[idx[k]] ?? ''));
+  const txs = [];
+
+  for (let i = 1; i < csvRows.length; i++) {
+    const r = csvRows[i];
+    const processed = parseDate(cell(r, 'processed'));
+    if (!processed) continue;                       // skip notes / footers
+    txs.push({
+      type:      String(cell(r, 'type')).trim() || 'Other',
+      processed,
+      effective: parseDate(cell(r, 'effective')),
+      amount:    parseMoney(cell(r, 'amount')),
+      principal: parseMoney(cell(r, 'principal')),
+      interest:  parseMoney(cell(r, 'interest')),
+      escrow:    parseMoney(cell(r, 'escrow')),
+      optional:  parseMoney(cell(r, 'optional')),
+      suspense:  parseMoney(cell(r, 'suspense')),
+      fees:      parseMoney(cell(r, 'fees')),
+      balance:   parseMoney(cell(r, 'balance'))
+    });
+  }
+
+  if (!txs.length) throw new Error('No dated transaction rows were found in this file.');
+
+  // Chronological order. Same-day rows: the higher balance happened first,
+  // because the balance only ever falls as principal is applied.
+  txs.sort((a, b) => (a.processed - b.processed) || (b.balance - a.balance));
+  return txs;
+}
+
+/* ----------------------------------------------------------------- analysis */
+
+function analyse(txs) {
+  const first = txs[0], last = txs[txs.length - 1];
+
+  const sum = key => txs.reduce((a, t) => a + t[key], 0);
+  const totalPrincipal = sum('principal');
+  const totalInterest  = sum('interest');
+  const totalFees      = sum('fees');
+  const totalOptional  = sum('optional');
+
+  let escrowIn = 0, escrowOut = 0, paidIn = 0;
+  for (const t of txs) {
+    if (t.escrow > 0) escrowIn += t.escrow; else escrowOut += -t.escrow;
+    if (t.amount > 0) paidIn += t.amount;
+  }
+
+  // Balance before the first recorded transaction.
+  const openingPrincipal = first.balance + first.principal;
+  const currentBalance   = last.balance;
+
+  const payments = txs.filter(t => isScheduledPayment(t.type));
+  const extras   = txs.filter(t => isExtraPrincipal(t.type));
+  const extraPrincipal = extras.reduce((a, t) => a + t.principal, 0);
+
+  // Implied rate: this period's interest annualised over the balance it accrued on.
+  const lastPI = [...payments].reverse().find(t => t.interest > 0) || null;
+  let impliedApr = null, monthlyPI = null;
+  if (lastPI) {
+    const balanceBefore = lastPI.balance + lastPI.principal;
+    if (balanceBefore > 0) impliedApr = (lastPI.interest * 12 / balanceBefore) * 100;
+    monthlyPI = lastPI.principal + lastPI.interest;
+  }
+  const lastPayment = payments.length ? payments[payments.length - 1] : null;
+
+  // Remaining-term estimate at the current rate and principal+interest amount.
+  let monthsLeft = null, payoffDate = null;
+  if (impliedApr && monthlyPI && currentBalance > 0) {
+    const r = impliedApr / 100 / 12;
+    if (monthlyPI > currentBalance * r) {
+      monthsLeft = Math.ceil(-Math.log(1 - (r * currentBalance) / monthlyPI) / Math.log(1 + r));
+      payoffDate = addMonths(lastPI.effective || lastPI.processed, monthsLeft);
+    }
+  }
+
+  /* --- balance series: one point per day, keeping that day's final balance --- */
+  const balanceByDay = new Map();
+  for (const t of txs) balanceByDay.set(dayKey(t.processed), { date: t.processed, value: t.balance });
+  const balanceSeries = [...balanceByDay.values()];
+
+  /* --- cumulative principal / interest, one point per day --- */
+  const cumByDay = new Map();
+  let cp = 0, ci = 0;
+  for (const t of txs) {
+    cp += t.principal; ci += t.interest;
+    cumByDay.set(dayKey(t.processed), { date: t.processed, principal: cp, interest: ci });
+  }
+  const cumulativeSeries = [...cumByDay.values()];
+
+  /* --- payment composition by applied (effective) month --- */
+  const byMonth = new Map();
+  for (const t of txs) {
+    if (!isScheduledPayment(t.type)) continue;
+    const d = t.effective || t.processed;
+    const key = monthKey(d);
+    if (!byMonth.has(key)) {
+      byMonth.set(key, {
+        key, date: new Date(d.getFullYear(), d.getMonth(), 1, 12),
+        principal: 0, interest: 0, escrow: 0, total: 0, count: 0
+      });
+    }
+    const b = byMonth.get(key);
+    b.principal += t.principal;
+    b.interest  += t.interest;
+    b.escrow    += Math.max(0, t.escrow);
+    b.total     += t.amount;
+    b.count     += 1;
+  }
+  const monthly = [...byMonth.values()].sort((a, b) => a.date - b.date);
+
+  /* --- yearly rollup, by posting date --- */
+  const byYear = new Map();
+  for (const t of txs) {
+    const y = t.processed.getFullYear();
+    if (!byYear.has(y)) {
+      byYear.set(y, {
+        year: y, payments: 0, principal: 0, interest: 0,
+        escrowIn: 0, escrowOut: 0, extra: 0, fees: 0,
+        endBalance: t.balance, endDate: t.processed
+      });
+    }
+    const b = byYear.get(y);
+    if (isScheduledPayment(t.type)) b.payments += 1;
+    if (isExtraPrincipal(t.type))   b.extra    += t.principal;
+    b.principal += t.principal;
+    b.interest  += t.interest;
+    b.fees      += t.fees;
+    if (t.escrow > 0) b.escrowIn += t.escrow; else b.escrowOut += -t.escrow;
+    if (t.processed >= b.endDate) { b.endBalance = t.balance; b.endDate = t.processed; }
+  }
+  const yearly = [...byYear.values()].sort((a, b) => a.year - b.year);
+
+  /* --- transaction type tally --- */
+  const typeCounts = new Map();
+  for (const t of txs) typeCounts.set(t.type, (typeCounts.get(t.type) || 0) + 1);
+
+  return {
+    txs, payments, extras, monthly, yearly,
+    balanceSeries, cumulativeSeries, typeCounts,
+    openingPrincipal, currentBalance,
+    totalPrincipal, totalInterest, totalFees, totalOptional,
+    escrowIn, escrowOut, paidIn,
+    extraPrincipal, extraCount: extras.length,
+    paidOffPct: openingPrincipal > 0 ? (totalPrincipal / openingPrincipal) * 100 : 0,
+    interestShare: (totalPrincipal + totalInterest) > 0
+      ? (totalInterest / (totalPrincipal + totalInterest)) * 100 : 0,
+    impliedApr, monthlyPI, lastPayment, lastPI,
+    monthsLeft, payoffDate,
+    firstDate: first.processed, lastDate: last.processed
+  };
+}
+
+/* -------------------------------------------------------------- svg helpers */
+
+function svg(name, attrs = {}, parent = null) {
+  const node = document.createElementNS(SVG_NS, name);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (v !== null && v !== undefined) node.setAttribute(k, String(v));
+  }
+  if (parent) parent.appendChild(node);
+  return node;
+}
+
+/** Nice round tick values covering [min,max]. */
+function linearTicks(min, max, target = 5) {
+  if (!Number.isFinite(min) || !Number.isFinite(max) || min === max) {
+    const base = Number.isFinite(max) ? max : 1;
+    return { ticks: [0, base || 1], min: 0, max: base || 1 };
+  }
+  const step0 = (max - min) / target;
+  const mag = Math.pow(10, Math.floor(Math.log10(step0)));
+  const norm = step0 / mag;
+  const step = (norm >= 7.5 ? 10 : norm >= 3.5 ? 5 : norm >= 1.5 ? 2 : 1) * mag;
+  const lo = Math.floor(min / step) * step;
+  const hi = Math.ceil(max / step) * step;
+  const ticks = [];
+  for (let v = lo; v <= hi + step * 1e-9; v += step) ticks.push(Math.round(v * 1e6) / 1e6);
+  return { ticks, min: lo, max: hi };
+}
+
+/** Jan-1 ticks across a date span (plus the span ends when the gap is wide). */
+function yearTicks(d0, d1) {
+  const out = [];
+  for (let y = d0.getFullYear(); y <= d1.getFullYear(); y++) {
+    const d = new Date(y, 0, 1, 12);
+    if (d >= d0 && d <= d1) out.push(d);
+  }
+  if (!out.length) out.push(d0, d1);
+  return out;
+}
+
+/** Path for a rect with rounded top corners, square at the baseline. */
+function topRoundedPath(x, y, w, h, r) {
+  const rr = Math.max(0, Math.min(r, w / 2, h));
+  return `M${x},${y + h}L${x},${y + rr}Q${x},${y} ${x + rr},${y}` +
+         `L${x + w - rr},${y}Q${x + w},${y} ${x + w},${y + rr}L${x + w},${y + h}Z`;
+}
+
+function cssVar(name) {
+  return getComputedStyle(document.body).getPropertyValue(name).trim();
+}
+
+/** Shared tooltip element per chart container. */
+function ensureTip(host) {
+  let tip = host.querySelector('.chart-tip');
+  if (!tip) {
+    tip = document.createElement('div');
+    tip.className = 'chart-tip';
+    tip.setAttribute('role', 'status');
+    host.appendChild(tip);
+  }
+  return tip;
+}
+
+function placeTip(host, tip, x, y) {
+  const hw = host.clientWidth, hh = host.clientHeight;
+  const tw = tip.offsetWidth, th = tip.offsetHeight;
+  let left = x + 14, top = y - th - 12;
+  if (left + tw > hw - 4) left = x - tw - 14;
+  if (left < 4) left = 4;
+  if (top < 4) top = Math.min(y + 16, hh - th - 4);
+  tip.style.left = left + 'px';
+  tip.style.top = Math.max(4, top) + 'px';
+}
+
+const BASE_PAD = { top: 18, right: 68, bottom: 32, left: 68 };
+
+/**
+ * SVG text is sized in user units, so it cannot inherit the page's rem scale.
+ * Read the live root font size instead and scale chart type, padding and marks
+ * by it, so the charts grow with the text-size setting.
+ */
+function chartMetrics() {
+  const rootPx = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+  const scale = rootPx / 16;
+  return {
+    scale,
+    axisFont: 12.5 * scale,
+    labelFont: 13 * scale,
+    pad: {
+      top: BASE_PAD.top * scale, right: BASE_PAD.right * scale,
+      bottom: BASE_PAD.bottom * scale, left: BASE_PAD.left * scale
+    }
+  };
+}
+
+function chartFrame(host, height) {
+  host.querySelectorAll('svg').forEach(n => n.remove());
+  const m = chartMetrics();
+  const width = Math.max(320, host.clientWidth || 640);
+  const tall = Math.round(height * m.scale);
+  const node = svg('svg', {
+    viewBox: `0 0 ${width} ${tall}`,
+    width, height: tall,
+    role: 'img', 'aria-hidden': 'true', focusable: 'false'
+  }, host);
+  return {
+    node, width, height: tall,
+    scale: m.scale, axisFont: m.axisFont, labelFont: m.labelFont,
+    x0: m.pad.left, x1: width - m.pad.right,
+    y0: m.pad.top,  y1: tall - m.pad.bottom,
+    get w() { return this.x1 - this.x0; },
+    get h() { return this.y1 - this.y0; }
+  };
+}
+
+function drawYAxis(f, scaleY, ticks, fmt) {
+  const g = svg('g', {}, f.node);
+  for (const t of ticks) {
+    const y = scaleY(t);
+    svg('line', {
+      x1: f.x0, x2: f.x1, y1: y, y2: y,
+      stroke: cssVar('--grid'), 'stroke-width': 1, 'shape-rendering': 'crispEdges'
+    }, g);
+    const label = svg('text', {
+      x: f.x0 - 10 * f.scale, y, fill: cssVar('--text-secondary'),
+      'font-size': f.axisFont, 'text-anchor': 'end', 'dominant-baseline': 'middle'
+    }, g);
+    label.style.fontVariantNumeric = 'tabular-nums';
+    label.textContent = fmt(t);
+  }
+}
+
+function drawXYearAxis(f, scaleX, d0, d1) {
+  const g = svg('g', {}, f.node);
+  svg('line', {
+    x1: f.x0, x2: f.x1, y1: f.y1, y2: f.y1,
+    stroke: cssVar('--axis'), 'stroke-width': 1, 'shape-rendering': 'crispEdges'
+  }, g);
+  for (const d of yearTicks(d0, d1)) {
+    const x = scaleX(d);
+    const label = svg('text', {
+      x, y: f.y1 + 18 * f.scale, fill: cssVar('--text-secondary'),
+      'font-size': f.axisFont, 'text-anchor': 'middle'
+    }, g);
+    label.textContent = d.getFullYear();
+  }
+}
+
+function drawXBandAxis(f, labels, centreOf) {
+  const g = svg('g', {}, f.node);
+  svg('line', {
+    x1: f.x0, x2: f.x1, y1: f.y1, y2: f.y1,
+    stroke: cssVar('--axis'), 'stroke-width': 1, 'shape-rendering': 'crispEdges'
+  }, g);
+  labels.forEach((text, i) => {
+    const label = svg('text', {
+      x: centreOf(i), y: f.y1 + 18 * f.scale, fill: cssVar('--text-secondary'),
+      'font-size': f.axisFont, 'text-anchor': 'middle'
+    }, g);
+    label.textContent = text;
+  });
+}
+
+function endLabel(f, x, y, text, colour) {
+  const t = svg('text', {
+    x: Math.min(x + 10 * f.scale, f.width - 4), y,
+    fill: cssVar('--text-primary'),
+    'font-size': f.labelFont, 'font-weight': 600,
+    'text-anchor': 'start', 'dominant-baseline': 'middle'
+  }, f.node);
+  t.style.fontVariantNumeric = 'tabular-nums';
+  t.textContent = text;
+  return t;
+}
+
+function endDot(f, x, y, colour) {
+  svg('circle', {
+    cx: x, cy: y, r: 4.5 * f.scale, fill: colour,
+    stroke: cssVar('--surface-1'), 'stroke-width': 2 * f.scale
+  }, f.node);
+}
+
+/* ------------------------------------------------------------------ charts */
+
+/** Line chart over time. Non-zero baseline allowed (no area fill, so no
+    magnitude is implied by a filled region). */
+function renderLineChart(host, cfg) {
+  const { series, points, yFormatHint } = cfg;
+  if (!points.length) return;
+
+  const f = chartFrame(host, cfg.height || 300);
+  const tip = ensureTip(host);
+
+  const d0 = points[0].date, d1 = points[points.length - 1].date;
+  const spanX = Math.max(1, d1 - d0);
+  const scaleX = d => f.x0 + ((d - d0) / spanX) * f.w;
+
+  let lo = Infinity, hi = -Infinity;
+  for (const p of points) for (const s of series) {
+    const v = p[s.key];
+    if (Number.isFinite(v)) { lo = Math.min(lo, v); hi = Math.max(hi, v); }
+  }
+  if (cfg.zeroBased) lo = 0;
+  else { const pad = (hi - lo) * 0.12 || 1; lo -= pad; hi += pad; }
+
+  const { ticks, min, max } = linearTicks(lo, hi, 5);
+  const scaleY = v => f.y1 - ((v - min) / (max - min || 1)) * f.h;
+
+  drawYAxis(f, scaleY, ticks, yFormatHint || axisMoneyFormatter(Math.max(Math.abs(min), Math.abs(max))));
+  drawXYearAxis(f, scaleX, d0, d1);
+
+  // crosshair sits under the marks
+  const cross = svg('line', {
+    x1: 0, x2: 0, y1: f.y0, y2: f.y1,
+    stroke: cssVar('--axis'), 'stroke-width': 1, opacity: 0
+  }, f.node);
+
+  for (const s of series) {
+    const colour = cssVar(s.varName);
+    const d = points.map((p, i) =>
+      `${i ? 'L' : 'M'}${scaleX(p.date).toFixed(2)},${scaleY(p[s.key]).toFixed(2)}`
+    ).join('');
+    svg('path', {
+      d, fill: 'none', stroke: colour,
+      'stroke-width': 2 * f.scale, 'stroke-linejoin': 'round', 'stroke-linecap': 'round'
+    }, f.node);
+
+    const lastP = points[points.length - 1];
+    const lx = scaleX(lastP.date), ly = scaleY(lastP[s.key]);
+    endDot(f, lx, ly, colour);
+    if (s.label !== false) endLabel(f, lx, ly, money(lastP[s.key], false), colour);
+  }
+
+  const dots = series.map(s => svg('circle', {
+    cx: 0, cy: 0, r: 4.5 * f.scale, fill: cssVar(s.varName),
+    stroke: cssVar('--surface-1'), 'stroke-width': 2 * f.scale, opacity: 0
+  }, f.node));
+
+  const show = i => {
+    const p = points[i];
+    const x = scaleX(p.date);
+    cross.setAttribute('x1', x); cross.setAttribute('x2', x); cross.setAttribute('opacity', 1);
+    series.forEach((s, k) => {
+      dots[k].setAttribute('cx', x);
+      dots[k].setAttribute('cy', scaleY(p[s.key]));
+      dots[k].setAttribute('opacity', 1);
+    });
+    tip.innerHTML =
+      `<div class="tip-title">${fmtDate(p.date)}</div>` +
+      series.map(s =>
+        `<div class="tip-row"><span class="tip-name">` +
+        `<span class="tip-swatch" style="background:${cssVar(s.varName)}"></span>${s.name}` +
+        `</span><span class="tip-val">${money(p[s.key])}</span></div>`
+      ).join('');
+    tip.classList.add('is-on');
+    placeTip(host, tip, x, scaleY(p[series[0].key]));
+  };
+  const hide = () => {
+    cross.setAttribute('opacity', 0);
+    dots.forEach(d => d.setAttribute('opacity', 0));
+    tip.classList.remove('is-on');
+  };
+  const nearest = clientX => {
+    const r = f.node.getBoundingClientRect();
+    const px = ((clientX - r.left) / r.width) * f.width;
+    let best = 0, bestD = Infinity;
+    points.forEach((p, i) => {
+      const d = Math.abs(scaleX(p.date) - px);
+      if (d < bestD) { bestD = d; best = i; }
+    });
+    return best;
+  };
+
+  f.node.style.pointerEvents = 'all';
+  f.node.addEventListener('mousemove', e => show(nearest(e.clientX)));
+  f.node.addEventListener('mouseleave', hide);
+  f.node.addEventListener('touchstart', e => show(nearest(e.touches[0].clientX)), { passive: true });
+  f.node.addEventListener('touchmove',  e => show(nearest(e.touches[0].clientX)), { passive: true });
+
+  // keyboard parity with hover
+  let cursor = points.length - 1;
+  host.tabIndex = 0;
+  host.setAttribute('role', 'application');
+  host.setAttribute('aria-label', cfg.ariaLabel || 'Line chart — use arrow keys to read values');
+  host.onkeydown = e => {
+    if (e.key === 'ArrowRight') cursor = Math.min(points.length - 1, cursor + 1);
+    else if (e.key === 'ArrowLeft') cursor = Math.max(0, cursor - 1);
+    else if (e.key === 'Home') cursor = 0;
+    else if (e.key === 'End') cursor = points.length - 1;
+    else if (e.key === 'Escape') { hide(); return; }
+    else return;
+    e.preventDefault();
+    show(cursor);
+  };
+  host.onblur = hide;
+}
+
+/** Stacked columns, zero-based, 2px surface gap between segments. */
+function renderStackedColumns(host, cfg) {
+  const { bands, series } = cfg;
+  if (!bands.length) return;
+
+  const f = chartFrame(host, cfg.height || 300);
+  const tip = ensureTip(host);
+
+  const band = f.w / bands.length;
+  const barW = Math.max(3, Math.min(24, band - 3));
+  const centre = i => f.x0 + band * (i + 0.5);
+
+  const totals = bands.map(b => series.reduce((a, s) => a + Math.max(0, b[s.key]), 0));
+  const { ticks, min, max } = linearTicks(0, Math.max(...totals), 5);
+  const scaleY = v => f.y1 - ((v - min) / (max - min || 1)) * f.h;
+
+  drawYAxis(f, scaleY, ticks, axisMoneyFormatter(max));
+
+  // One label per January, so a long run of months doesn't collide. If the
+  // series starts mid-year, label the first band too — otherwise that year
+  // never appears on the axis.
+  const hasJanuary = new Set(
+    bands.filter(b => b.date.getMonth() === 0).map(b => b.date.getFullYear())
+  );
+  const labels = bands.map((b, i) => {
+    const y = b.date.getFullYear();
+    if (b.date.getMonth() === 0) return String(y);
+    return (i === 0 && !hasJanuary.has(y)) ? String(y) : '';
+  });
+  drawXBandAxis(f, labels, centre);
+
+  const surface = cssVar('--surface-1');
+  const GAP = 2;
+
+  bands.forEach((b, i) => {
+    const x = centre(i) - barW / 2;
+    let acc = 0;
+    const stack = series.map(s => ({ s, v: Math.max(0, b[s.key]) })).filter(d => d.v > 0);
+    stack.forEach((d, k) => {
+      const yBottom = scaleY(acc);
+      acc += d.v;
+      const yTop = scaleY(acc);
+      const isTop = k === stack.length - 1;
+      let h = yBottom - yTop;
+      // the gap is taken off the bottom of each segment above the baseline
+      const trimmed = k > 0 ? Math.max(1, h - GAP) : h;
+      const y = yBottom - trimmed;
+      const colour = cssVar(d.s.varName);
+      if (isTop) {
+        svg('path', { d: topRoundedPath(x, y, barW, trimmed, 4), fill: colour }, f.node);
+      } else {
+        svg('rect', { x, y, width: barW, height: trimmed, fill: colour }, f.node);
+      }
+    });
+  });
+
+  // full-height hit bands (hover target far wider than the mark)
+  bands.forEach((b, i) => {
+    const hit = svg('rect', {
+      x: f.x0 + band * i, y: f.y0, width: band, height: f.h,
+      fill: 'transparent', style: 'pointer-events:all'
+    }, f.node);
+    hit.addEventListener('mouseenter', () => {
+      const rows = series.map(s =>
+        `<div class="tip-row"><span class="tip-name">` +
+        `<span class="tip-swatch" style="background:${cssVar(s.varName)}"></span>${s.name}` +
+        `</span><span class="tip-val">${money(b[s.key])}</span></div>`
+      ).join('');
+      const label = b.count > 1
+        ? `${fmtMonth(b.date)} <span class="muted">(${b.count} payments)</span>`
+        : fmtMonth(b.date);
+      tip.innerHTML =
+        `<div class="tip-title">${label}</div>${rows}` +
+        `<div class="tip-row tip-total"><span>${b.count > 1 ? 'Combined' : 'Payment'}</span>` +
+        `<span class="tip-val">${money(totals[i])}</span></div>`;
+      tip.classList.add('is-on');
+      placeTip(host, tip, centre(i), scaleY(totals[i]));
+    });
+  });
+  f.node.style.pointerEvents = 'all';
+  f.node.addEventListener('mouseleave', () => tip.classList.remove('is-on'));
+}
+
+/** Grouped columns, zero-based, 2px surface gap between neighbours. */
+function renderGroupedColumns(host, cfg) {
+  const { groups, series } = cfg;
+  if (!groups.length) return;
+
+  const f = chartFrame(host, cfg.height || 240);
+  const tip = ensureTip(host);
+
+  const band = f.w / groups.length;
+  const n = series.length;
+  const GAP = 2;
+  const barW = Math.max(6, Math.min(24, (band * 0.62 - GAP * (n - 1)) / n));
+  const groupW = barW * n + GAP * (n - 1);
+  const centre = i => f.x0 + band * (i + 0.5);
+
+  let hi = 0;
+  for (const g of groups) for (const s of series) hi = Math.max(hi, Math.abs(g[s.key]));
+  const { ticks, min, max } = linearTicks(0, hi, 4);
+  const scaleY = v => f.y1 - ((v - min) / (max - min || 1)) * f.h;
+
+  drawYAxis(f, scaleY, ticks, axisMoneyFormatter(max));
+  drawXBandAxis(f, groups.map(g => g.label), centre);
+
+  groups.forEach((g, i) => {
+    const left = centre(i) - groupW / 2;
+    series.forEach((s, k) => {
+      const v = Math.abs(g[s.key]);
+      if (v <= 0) return;
+      const x = left + k * (barW + GAP);
+      const y = scaleY(v);
+      svg('path', {
+        d: topRoundedPath(x, y, barW, f.y1 - y, 4),
+        fill: cssVar(s.varName)
+      }, f.node);
+    });
+
+    const hit = svg('rect', {
+      x: f.x0 + band * i, y: f.y0, width: band, height: f.h,
+      fill: 'transparent', style: 'pointer-events:all'
+    }, f.node);
+    hit.addEventListener('mouseenter', () => {
+      tip.innerHTML =
+        `<div class="tip-title">${g.label}</div>` +
+        series.map(s =>
+          `<div class="tip-row"><span class="tip-name">` +
+          `<span class="tip-swatch" style="background:${cssVar(s.varName)}"></span>${s.name}` +
+          `</span><span class="tip-val">${money(Math.abs(g[s.key]))}</span></div>`
+        ).join('') +
+        `<div class="tip-row tip-total"><span>Net to escrow</span>` +
+        `<span class="tip-val">${money(g.net)}</span></div>`;
+      tip.classList.add('is-on');
+      placeTip(host, tip, centre(i), f.y0 + 10);
+    });
+  });
+
+  f.node.style.pointerEvents = 'all';
+  f.node.addEventListener('mouseleave', () => tip.classList.remove('is-on'));
+}
+
+/* ------------------------------------------------------------------ tables */
+
+function moneyCell(v, { dash = true } = {}) {
+  const cls = v < -0.005 ? 'num neg' : (Math.abs(v) < 0.005 ? 'num zero' : 'num');
+  const text = (dash && Math.abs(v) < 0.005) ? '—' : money(v);
+  return `<td class="${cls}">${text}</td>`;
+}
+
+function buildTable({ head, rows, foot, caption }) {
+  const thead = `<thead><tr>${head.map(h => `<th${h.num ? ' class="num"' : ''}>${h.label}</th>`).join('')}</tr></thead>`;
+  const tbody = `<tbody>${rows.join('')}</tbody>`;
+  const tfoot = foot ? `<tfoot><tr>${foot}</tr></tfoot>` : '';
+  const cap = caption ? `<p class="table-cap">${caption}</p>` : '';
+  return `<div class="table-scroll"><table class="data">${thead}${tbody}${tfoot}</table></div>${cap}`;
+}
+
+const legendSwatch = (varName, name, kind = 'swatch') =>
+  `<span class="legend-item"><span class="legend-${kind}" style="background:${`var(${varName})`}"></span>${name}</span>`;
+
+/* ---------------------------------------------------------------- rendering */
+
+const state = {
+  model: null,
+  sourceName: '',
+  sourceCsv: '',
+  theme: 'auto',
+  textScale: 1,
+  cssText: '',
+  ledgerSort: { key: 'processed', dir: 'desc' },
+  redraws: []
+};
+
+const SERIES = {
+  principal: { key: 'principal', name: 'Principal', varName: '--series-1' },
+  interest:  { key: 'interest',  name: 'Interest',  varName: '--series-2' },
+  escrow:    { key: 'escrow',    name: 'Escrow',    varName: '--series-3' }
+};
+
+function renderTiles(m) {
+  const tiles = [
+    {
+      label: 'Total interest paid',
+      value: money(m.totalInterest, false),
+      note: `${pct(m.interestShare)} of every principal + interest dollar`,
+      key: '--series-2'
+    },
+    {
+      label: 'Total principal paid',
+      value: money(m.totalPrincipal, false),
+      note: `${pct(m.paidOffPct)} of the ${money(m.openingPrincipal, false)} opening balance`,
+      key: '--series-1'
+    },
+    {
+      label: 'Escrow disbursed',
+      value: money(m.escrowOut, false),
+      note: 'Property tax and hazard insurance paid out',
+      key: '--series-3'
+    },
+    {
+      label: 'Extra principal paid',
+      value: money(m.extraPrincipal, false),
+      note: m.extraCount
+        ? `${m.extraCount} additional payment${m.extraCount === 1 ? '' : 's'} on top of the schedule`
+        : 'No additional principal payments on record',
+      key: '--series-1'
+    },
+    {
+      label: 'Current monthly payment',
+      value: m.lastPayment ? money(m.lastPayment.amount) : '—',
+      note: m.lastPayment
+        ? `${money(m.lastPayment.principal + m.lastPayment.interest)} P&I + ${money(Math.max(0, m.lastPayment.escrow))} escrow`
+        : ''
+    },
+    {
+      label: 'Implied interest rate',
+      value: m.impliedApr ? pct(m.impliedApr, 2) : '—',
+      note: m.lastPI ? `From interest charged ${fmtMonth(m.lastPI.effective || m.lastPI.processed)}` : ''
+    },
+    {
+      label: 'Total paid in',
+      value: money(m.paidIn, false),
+      note: `${m.payments.length} scheduled payments since ${fmtMonth(m.firstDate)}`
+    },
+    {
+      label: 'Projected payoff',
+      value: m.payoffDate ? fmtMonth(m.payoffDate) : '—',
+      note: m.monthsLeft
+        ? `~${m.monthsLeft} more payments at today's rate and amount`
+        : 'Not enough information to project'
+    }
+  ];
+
+  $('#tiles').innerHTML = tiles.map(t => `
+    <div class="tile">
+      <p class="tile-label">${t.key ? `<span class="tile-key" style="background:var(${t.key})"></span>` : ''}${t.label}</p>
+      <p class="tile-value">${t.value}</p>
+      ${t.note ? `<p class="tile-note">${t.note}</p>` : ''}
+    </div>`).join('');
+}
+
+function renderHero(m) {
+  $('#heroBalance').textContent = money(m.currentBalance, false);
+  $('#heroMeta').textContent =
+    `As of ${fmtDate(m.lastDate)} · down ${money(m.openingPrincipal - m.currentBalance, false)} ` +
+    `from ${money(m.openingPrincipal, false)}`;
+  $('#paidPctLabel').textContent = `${pct(m.paidOffPct)} of principal repaid`;
+  $('#paidAmtLabel').textContent = `${money(m.currentBalance, false)} to go`;
+  $('#origLabel').textContent = money(m.openingPrincipal, false);
+  $('#rateLabel').textContent = m.impliedApr ? `Implied rate ${pct(m.impliedApr, 2)}` : '';
+  const fill = $('#meterFill');
+  const p = Math.max(0, Math.min(100, m.paidOffPct));
+  requestAnimationFrame(() => { fill.style.width = p.toFixed(2) + '%'; });
+  $('#meter').setAttribute('aria-label',
+    `Payoff progress: ${pct(m.paidOffPct)} of ${money(m.openingPrincipal, false)} principal repaid`);
+}
+
+function renderBalance(m) {
+  $('#balanceSub').textContent =
+    `${m.balanceSeries.length} balance points, ${fmtMonth(m.firstDate)} to ${fmtMonth(m.lastDate)}. ` +
+    `The axis is zoomed to the balance range, so it does not start at zero.`;
+
+  const host = $('#chart-balance');
+  const draw = () => renderLineChart(host, {
+    points: m.balanceSeries.map(p => ({ date: p.date, balance: p.value })),
+    series: [{ key: 'balance', name: 'Principal balance', varName: '--series-1' }],
+    height: 300,
+    ariaLabel: 'Principal balance over time — use arrow keys to read values'
+  });
+  state.redraws.push(draw); draw();
+
+  const rows = [...m.balanceSeries].reverse().map(p =>
+    `<tr><td>${fmtDate(p.date)}</td>${moneyCell(p.value, { dash: false })}</tr>`
+  );
+  $('#table-balance').innerHTML = buildTable({
+    head: [{ label: 'Date' }, { label: 'Principal balance', num: true }],
+    rows,
+    caption: 'Closing principal balance on each date a transaction posted, newest first.'
+  });
+}
+
+function renderComposition(m) {
+  $('#legend-composition').innerHTML =
+    legendSwatch('--series-1', 'Principal') +
+    legendSwatch('--series-2', 'Interest') +
+    legendSwatch('--series-3', 'Escrow');
+
+  const host = $('#chart-composition');
+  const draw = () => renderStackedColumns(host, {
+    bands: m.monthly,
+    series: [SERIES.principal, SERIES.interest, SERIES.escrow],
+    height: 300
+  });
+  state.redraws.push(draw); draw();
+
+  const rows = [...m.monthly].reverse().map(b =>
+    `<tr><td>${fmtMonth(b.date)}${b.count > 1 ? ` <span class="tag">${b.count} payments</span>` : ''}</td>` +
+    moneyCell(b.principal) + moneyCell(b.interest) + moneyCell(b.escrow) +
+    `<td class="num">${money(b.principal + b.interest + b.escrow)}</td></tr>`
+  );
+  const t = m.monthly.reduce((a, b) => ({
+    principal: a.principal + b.principal,
+    interest:  a.interest  + b.interest,
+    escrow:    a.escrow    + b.escrow
+  }), { principal: 0, interest: 0, escrow: 0 });
+
+  $('#table-composition').innerHTML = buildTable({
+    head: [{ label: 'Applied month' }, { label: 'Principal', num: true },
+           { label: 'Interest', num: true }, { label: 'Escrow', num: true },
+           { label: 'Payment', num: true }],
+    rows,
+    foot: `<td>${m.monthly.length} months</td>` +
+          `<td class="num">${money(t.principal)}</td>` +
+          `<td class="num">${money(t.interest)}</td>` +
+          `<td class="num">${money(t.escrow)}</td>` +
+          `<td class="num">${money(t.principal + t.interest + t.escrow)}</td>`,
+    caption: 'Scheduled payments grouped by the month they were applied to (effective date), newest first. ' +
+             'Where two payments were applied to the same month, they are combined into one row.'
+  });
+}
+
+function renderCumulative(m) {
+  $('#legend-cumulative').innerHTML =
+    legendSwatch('--series-1', 'Cumulative principal', 'line') +
+    legendSwatch('--series-2', 'Cumulative interest', 'line');
+
+  const host = $('#chart-cumulative');
+  const draw = () => renderLineChart(host, {
+    points: m.cumulativeSeries,
+    series: [
+      { key: 'principal', name: 'Cumulative principal', varName: '--series-1' },
+      { key: 'interest',  name: 'Cumulative interest',  varName: '--series-2' }
+    ],
+    zeroBased: true,
+    height: 300,
+    ariaLabel: 'Cumulative principal and interest paid — use arrow keys to read values'
+  });
+  state.redraws.push(draw); draw();
+
+  const rows = [...m.cumulativeSeries].reverse().map(p =>
+    `<tr><td>${fmtDate(p.date)}</td>` +
+    moneyCell(p.principal, { dash: false }) + moneyCell(p.interest, { dash: false }) +
+    `<td class="num">${money(p.principal + p.interest)}</td></tr>`
+  );
+  $('#table-cumulative').innerHTML = buildTable({
+    head: [{ label: 'Date' }, { label: 'Cumulative principal', num: true },
+           { label: 'Cumulative interest', num: true }, { label: 'Combined', num: true }],
+    rows,
+    caption: 'Running totals after each posting date, newest first.'
+  });
+}
+
+function renderEscrow(m) {
+  $('#legend-escrow').innerHTML =
+    legendSwatch('--series-3', 'Collected with payments') +
+    legendSwatch('--series-2', 'Disbursed for tax & insurance');
+
+  const groups = m.yearly.map(y => ({
+    label: String(y.year),
+    collected: y.escrowIn,
+    disbursed: y.escrowOut,
+    net: y.escrowIn - y.escrowOut
+  }));
+
+  const host = $('#chart-escrow');
+  const draw = () => renderGroupedColumns(host, {
+    groups,
+    series: [
+      { key: 'collected', name: 'Collected', varName: '--series-3' },
+      { key: 'disbursed', name: 'Disbursed', varName: '--series-2' }
+    ],
+    height: 240
+  });
+  state.redraws.push(draw); draw();
+
+  const rows = groups.map(g =>
+    `<tr><td>${g.label}</td>` +
+    moneyCell(g.collected) + moneyCell(g.disbursed) + moneyCell(g.net, { dash: false }) +
+    `</tr>`
+  );
+  $('#table-escrow').innerHTML = buildTable({
+    head: [{ label: 'Year' }, { label: 'Collected', num: true },
+           { label: 'Disbursed', num: true }, { label: 'Net to escrow', num: true }],
+    rows,
+    foot: `<td>All years</td><td class="num">${money(m.escrowIn)}</td>` +
+          `<td class="num">${money(m.escrowOut)}</td>` +
+          `<td class="num">${money(m.escrowIn - m.escrowOut)}</td>`,
+    caption: 'A positive net means more was collected than paid out that year, by posting date.'
+  });
+}
+
+function renderYearly(m) {
+  const rows = m.yearly.map(y =>
+    `<tr><td>${y.year}</td>` +
+    `<td class="num">${y.payments}</td>` +
+    moneyCell(y.principal) + moneyCell(y.interest) + moneyCell(y.extra) +
+    moneyCell(y.escrowIn) + moneyCell(y.escrowOut) +
+    `<td class="num">${money(y.endBalance, false)}</td></tr>`
+  );
+  const tot = m.yearly.reduce((a, y) => ({
+    payments: a.payments + y.payments,
+    principal: a.principal + y.principal,
+    interest: a.interest + y.interest,
+    extra: a.extra + y.extra,
+    escrowIn: a.escrowIn + y.escrowIn,
+    escrowOut: a.escrowOut + y.escrowOut
+  }), { payments: 0, principal: 0, interest: 0, extra: 0, escrowIn: 0, escrowOut: 0 });
+
+  $('#table-yearly').innerHTML = buildTable({
+    head: [{ label: 'Year' }, { label: 'Payments', num: true },
+           { label: 'Principal', num: true }, { label: 'Interest', num: true },
+           { label: 'Extra principal', num: true }, { label: 'Escrow in', num: true },
+           { label: 'Escrow out', num: true }, { label: 'Ending balance', num: true }],
+    rows,
+    foot: `<td>Total</td><td class="num">${tot.payments}</td>` +
+          `<td class="num">${money(tot.principal)}</td>` +
+          `<td class="num">${money(tot.interest)}</td>` +
+          `<td class="num">${money(tot.extra)}</td>` +
+          `<td class="num">${money(tot.escrowIn)}</td>` +
+          `<td class="num">${money(tot.escrowOut)}</td>` +
+          `<td class="num">${money(m.currentBalance, false)}</td>`,
+    caption: 'Ending balance is the closing principal balance on the last transaction posted that year.'
+  });
+}
+
+/* ------------------------------------------------------------------ ledger */
+
+const TYPE_COLOUR = type => {
+  if (isScheduledPayment(type)) return 'var(--series-1)';
+  if (isExtraPrincipal(type))   return 'var(--series-1)';
+  if (/tax|insurance|disburse/i.test(type)) return 'var(--series-2)';
+  if (/escrow|refund/i.test(type))          return 'var(--series-3)';
+  return 'var(--text-secondary)';
+};
+
+const LEDGER_COLS = [
+  { key: 'type',      label: 'Type' },
+  { key: 'processed', label: 'Processed' },
+  { key: 'effective', label: 'Effective' },
+  { key: 'amount',    label: 'Transaction', num: true },
+  { key: 'principal', label: 'Principal',   num: true },
+  { key: 'interest',  label: 'Interest',    num: true },
+  { key: 'escrow',    label: 'Escrow',      num: true },
+  { key: 'fees',      label: 'Fees',        num: true },
+  { key: 'balance',   label: 'Balance',     num: true }
+];
+
+function ledgerRows(m) {
+  const type = $('#filterType').value;
+  const year = $('#filterYear').value;
+  const q = $('#filterSearch').value.trim().toLowerCase();
+
+  let rows = m.txs.filter(t => {
+    if (type !== 'all' && t.type !== type) return false;
+    if (year !== 'all' && String(t.processed.getFullYear()) !== year) return false;
+    if (q) {
+      const hay = [
+        t.type, fmtDate(t.processed), fmtDate(t.effective),
+        t.amount.toFixed(2), t.principal.toFixed(2), t.interest.toFixed(2),
+        t.escrow.toFixed(2), t.balance.toFixed(2)
+      ].join(' ').toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+
+  const { key, dir } = state.ledgerSort;
+  const mul = dir === 'asc' ? 1 : -1;
+  rows.sort((a, b) => {
+    let av = a[key], bv = b[key];
+    if (key === 'processed' || key === 'effective') {
+      av = av ? av.getTime() : 0; bv = bv ? bv.getTime() : 0;
+    }
+    if (typeof av === 'string') return mul * av.localeCompare(bv);
+    return mul * ((av ?? 0) - (bv ?? 0));
+  });
+  return rows;
+}
+
+function renderLedger(m) {
+  const rows = ledgerRows(m);
+  const host = $('#table-ledger');
+
+  $('#ledgerCount').textContent =
+    `${rows.length} of ${m.txs.length} transactions · ${fmtDate(m.firstDate)} to ${fmtDate(m.lastDate)}`;
+
+  if (!rows.length) {
+    host.innerHTML = `<p class="empty">No transactions match these filters.</p>`;
+    return;
+  }
+
+  const head = LEDGER_COLS.map(c => {
+    const sorted = state.ledgerSort.key === c.key;
+    const aria = sorted ? (state.ledgerSort.dir === 'asc' ? 'ascending' : 'descending') : 'none';
+    return `<th class="sortable${c.num ? ' num' : ''}" data-key="${c.key}" aria-sort="${aria}"
+             tabindex="0" role="columnheader">${c.label}</th>`;
+  }).join('');
+
+  const body = rows.map(t => `<tr>
+      <td><span class="tag"><span class="tag-dot" style="background:${TYPE_COLOUR(t.type)}"></span>${t.type}</span></td>
+      <td>${fmtDate(t.processed)}</td>
+      <td>${t.effective ? fmtDate(t.effective) : '—'}</td>
+      ${moneyCell(t.amount, { dash: false })}
+      ${moneyCell(t.principal)}
+      ${moneyCell(t.interest)}
+      ${moneyCell(t.escrow)}
+      ${moneyCell(t.fees)}
+      <td class="num">${money(t.balance, false)}</td>
+    </tr>`).join('');
+
+  const sums = rows.reduce((a, t) => ({
+    amount: a.amount + t.amount, principal: a.principal + t.principal,
+    interest: a.interest + t.interest, escrow: a.escrow + t.escrow, fees: a.fees + t.fees
+  }), { amount: 0, principal: 0, interest: 0, escrow: 0, fees: 0 });
+
+  host.innerHTML = `<div class="table-scroll"><table class="data">
+      <thead><tr>${head}</tr></thead>
+      <tbody>${body}</tbody>
+      <tfoot><tr>
+        <td>Shown</td><td>${rows.length} rows</td><td></td>
+        <td class="num">${money(sums.amount)}</td>
+        <td class="num">${money(sums.principal)}</td>
+        <td class="num">${money(sums.interest)}</td>
+        <td class="num">${money(sums.escrow)}</td>
+        <td class="num">${money(sums.fees)}</td>
+        <td></td>
+      </tr></tfoot>
+    </table></div>
+    <p class="table-cap">Click a column heading to sort. Negative amounts are money leaving escrow.</p>`;
+
+  $$('th.sortable', host).forEach(th => {
+    const activate = () => {
+      const key = th.dataset.key;
+      const s = state.ledgerSort;
+      s.dir = (s.key === key && s.dir === 'desc') ? 'asc' : (s.key === key ? 'desc' : 'desc');
+      s.key = key;
+      renderLedger(m);
+    };
+    th.addEventListener('click', activate);
+    th.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(); }
+    });
+  });
+}
+
+function wireFilters(m) {
+  const typeSel = $('#filterType');
+  const yearSel = $('#filterYear');
+
+  const types = [...m.typeCounts.entries()].sort((a, b) => b[1] - a[1]);
+  typeSel.innerHTML = `<option value="all">All types (${m.txs.length})</option>` +
+    types.map(([t, n]) => `<option value="${t}">${t} (${n})</option>`).join('');
+
+  const years = [...new Set(m.txs.map(t => t.processed.getFullYear()))].sort((a, b) => b - a);
+  yearSel.innerHTML = `<option value="all">All years</option>` +
+    years.map(y => `<option value="${y}">${y}</option>`).join('');
+
+  const rerender = () => renderLedger(m);
+  typeSel.onchange = rerender;
+  yearSel.onchange = rerender;
+
+  let timer;
+  $('#filterSearch').oninput = () => { clearTimeout(timer); timer = setTimeout(rerender, 140); };
+  $('#clearFilters').onclick = () => {
+    typeSel.value = 'all'; yearSel.value = 'all'; $('#filterSearch').value = '';
+    rerender();
+  };
+}
+
+function wireViewToggles() {
+  $$('[data-view-toggle]').forEach(group => {
+    const card = group.closest('.card');
+    group.addEventListener('click', e => {
+      const btn = e.target.closest('[data-view]');
+      if (!btn) return;
+      $$('[data-view]', group).forEach(b => b.classList.toggle('is-active', b === btn));
+      const want = btn.dataset.view;
+      $$('[data-pane]', card).forEach(p => { p.hidden = p.dataset.pane !== want; });
+      if (want === 'chart') redrawCharts();
+    });
+  });
+}
+
+/* ---------------------------------------------------------------- exporting */
+
+/**
+ * The script for the export, as a runnable statement. Never needs the network:
+ * an exported file already carries it inline, and otherwise the running app
+ * hands back its own source.
+ */
+function appSource() {
+  const inline = document.querySelector('script[data-inline="app"]');
+  if (inline && inline.textContent.trim()) return inline.textContent;
+  return `(${MortgageReportApp.toString()})();`;
+}
+
+/** Let the reader hand over styles.css when the browser refuses to read it. */
+function pickStylesheet() {
+  return new Promise(resolve => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.css,text/css';
+    input.addEventListener('change', () => {
+      const file = input.files && input.files[0];
+      if (!file) return resolve(null);
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result));
+      reader.onerror = () => resolve(null);
+      reader.readAsText(file);
+    });
+    input.click();
+  });
+}
+
+/**
+ * The stylesheet text for the export. Tries, in order: already inline (an
+ * exported file), the parsed rules (same-origin), the file itself (served).
+ * From disk all three are blocked, so the reader is asked for it once and the
+ * answer is kept for the rest of the session.
+ */
+async function collectCss() {
+  if (state.cssText) return state.cssText;
+  const keep = css => (state.cssText = css);
+
+  const inline = document.querySelector('style[data-inline="styles"]');
+  if (inline && inline.textContent.trim()) return keep(inline.textContent);
+
+  // Prefer the file itself: reading the parsed rules instead would silently
+  // drop every comment, and in a one-file export the embedded copy is the
+  // only copy left.
+  if (location.protocol !== 'file:') {
+    try {
+      const res = await fetch('styles.css', { cache: 'no-store' });
+      if (res.ok) return keep(await res.text());
+    } catch (_) { /* fall through */ }
+
+    try {
+      const sheet = Array.from(document.styleSheets)
+        .find(s => (s.href || '').endsWith('styles.css'));
+      if (sheet && sheet.cssRules && sheet.cssRules.length) {
+        return keep(Array.from(sheet.cssRules).map(r => r.cssText).join('\n'));
+      }
+    } catch (_) { /* cross-origin — fall through */ }
+  } else {
+    // From disk every automatic read is blocked, so ask while the click that
+    // started the export is still fresh and the browser accepts a dialog.
+    toast('Opened from disk, so the browser will not let this page read styles.css. Pick it to finish the export.');
+  }
+
+  const picked = await pickStylesheet();
+  return picked ? keep(picked) : null;
+}
+
+/** Escape a value for safe embedding inside a <script> block. */
+function scriptSafe(value) {
+  // Built from escapes so no raw line-separator characters sit in this file.
+  const SEPARATORS = new RegExp('[\\u2028\\u2029]', 'g');
+  return JSON.stringify(value)
+    .replace(/</g, '\\u003c')
+    .replace(SEPARATORS, ch => '\\u' + ch.charCodeAt(0).toString(16));
+}
+
+/** Strip generated content so the export ships the same clean shell as index.html. */
+function resetShell(root) {
+  const blank = sel => root.querySelectorAll(sel).forEach(n => { n.innerHTML = ''; });
+  blank('#tiles');
+  blank('.legend');
+  blank('.table-pane > div');
+  blank('#table-yearly');
+  blank('#table-ledger');
+  blank('#filterType');
+  blank('#filterYear');
+
+  root.querySelectorAll('.chart').forEach(n => {
+    n.innerHTML = '';
+    ['tabindex', 'role', 'aria-label'].forEach(a => n.removeAttribute(a));
+  });
+
+  // back to the default view state: charts shown, table twins hidden
+  root.querySelectorAll('[data-view-toggle] [data-view]').forEach(b =>
+    b.classList.toggle('is-active', b.dataset.view === 'chart'));
+  root.querySelectorAll('[data-pane]').forEach(p => { p.hidden = p.dataset.pane !== 'chart'; });
+
+  const placeholders = {
+    '#heroBalance': '—', '#heroMeta': '', '#paidPctLabel': '—', '#paidAmtLabel': '',
+    '#origLabel': '—', '#rateLabel': '', '#sourceLine': 'No data loaded',
+    '#ledgerCount': '', '#footNote': '', '#balanceSub': '', '#loaderNote': ''
+  };
+  for (const [sel, text] of Object.entries(placeholders)) {
+    const n = root.querySelector(sel);
+    if (n) n.textContent = text;
+  }
+
+  const meter = root.querySelector('#meterFill');
+  if (meter) meter.style.width = '0%';
+  const search = root.querySelector('#filterSearch');
+  if (search) search.value = '';
+  const meterBox = root.querySelector('#meter');
+  if (meterBox) meterBox.setAttribute('aria-label', 'Loan payoff progress');
+
+  ['#loader', '#report', '#reloadBtn', '#clearBtn', '#exportBtn', '#printBtn', '#toast']
+    .forEach(sel => { const n = root.querySelector(sel); if (n) n.hidden = true; });
+
+  // The clone is taken mid-export, so the button that started it is disabled
+  // and relabelled. Hand the copy a toolbar in its resting state.
+  root.querySelectorAll('button[disabled]').forEach(b => b.removeAttribute('disabled'));
+  const exportBtn = root.querySelector('#exportBtn');
+  if (exportBtn) exportBtn.textContent = 'Export HTML';
+  const toastEl = root.querySelector('#toast');
+  if (toastEl) { toastEl.className = 'toast'; toastEl.textContent = ''; }
+}
+
+/**
+ * Serialise the whole report into one self-contained HTML file: the stylesheet
+ * and the script are inlined, and the source CSV rides along as embedded data,
+ * so the export keeps every feature of the live page with no server, no network
+ * and no sidecar files.
+ */
+function buildExportDocument({ css, js, csv, sourceName, theme, scale }) {
+  const root = document.documentElement.cloneNode(true);
+  resetShell(root);
+
+  // What gets exported is a finished report, not the tool that produced it:
+  // drop the controls that load, clear or re-export data, and the drop zone
+  // they go with. Reading aids — print, text size, theme — stay.
+  ['#reloadBtn', '#clearBtn', '#exportBtn', '#loader']
+    .forEach(sel => { const n = root.querySelector(sel); if (n) n.remove(); });
+
+  setIdentity(!!csv, root);
+
+  // external stylesheet -> inline <style>
+  const style = document.createElement('style');
+  style.setAttribute('data-inline', 'styles');
+  style.textContent = css;
+  const cssNode = root.querySelector('link[rel="stylesheet"], style[data-inline="styles"]');
+  if (cssNode) cssNode.replaceWith(style);
+  else root.querySelector('head').appendChild(style);
+
+  // external script -> embedded data + inline <script>
+  const dataScript = document.createElement('script');
+  dataScript.setAttribute('data-inline', 'data');
+  dataScript.textContent =
+    'window.__EMBEDDED__ = {' +
+    `csv:${scriptSafe(csv)},` +
+    `name:${scriptSafe(sourceName)},` +
+    `theme:${scriptSafe(theme || 'auto')},` +
+    'report:true,' +
+    `scale:${Number(scale) || 1},` +
+    `exportedAt:${scriptSafe(new Date().toISOString())}` +
+    '};';
+
+  const appScript = document.createElement('script');
+  appScript.setAttribute('data-inline', 'app');
+  appScript.textContent = js.replace(/<\/script/gi, '<\\/script');
+
+  const SCRIPTS = 'script[src], script[data-inline="data"], script[data-inline="app"]';
+  const anchor = root.querySelector(SCRIPTS);
+  if (anchor) anchor.replaceWith(dataScript, appScript);
+  else root.querySelector('body').append(dataScript, appScript);
+  root.querySelectorAll(SCRIPTS).forEach(n => {
+    if (n !== dataScript && n !== appScript) n.remove();
+  });
+
+  // the embedded defaults drive theme and text size in the exported copy
+  root.removeAttribute('data-theme');
+  root.style.removeProperty('--font-scale');
+  if (!root.getAttribute('style')) root.removeAttribute('style');
+
+  return '<!doctype html>\n' + root.outerHTML + '\n';
+}
+
+/** Legacy download path, for browsers without the File System Access API. */
+function downloadBlob(filename, blob) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+
+/**
+ * Write the export to disk.
+ *
+ * Chrome refuses an <a download> pointing at a blob from an opaque origin,
+ * which is every page opened as file://, and the download fails with no way
+ * to choose a folder or a name. showSaveFilePicker is allowed there (it only
+ * needs a user gesture) and gives a real Save dialog, so it is the first
+ * choice; the anchor stays as the fallback for browsers that lack the API.
+ */
+async function saveExport(name, html) {
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+
+  if (typeof window.showSaveFilePicker === 'function') {
+    try {
+      const handle = await window.showSaveFilePicker({
+        suggestedName: name,
+        types: [{ description: 'HTML page', accept: { 'text/html': ['.html', '.htm'] } }]
+      });
+      const writable = await handle.createWritable();
+      await writable.write(blob);
+      await writable.close();
+      return { ok: true, name: handle.name || name };
+    } catch (err) {
+      if (err && err.name === 'AbortError') return { ok: false, cancelled: true };
+      // The gesture that opened the export has expired (a file dialog in
+      // between, or simply time) — the reader can grant a fresh one.
+      if (err && err.name === 'SecurityError') return { ok: false, needsGesture: true };
+      return { ok: false, error: err };
+    }
+  }
+
+  try {
+    downloadBlob(name, blob);
+    return { ok: true, name };
+  } catch (err) {
+    return { ok: false, error: err };
+  }
+}
+
+/** Save, and say what happened — offering a fresh click if one is needed. */
+async function deliverExport(name, html) {
+  const res = await saveExport(name, html);
+  if (res.ok) {
+    toast(`Saved ${res.name} — ${Math.round(html.length / 1024)} KB, ` +
+          'self-contained and fully interactive offline.');
+  } else if (res.cancelled) {
+    toast('Export cancelled — nothing was saved.');
+  } else if (res.needsGesture) {
+    toast('The report is ready to save.', false,
+          { label: 'Choose location…', onClick: () => deliverExport(name, html) });
+  } else {
+    toast('Could not write the file: ' +
+          ((res.error && res.error.message) || 'unknown error'), true);
+  }
+}
+
+let toastTimer;
+function toast(message, isError = false, action = null) {
+  const el = $('#toast');
+  if (!el) return;
+
+  el.textContent = '';
+  const text = document.createElement('span');
+  text.textContent = message;
+  el.appendChild(text);
+
+  if (action) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'toast-action';
+    btn.textContent = action.label;
+    btn.addEventListener('click', () => { hideToast(); action.onClick(); });
+    el.appendChild(btn);
+  }
+
+  el.classList.toggle('is-error', !!isError);
+  el.hidden = false;
+  requestAnimationFrame(() => el.classList.add('is-on'));
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(hideToast, action ? 60000 : (isError ? 10000 : 4500));
+}
+
+function hideToast() {
+  const el = $('#toast');
+  if (!el) return;
+  clearTimeout(toastTimer);
+  el.classList.remove('is-on');
+  setTimeout(() => { el.hidden = true; }, 220);
+}
+
+async function exportHtml() {
+  const btn = $('#exportBtn');
+  const label = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Exporting…';
+  try {
+    const js = appSource();
+    const css = await collectCss();
+    if (css === null) {
+      toast('Export cancelled — styles.css is needed to build a standalone file.', true);
+      return;
+    }
+    const html = buildExportDocument({
+      css, js,
+      csv: state.sourceCsv,
+      sourceName: state.sourceName,
+      theme: state.theme,
+      scale: state.textScale
+    });
+    // local calendar date, not UTC — the filename should match the user's day
+    const now = new Date();
+    const stamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}` +
+                  `-${String(now.getDate()).padStart(2, '0')}`;
+    const name = state.sourceCsv
+      ? `mortgage-report-${stamp}.html`
+      : 'mortgage-report-blank.html';
+    await deliverExport(name, html);
+  } catch (err) {
+    console.error(err);
+    toast('Export failed: ' + err.message, true);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = label;
+  }
+}
+
+/* --------------------------------------------------------------- app plumbing */
+
+function redrawCharts() {
+  for (const fn of state.redraws) {
+    try { fn(); } catch (err) { console.error('chart redraw failed', err); }
+  }
+}
+
+function renderReport(m, sourceName) {
+  state.model = m;
+  state.redraws = [];
+
+  // Reveal the report BEFORE drawing anything: a chart measures its container
+  // to size its SVG, and a container inside `display:none` measures zero.
+  setIdentity(true);
+  setHidden('#loader', true);
+  setHidden('#report', false);
+  setHidden('#reloadBtn', false);
+  setHidden('#clearBtn', false);
+  setHidden('#exportBtn', false);
+  setHidden('#printBtn', false);
+
+  renderHero(m);
+  renderTiles(m);
+  renderBalance(m);
+  renderComposition(m);
+  renderCumulative(m);
+  renderEscrow(m);
+  renderYearly(m);
+  wireFilters(m);
+  renderLedger(m);
+
+  const embedded = window.__EMBEDDED__;
+  const isExport = !!(embedded && embedded.csv && sourceName === embedded.name);
+
+  $('#sourceLine').textContent =
+    `${sourceName} · ${m.txs.length} transactions · ${fmtMonth(m.firstDate)} – ${fmtMonth(m.lastDate)}`;
+  $('#footNote').textContent =
+    (isExport
+      ? `Self-contained export of ${sourceName}: the data, styles and code are embedded in this single file, so it works offline. `
+      : `Every figure on this page is derived from ${sourceName} in your browser; nothing was uploaded. `) +
+    `The implied rate and projected payoff are estimates from the most recent payment, not terms from your note. ` +
+    (isExport && embedded.exportedAt
+      ? `Exported ${fmtDate(new Date(embedded.exportedAt))}.`
+      : `Report generated ${fmtDate(new Date())}.`);
+}
+
+/**
+ * Empty the report and go back to the drop zone. This clears only the copy
+ * running in the browser — the file on disk keeps its data until it is
+ * exported again. Exporting straight after clearing yields a blank
+ * single-file tool that will parse any loan history CSV dropped on it.
+ */
+function clearData() {
+  state.model = null;
+  state.sourceCsv = '';
+  state.sourceName = '';
+  state.redraws = [];
+  state.ledgerSort = { key: 'processed', dir: 'desc' };
+
+  setIdentity(false);
+  setHidden('#report', true);
+  setHidden('#reloadBtn', true);
+  setHidden('#printBtn', true);
+  setHidden('#clearBtn', true);
+  setHidden('#exportBtn', false);          // still useful: save the blank tool
+
+  ['#tiles', '#table-yearly', '#table-ledger', '#filterType', '#filterYear']
+    .forEach(sel => { const n = $(sel); if (n) n.innerHTML = ''; });
+  $$('.chart, .legend, .table-pane > div').forEach(n => { n.innerHTML = ''; });
+  const search = $('#filterSearch');
+  if (search) search.value = '';
+  const meter = $('#meterFill');
+  if (meter) meter.style.width = '0%';
+
+  // blank the figures as well, so nothing stale is left behind the scenes
+  const blanks = {
+    '#sourceLine': 'No data loaded', '#heroBalance': '—', '#heroMeta': '',
+    '#paidPctLabel': '—', '#paidAmtLabel': '', '#origLabel': '—',
+    '#rateLabel': '', '#ledgerCount': '', '#footNote': '', '#balanceSub': ''
+  };
+  for (const [sel, text] of Object.entries(blanks)) {
+    const n = $(sel);
+    if (n) n.textContent = text;
+  }
+
+  showLoader('Data cleared. Drop another loan history CSV here, or export now to keep a blank copy of this tool.');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  toast('Report cleared. Export now to save a blank, reusable copy.');
+}
+
+function showLoader(message, isError) {
+  setHidden('#loader', false);
+  setHidden('#report', true);
+  const note = $('#loaderNote');
+  if (!note) return;
+  note.textContent = message || '';
+  note.classList.toggle('is-error', !!isError);
+}
+
+function ingest(text, sourceName) {
+  try {
+    const model = analyse(normalise(parseCSV(text)));
+    state.sourceName = sourceName;
+    state.sourceCsv = text;
+    renderReport(model, sourceName);
+  } catch (err) {
+    console.error(err);
+    showLoader(err.message || 'That file could not be parsed.', true);
+  }
+}
+
+function readFile(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => ingest(String(reader.result), file.name);
+  reader.onerror = () => showLoader('That file could not be read.', true);
+  reader.readAsText(file);
+}
+
+function wireLoader() {
+  const drop = $('#drop'), input = $('#fileInput');
+
+  // A finished report has no drop zone — only the working file does.
+  if (drop && input) {
+    drop.addEventListener('click', () => input.click());
+    drop.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); input.click(); }
+    });
+    input.addEventListener('change', () => readFile(input.files[0]));
+
+    ['dragenter', 'dragover'].forEach(ev =>
+      drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('is-over'); }));
+    ['dragleave', 'drop'].forEach(ev =>
+      drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('is-over'); }));
+    drop.addEventListener('drop', e => readFile(e.dataTransfer?.files?.[0]));
+
+    // dropping anywhere on the page works too, once a report is showing
+    document.addEventListener('dragover', e => e.preventDefault());
+    document.addEventListener('drop', e => {
+      if (e.dataTransfer?.files?.length) { e.preventDefault(); readFile(e.dataTransfer.files[0]); }
+    });
+  }
+
+  on('#reloadBtn', 'click', () => {
+    showLoader('Choose a different loan history CSV to replace the current report.');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+  on('#clearBtn', 'click', clearData);
+  on('#exportBtn', 'click', exportHtml);
+  on('#printBtn', 'click', () => window.print());
+}
+
+function wireTheme() {
+  const order = ['auto', 'light', 'dark'];
+  const label = { auto: 'Auto', light: 'Light', dark: 'Dark' };
+  let stored = null;
+  try { stored = localStorage.getItem('mortgage-report-theme'); } catch (_) {}
+  let mode = stored || (window.__EMBEDDED__ && window.__EMBEDDED__.theme) || 'auto';
+  if (!order.includes(mode)) mode = 'auto';
+
+  const apply = () => {
+    state.theme = mode;
+    if (mode === 'auto') document.documentElement.removeAttribute('data-theme');
+    else document.documentElement.setAttribute('data-theme', mode);
+    $('#themeLabel').textContent = label[mode];
+    requestAnimationFrame(redrawCharts);   // charts read colour from CSS vars
+  };
+
+  $('#themeBtn').addEventListener('click', () => {
+    mode = order[(order.indexOf(mode) + 1) % order.length];
+    try { localStorage.setItem('mortgage-report-theme', mode); } catch (_) {}
+    apply();
+  });
+
+  window.matchMedia('(prefers-color-scheme: dark)')
+    .addEventListener('change', () => { if (mode === 'auto') apply(); });
+
+  apply();
+}
+
+const TEXT_SCALES = [0.9, 1, 1.1, 1.25, 1.4, 1.6];
+
+/** A− / A+ text size, persisted per browser and carried into exports. */
+function wireTextSize() {
+  const smaller = $('#textSmaller'), larger = $('#textLarger'), label = $('#textSizeLabel');
+
+  let stored = NaN;
+  try { stored = parseFloat(localStorage.getItem('mortgage-report-text-scale')); } catch (_) {}
+  const embedded = window.__EMBEDDED__ && Number(window.__EMBEDDED__.scale);
+  let scale = TEXT_SCALES.includes(stored) ? stored
+            : (TEXT_SCALES.includes(embedded) ? embedded : 1);
+
+  const apply = () => {
+    state.textScale = scale;
+    document.documentElement.style.setProperty('--font-scale', String(scale));
+    label.textContent = Math.round(scale * 100) + '%';
+    smaller.disabled = scale <= TEXT_SCALES[0];
+    larger.disabled  = scale >= TEXT_SCALES[TEXT_SCALES.length - 1];
+    try { localStorage.setItem('mortgage-report-text-scale', String(scale)); } catch (_) {}
+    // charts carry their own type, so they have to be redrawn at the new size
+    requestAnimationFrame(redrawCharts);
+  };
+
+  const step = dir => {
+    const i = TEXT_SCALES.indexOf(scale);
+    const next = TEXT_SCALES[Math.min(TEXT_SCALES.length - 1, Math.max(0, i + dir))];
+    if (next !== scale) { scale = next; apply(); }
+  };
+
+  smaller.addEventListener('click', () => step(-1));
+  larger.addEventListener('click', () => step(1));
+  apply();
+}
+
+function wireResize() {
+  let timer;
+  window.addEventListener('resize', () => {
+    clearTimeout(timer);
+    timer = setTimeout(redrawCharts, 160);
+  });
+}
+
+async function boot() {
+  wireLoader();
+  wireTheme();
+  wireTextSize();
+  wireViewToggles();
+  wireResize();
+
+  // An exported file carries its own data — no fetch, no sidecar files.
+  const embedded = window.__EMBEDDED__;
+  if (embedded && embedded.csv) {
+    ingest(embedded.csv, embedded.name || 'embedded data');
+    return;
+  }
+  if (embedded) {
+    // Exported with the data cleared: a blank, reusable single-file tool.
+    setIdentity(false);
+    setHidden('#exportBtn', false);
+    showLoader('Drop a loan history CSV here to build the report. ' +
+               'Everything is parsed inside this one file — nothing is uploaded.');
+    return;
+  }
+
+  // Otherwise try the CSV sitting next to this page. Over file:// the browser
+  // blocks that read, so fall back to the picker.
+  const url = new URLSearchParams(location.search).get('csv') || DEFAULT_CSV;
+  showLoader('Looking for ' + url + '…');
+  try {
+    const res = await fetch(url, { cache: 'no-store' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    ingest(await res.text(), url.split('/').pop());
+  } catch (_) {
+    showLoader(
+      `Could not read ${url} automatically — browsers block file reads when a page is opened ` +
+      `directly from disk. Choose the CSV above, or serve this folder (python3 -m http.server) ` +
+      `and the report will load on its own.`
+    );
+  }
+}
+
+document.addEventListener('DOMContentLoaded', boot);
+
+})();</script>
+
+
+</body></html>
